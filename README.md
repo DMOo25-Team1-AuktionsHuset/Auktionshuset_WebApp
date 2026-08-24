@@ -1,4 +1,4 @@
-# UCL Team 1, 4 Semester - Auktionshuset
+# UCL Team 1 ~ 4 Semester - Auktionshuset
 ## Formål
 Projektet er udarbejdet som en prototype på et auktionssoftware. Formålet er at udarbejde et system med online budgivning og embedded devices til at styre budgivning. 
 
