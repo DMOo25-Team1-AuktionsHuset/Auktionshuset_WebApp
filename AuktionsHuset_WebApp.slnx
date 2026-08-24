@@ -1,8 +1,18 @@
 <Solution>
-  <Project Path="Auktionshus.API/Auktionshus.API.csproj" Id="ea503c5f-7f73-4002-a893-c4f37c58fad2" />
+  <Project Path="Auktionshus.API/Auktionshus.API.csproj" Id="ea503c5f-7f73-4002-a893-c4f37c58fad2">
+    <BuildDependency Project="Auktionshuset.Application/Auktionshuset.Application.csproj" />
+    <BuildDependency Project="Auktionshuset.Contracts/Auktionshuset.Contracts.csproj" />
+    <BuildDependency Project="Auktionshuset.Domain/Auktionshuset.Domain.csproj" />
+    <BuildDependency Project="Auktionshuset.Infrastructure/Auktionshuset.Infrastructure.csproj" />
+  </Project>
   <Project Path="Auktionshuset.Application/Auktionshuset.Application.csproj" Id="7f57c895-4f3d-49be-976f-ddb12e702b84" />
   <Project Path="Auktionshuset.Contracts/Auktionshuset.Contracts.csproj" Id="404774d8-f259-4e14-aed6-7c6bae17cc8a" />
   <Project Path="Auktionshuset.Domain/Auktionshuset.Domain.csproj" Id="707a9218-5bb8-4732-aa91-1b578b045dc2" />
-  <Project Path="Auktionshuset.Infrastructure/Auktionshuset.Infrastructure.csproj" Id="fb50a77e-5657-41d0-9b94-37f6c4559c82" />
-  <Project Path="Auktionshuset/Auktionshuset.csproj" />
+  <Project Path="Auktionshuset.Infrastructure/Auktionshuset.Infrastructure.csproj" Id="fb50a77e-5657-41d0-9b94-37f6c4559c82">
+    <BuildDependency Project="Auktionshuset.Application/Auktionshuset.Application.csproj" />
+    <BuildDependency Project="Auktionshuset.Domain/Auktionshuset.Domain.csproj" />
+  </Project>
+  <Project Path="Auktionshuset/Auktionshuset.csproj">
+    <BuildDependency Project="Auktionshuset.Contracts/Auktionshuset.Contracts.csproj" />
+  </Project>
 </Solution>
