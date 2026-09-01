@@ -23,17 +23,17 @@ jobs:
         dotnet-version: 10.0.x
         
     - name: Restore solution
-      run: dotnet restore Auktionshuset.slnx
+      run: dotnet restore AuktionsHuset_WebApp.slnx
 
     - name: Build entire solution
       run: >
-          dotnet build Auktionshuset.slnx
+          dotnet build AuktionsHuset_WebApp.slnx
           --configuration Release
           --no-restore
 
     - name: Run all tests
       run: >
-          dotnet test Auktionshuset.slnx
+          dotnet test AuktionsHuset_WebApp.slnx
           --configuration Release
           --no-build
           --no-restore
