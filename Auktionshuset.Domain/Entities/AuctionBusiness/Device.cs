@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel.DataAnnotations;
 
-namespace Auktionshuset.Domain.Entities.Customer
+namespace Auktionshuset.Domain.Entities.AuctionBusiness
 {
     public class Device
     {

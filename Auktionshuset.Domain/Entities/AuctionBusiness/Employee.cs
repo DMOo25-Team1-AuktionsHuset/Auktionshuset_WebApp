@@ -3,15 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace Auktionshuset.Domain.Entities.Customer
+namespace Auktionshuset.Domain.Entities.AuctionBusiness
 {
-    public class Customer
+    public class Employee
     {
-        public required Guid CustomerId { get; set; }
+        public required Guid EmployeeId { get; set; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
-        public required string Email { get; set; }
-        public required string PhoneNumber { get; set; }
+        public required DateOnly BirthDate { get; set; }
         public required string Address { get; set; }
     }
 }
