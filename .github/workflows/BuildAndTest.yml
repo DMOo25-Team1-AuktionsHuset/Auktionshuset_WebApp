@@ -39,8 +39,8 @@ jobs:
           --no-restore
           --verbosity normal
 
-    - name: Download a Build Artifact
-      uses: actions/download-artifact@v3.1.0
-      with:
-        name: BuildArtifact
-        path: TestResults
+#    - name: Download a Build Artifact
+#      uses: actions/download-artifact@v3.1.0
+#      with:
+#        name: BuildArtifact
+#        path: TestResults
