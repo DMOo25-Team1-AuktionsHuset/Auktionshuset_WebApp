@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace Auktionshuset.Domain.Entities.Auction
+namespace Auktionshuset.Domain.Entities.AuctionBusiness
 {
     public class Lot
     {
@@ -12,5 +12,6 @@ namespace Auktionshuset.Domain.Entities.Auction
         public required string Category { get; set; }
         public required int Quantity { get; set; }
         public required decimal Value { get; set; }
+        public required string Description { get; set; }
     }
 }
