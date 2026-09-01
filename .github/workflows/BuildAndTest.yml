@@ -23,7 +23,7 @@ jobs:
         dotnet-version: 10.0.x
         
     - name: Restore solution
-      run: dotnet restore Slottet.slnx
+      run: dotnet restore Auktionshuset.slnx
 
     - name: Build entire solution
       run: >
