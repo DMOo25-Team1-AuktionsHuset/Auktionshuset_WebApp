@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="Auktionshus.API/Auktionshus.API.csproj" Id="ea503c5f-7f73-4002-a893-c4f37c58fad2">
+  <Project Path="Auktionshuset.Api/Auktionshuset.Api.csproj" Id="d19fe916-971c-4b63-befa-64eb1681ccb8">
     <BuildDependency Project="Auktionshuset.Application/Auktionshuset.Application.csproj" />
     <BuildDependency Project="Auktionshuset.Contracts/Auktionshuset.Contracts.csproj" />
     <BuildDependency Project="Auktionshuset.Domain/Auktionshuset.Domain.csproj" />
