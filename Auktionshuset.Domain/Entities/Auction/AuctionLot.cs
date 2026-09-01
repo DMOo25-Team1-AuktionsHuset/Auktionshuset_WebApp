@@ -8,7 +8,7 @@ namespace Auktionshuset.Domain.Entities.Auction
     public class AuctionLot
     {
         public required Guid AuctionId { get; set; }
-        public required Guid LotID { get; set; }
+        public required Guid LotId { get; set; }
 
         public required Auction Auction { get; set; }
         public required Lot Lot { get; set; }
