@@ -38,13 +38,4 @@ jobs:
           --no-build
           --no-restore
           --verbosity normal
-          --logger "trx"
-          --results-directory TestResults
 
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-          name: test-results
-          path: TestResults
-          if-no-files-found: warn
