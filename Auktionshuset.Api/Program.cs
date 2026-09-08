@@ -5,6 +5,7 @@ using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Endpoints.Admin.CreateLot;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Infrastructure.Service;
+using Auktionshuset.Infrastructure;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.EventHandling;
 using Auktionshuset.Infrastructure.Messaging;
@@ -21,27 +22,18 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddScoped<CreateLotHandler>();
-builder.Services.AddScoped<IIntegrationEventPublisher, InProcessIntegrationEventPublisher>();
-builder.Services.AddScoped<IIntegrationEventHandler<CreateLotIntegrationEvent>, CreateLotRealTimeHandler>();
-builder.Services.AddSingleton<IConnection>(sp =>
-{
-    //Obs! Dette er til test og bør ikke bruges i produktion.
-    var factory = new ConnectionFactory
-    {
-        HostName = "localhost",
-        UserName = "guest",
-        Password = "guest"
-    };
 
-    return factory
-        .CreateConnectionAsync()
-        .GetAwaiter()
-        .GetResult();
-});
 
-builder.Services.AddSingleton<
-    IIntegrationEventPublisher,
-    RabbitMqIntegrationEventPublisher>();
+//builder.Services.AddScoped<
+//    IIntegrationEventPublisher, 
+//    InProcessIntegrationEventPublisher>();
+
+builder.Services.AddScoped<
+    IIntegrationEventHandler<LotCreatedIntegrationEvent>, 
+    CreateLotRealTimeHandler>();
+
+//Infrastructure Services
+builder.Services.AddInfrastructure();
 
 var app = builder.Build();
 

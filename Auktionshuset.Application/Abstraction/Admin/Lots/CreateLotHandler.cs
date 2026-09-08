@@ -20,7 +20,7 @@ namespace Auktionshuset.Application.Abstraction.Admin.Lots {
 
             await lotRepository.AddAsync(lot, cancellationToken);
 
-            var integrationEvent = new CreateLotIntegrationEvent(
+            var integrationEvent = new LotCreatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 LotId: lot.LotId,
                 AuctionHouseId: lot.AuctionHouseId,

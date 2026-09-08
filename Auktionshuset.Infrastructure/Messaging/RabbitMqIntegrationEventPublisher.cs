@@ -7,13 +7,17 @@ using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
-    public class RabbitMqIntegrationEventPublisher : IIntegrationEventPublisher
+    internal sealed class RabbitMqIntegrationEventPublisher : IIntegrationEventPublisher
     {
         private readonly IConnection _connection;
+        private readonly RabbitMqRoutingKeyResolver _routingKeyResolver;
 
-        public RabbitMqIntegrationEventPublisher(IConnection connection)
+        public RabbitMqIntegrationEventPublisher(
+            IConnection connection,
+            RabbitMqRoutingKeyResolver routingKeyResolver)
         {
             _connection = connection;
+            _routingKeyResolver = routingKeyResolver;
         }
 
         public async Task PublishAsync<TEvent>(
@@ -22,6 +26,7 @@ namespace Auktionshuset.Infrastructure.Messaging
             where TEvent : IIntegrationEvent
 
         {
+            var routingkey = _routingKeyResolver.Resolve<TEvent>();
             await using var channel = await _connection.CreateChannelAsync(
                 cancellationToken: cancellationToken);
 
