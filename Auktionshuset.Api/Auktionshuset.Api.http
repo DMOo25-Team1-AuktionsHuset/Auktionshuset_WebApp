@@ -23,3 +23,12 @@ Content-Type: application/json
 }
 
 ###
+
+POST {{Auktionshuset.Api_HostAddress}}/api/lots
+Content-Type: application/json
+
+{
+  //CreateLotRequest
+}
+
+###
