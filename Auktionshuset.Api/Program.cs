@@ -5,8 +5,11 @@ using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Endpoints.Admin.CreateLot;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Infrastructure.Service;
+using Auktionshuset.Infrastructure;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.EventHandling;
+using Auktionshuset.Infrastructure.Messaging;
+using RabbitMQ.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +22,18 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddScoped<CreateLotHandler>();
-builder.Services.AddScoped<IIntegrationEventPublisher, InProcessIntegrationEventPublisher>();
-builder.Services.AddScoped<IIntegrationEventHandler<CreateLotIntegrationEvent>, CreateLotRealTimeHandler>();
+
+
+//builder.Services.AddScoped<
+//    IIntegrationEventPublisher, 
+//    InProcessIntegrationEventPublisher>();
+
+builder.Services.AddScoped<
+    IIntegrationEventHandler<LotCreatedIntegrationEvent>, 
+    CreateLotRealTimeHandler>();
+
+//Infrastructure Services
+builder.Services.AddInfrastructure();
 
 var app = builder.Build();
 

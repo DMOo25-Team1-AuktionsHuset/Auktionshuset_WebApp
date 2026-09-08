@@ -5,8 +5,8 @@ using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Auktionshuset.Api.Events.Admin.Lot {
-    public class CreateLotRealTimeHandler(IHubContext<LotHub, ILotClient> hubContext) : IIntegrationEventHandler<CreateLotIntegrationEvent> {
-        public Task HandleAsync(CreateLotIntegrationEvent message, CancellationToken cancellationToken) {
+    public class CreateLotRealTimeHandler(IHubContext<LotHub, ILotClient> hubContext) : IIntegrationEventHandler<LotCreatedIntegrationEvent> {
+        public Task HandleAsync(LotCreatedIntegrationEvent message, CancellationToken cancellationToken) {
             var notification = new CreateLotNotification(
                 EventId: message.EventId,
                 LotId: message.LotId,
