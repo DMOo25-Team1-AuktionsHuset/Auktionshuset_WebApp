@@ -32,7 +32,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
 
             var result = await handler.HandleAsync(command, cancellationToken);
 
-            return TypedResults.Created($"/api/lot/{result.LotId}", new CreateLotResponse(result.LotId));
+            return TypedResults.Created($"/api/lots/{result.LotId}", new CreateLotResponse(result.LotId));
         }
     }
 }
