@@ -15,5 +15,15 @@ namespace Auktionshuset.Infrastructure.Service {
 
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlyList<Domain.Entities.Lot>> GetAllAsync(CancellationToken cancellationToken) {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            IReadOnlyList<Domain.Entities.Lot> lots = _lots.Values
+                .OrderBy(lot => lot.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ToArray();
+
+            return Task.FromResult(lots);
+        }
     }
 }

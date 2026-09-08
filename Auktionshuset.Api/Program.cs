@@ -22,6 +22,7 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddScoped<CreateLotHandler>();
+builder.Services.AddScoped<GetLotsHandler>();
 
 
 //builder.Services.AddScoped<

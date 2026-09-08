@@ -7,6 +7,28 @@ namespace Auktionshuset.Services;
 
 public sealed class LotService(HttpClient httpClient)
 {
+    public async Task<IReadOnlyList<LotListItemResponse>> GetAllAsync(
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.GetAsync("api/lots", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var message = await ReadProblemMessageAsync(response, cancellationToken, "hentes");
+            throw new LotApiException(message, response.StatusCode);
+        }
+
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<IReadOnlyList<LotListItemResponse>>(cancellationToken)
+                ?? [];
+        }
+        catch (JsonException exception)
+        {
+            throw new LotApiException("Serveren returnerede ikke en gyldig lotliste.", response.StatusCode, exception);
+        }
+    }
+
     public async Task<CreateLotResponse> CreateAsync(
         CreateLotRequest request,
         CancellationToken cancellationToken = default)
@@ -32,7 +54,8 @@ public sealed class LotService(HttpClient httpClient)
 
     private static async Task<string> ReadProblemMessageAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string action = "oprettes")
     {
         try
         {
@@ -76,7 +99,7 @@ public sealed class LotService(HttpClient httpClient)
 
         return response.StatusCode == HttpStatusCode.BadRequest
             ? "Oplysningerne blev afvist. Kontrollér felterne og prøv igen."
-            : $"Lot kunne ikke oprettes (serverfejl {(int)response.StatusCode}).";
+            : $"Lot kunne ikke {action} (serverfejl {(int)response.StatusCode}).";
     }
 }
 

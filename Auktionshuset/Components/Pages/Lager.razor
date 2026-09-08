@@ -3,18 +3,21 @@
 @using Auktionshuset.Contracts.Dto.Admin.Lot
 @using Auktionshuset.Models
 @using Auktionshuset.Services
+@using System.Globalization
 @inject LotService LotService
 
 <PageTitle>Lager | Auktionshuset</PageTitle>
 
 <section class="warehouse-page" aria-labelledby="warehouse-heading">
-    <div class="page-heading">
-        <p class="eyebrow">Lager</p>
-        <h1 id="warehouse-heading">Tilføj lot</h1>
-        <p>Registrér et nyt lot, som skal indgå i auktionshusets lager.</p>
-    </div>
+    <div class="warehouse-grid">
+        <div class="lot-creation">
+            <div class="page-heading">
+                <p class="eyebrow">Lager</p>
+                <h1 id="warehouse-heading">Tilføj lot</h1>
+                <p>Registrér et nyt lot, som skal indgå i auktionshusets lager.</p>
+            </div>
 
-    <EditForm EditContext="editContext" OnValidSubmit="SubmitAsync" class="lot-form" novalidate>
+            <EditForm EditContext="editContext" OnValidSubmit="SubmitAsync" class="lot-form" novalidate>
         <DataAnnotationsValidator />
 
         <div class="form-grid">
@@ -74,20 +77,80 @@
             </div>
         }
 
-        <div class="form-actions">
-            <button type="submit" disabled="@isSubmitting">
-                @if (isSubmitting)
-                {
-                    <span class="spinner" aria-hidden="true"></span>
-                    <span>Tilføjer...</span>
-                }
-                else
-                {
-                    <span>Tilføj</span>
-                }
-            </button>
+                <div class="form-actions">
+                    <button type="submit" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>Tilføjer...</span>
+                        }
+                        else
+                        {
+                            <span>Tilføj</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
         </div>
-    </EditForm>
+
+        <section class="lot-list" aria-labelledby="lot-list-heading" aria-busy="@isLoadingLots">
+            <div class="list-heading">
+                <p class="eyebrow">Oversigt</p>
+                <h2 id="lot-list-heading">Alle lots</h2>
+                <p>@lots.Count lot@(lots.Count == 1 ? string.Empty : "s") i lageret</p>
+            </div>
+
+            @if (isLoadingLots)
+            {
+                <p class="list-state" role="status">Henter lots...</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(lotListError))
+            {
+                <p class="list-state list-error" role="alert">@lotListError</p>
+            }
+            else if (lots.Count == 0)
+            {
+                <p class="list-state">Der er endnu ingen lots i lageret.</p>
+            }
+            else
+            {
+                <ol class="lots">
+                    @foreach (var lot in lots)
+                    {
+                        <li class="lot-card">
+                            <div class="lot-card-header">
+                                <div>
+                                    <h3>@lot.Name</h3>
+                                    <p>@lot.Category</p>
+                                </div>
+                                <strong>@lot.EstimatedValue.ToString("N2", CultureInfo.GetCultureInfo("da-DK")) DKK</strong>
+                            </div>
+                            <p class="lot-description">@lot.Description</p>
+                            <dl class="lot-details">
+                                <div>
+                                    <dt>Antal</dt>
+                                    <dd>@lot.Quantity stk.</dd>
+                                </div>
+                                <div>
+                                    <dt>Auktionshus</dt>
+                                    <dd title="@lot.AuctionHouseId">@lot.AuctionHouseId</dd>
+                                </div>
+                            </dl>
+                            @if (lot.Tags.Count > 0)
+                            {
+                                <ul class="tags" aria-label="Tags">
+                                    @foreach (var tag in lot.Tags)
+                                    {
+                                        <li>@tag</li>
+                                    }
+                                </ul>
+                            }
+                        </li>
+                    }
+                </ol>
+            }
+        </section>
+    </div>
 </section>
 
 @code {
@@ -96,10 +159,14 @@
     private bool isSubmitting;
     private bool submissionSucceeded;
     private string? statusMessage;
+    private IReadOnlyList<LotListItemResponse> lots = [];
+    private bool isLoadingLots;
+    private string? lotListError;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         ResetForm();
+        await LoadLotsAsync();
     }
 
     private async Task SubmitAsync()
@@ -131,6 +198,7 @@
             ResetForm();
             submissionSucceeded = true;
             statusMessage = $"Lottet blev tilføjet. Lot-id: {createdLotId}";
+            await LoadLotsAsync();
         }
         catch (LotApiException exception)
         {
@@ -147,6 +215,33 @@
         finally
         {
             isSubmitting = false;
+        }
+    }
+
+    private async Task LoadLotsAsync()
+    {
+        isLoadingLots = true;
+        lotListError = null;
+
+        try
+        {
+            lots = await LotService.GetAllAsync();
+        }
+        catch (LotApiException exception)
+        {
+            lotListError = exception.Message;
+        }
+        catch (HttpRequestException)
+        {
+            lotListError = "Listen over lots kunne ikke hentes. Prøv igen om lidt.";
+        }
+        catch (TaskCanceledException)
+        {
+            lotListError = "Anmodningen om lotlisten tog for lang tid. Prøv igen.";
+        }
+        finally
+        {
+            isLoadingLots = false;
         }
     }
 

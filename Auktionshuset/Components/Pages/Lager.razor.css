@@ -1,6 +1,20 @@
 .warehouse-page {
     margin: 0 auto;
-    max-width: 850px;
+    max-width: 1400px;
+}
+
+.warehouse-grid {
+    align-items: start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(7rem, 13vw, 13rem) minmax(0, 1.3fr);
+}
+
+.lot-creation {
+    grid-column: 1;
+    justify-self: center;
+    max-width: 30rem;
+    min-width: 0;
+    width: 100%;
 }
 
 .page-heading {
@@ -29,12 +43,143 @@ h1 {
     margin: 0.8rem 0 0;
 }
 
+.lot-list,
 .lot-form {
     background: #fff;
     border: 1px solid #dfe4e0;
     border-radius: 0.8rem;
     box-shadow: 0 12px 36px rgba(26, 39, 30, 0.07);
     padding: 2rem;
+}
+
+.lot-list {
+    grid-column: 3;
+    justify-self: center;
+    max-width: 40rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.list-heading {
+    border-bottom: 1px solid #e5e9e6;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+}
+
+.list-heading h2 {
+    color: #17211b;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.list-heading > p:last-child {
+    color: #5d6760;
+    font-size: 0.9rem;
+    margin: 0.45rem 0 0;
+}
+
+.list-state {
+    background: #f5f6f4;
+    border-radius: 0.45rem;
+    color: #5d6760;
+    margin: 0;
+    padding: 1rem;
+}
+
+.list-error {
+    background: #fff0f0;
+    color: #852323;
+}
+
+.lots {
+    display: grid;
+    gap: 1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.lot-card {
+    border: 1px solid #dfe4e0;
+    border-radius: 0.55rem;
+    padding: 1.15rem;
+}
+
+.lot-card-header {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.lot-card h3 {
+    color: #17211b;
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.lot-card-header p,
+.lot-description {
+    color: #5d6760;
+    font-size: 0.9rem;
+    margin: 0.3rem 0 0;
+}
+
+.lot-card-header strong {
+    color: #31543e;
+    font-size: 0.9rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.lot-description {
+    line-height: 1.5;
+}
+
+.lot-details {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    margin: 1rem 0 0;
+}
+
+.lot-details div {
+    min-width: 0;
+}
+
+.lot-details dt {
+    color: #69736c;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.lot-details dd {
+    color: #26332b;
+    font-size: 0.84rem;
+    margin: 0.2rem 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+}
+
+.tags li {
+    background: #edf2ed;
+    border-radius: 999px;
+    color: #365b44;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
 }
 
 .form-grid {
@@ -198,7 +343,20 @@ button:disabled {
     }
 }
 
+@media (max-width: 1000px) {
+    .warehouse-grid {
+        gap: 2.5rem;
+        grid-template-columns: 1fr;
+    }
+
+    .lot-creation,
+    .lot-list {
+        grid-column: auto;
+    }
+}
+
 @media (max-width: 650px) {
+    .lot-list,
     .lot-form {
         padding: 1.25rem;
     }
@@ -209,6 +367,19 @@ button:disabled {
 
     .field-wide {
         grid-column: auto;
+    }
+
+    .lot-card-header {
+        flex-direction: column;
+        gap: 0.45rem;
+    }
+
+    .lot-card-header strong {
+        text-align: left;
+    }
+
+    .lot-details {
+        grid-template-columns: 1fr;
     }
 
     .form-actions button {
