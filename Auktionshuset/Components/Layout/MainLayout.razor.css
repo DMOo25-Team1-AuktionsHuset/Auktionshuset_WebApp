@@ -1,18 +1,22 @@
+.app-shell {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    min-height: 100vh;
+}
+
 .site-header {
     background: #17211b;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
     color: #fff;
 }
 
 .header-content {
-    align-items: center;
+    align-items: stretch;
     display: flex;
+    flex-direction: column;
     gap: 2rem;
-    justify-content: space-between;
-    margin: 0 auto;
-    max-width: 1180px;
-    min-height: 4.5rem;
-    padding: 0 1.5rem;
+    min-height: 100%;
+    padding: 2rem 1.25rem;
 }
 
 .header-content ::deep .brand {
@@ -30,17 +34,19 @@
 }
 
 nav {
-    align-self: stretch;
     display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 nav ::deep a {
     align-items: center;
-    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
     color: #dbe4dd;
     display: flex;
     font-weight: 600;
-    padding: 0 0.25rem;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
     text-decoration: none;
 }
 
@@ -50,14 +56,17 @@ nav ::deep a:focus-visible {
 }
 
 nav ::deep a.active {
-    border-bottom-color: #d8ad5f;
+    border-left-color: #d8ad5f;
     color: #fff;
 }
 
 .page-content {
+    box-sizing: border-box;
     margin: 0 auto;
     max-width: 1180px;
+    min-width: 0;
     padding: 3rem 1.5rem 4rem;
+    width: 100%;
 }
 
 #blazor-error-ui {
@@ -81,10 +90,37 @@ nav ::deep a.active {
         top: 0.5rem;
     }
 
-@media (max-width: 560px) {
+@media (max-width: 700px) {
+    .app-shell {
+        display: block;
+    }
+
+    .site-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        border-right: 0;
+    }
+
     .header-content {
+        align-items: center;
+        flex-direction: row;
+        justify-content: space-between;
         min-height: 4rem;
         padding: 0 1rem;
+    }
+
+    nav {
+        align-self: stretch;
+        flex-direction: row;
+    }
+
+    nav ::deep a {
+        border-bottom: 3px solid transparent;
+        border-left: 0;
+        padding: 0 0.5rem;
+    }
+
+    nav ::deep a.active {
+        border-bottom-color: #d8ad5f;
     }
 
     .page-content {
