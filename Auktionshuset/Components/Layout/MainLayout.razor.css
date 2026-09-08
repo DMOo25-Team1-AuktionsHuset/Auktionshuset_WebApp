@@ -1,3 +1,65 @@
+.site-header {
+    background: #17211b;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.header-content {
+    align-items: center;
+    display: flex;
+    gap: 2rem;
+    justify-content: space-between;
+    margin: 0 auto;
+    max-width: 1180px;
+    min-height: 4.5rem;
+    padding: 0 1.5rem;
+}
+
+.header-content ::deep .brand {
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+}
+
+.header-content ::deep .brand:hover,
+.header-content ::deep .brand:focus-visible {
+    color: #fff;
+    text-decoration: none;
+}
+
+nav {
+    align-self: stretch;
+    display: flex;
+}
+
+nav ::deep a {
+    align-items: center;
+    border-bottom: 3px solid transparent;
+    color: #dbe4dd;
+    display: flex;
+    font-weight: 600;
+    padding: 0 0.25rem;
+    text-decoration: none;
+}
+
+nav ::deep a:hover,
+nav ::deep a:focus-visible {
+    color: #fff;
+}
+
+nav ::deep a.active {
+    border-bottom-color: #d8ad5f;
+    color: #fff;
+}
+
+.page-content {
+    margin: 0 auto;
+    max-width: 1180px;
+    padding: 3rem 1.5rem 4rem;
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
@@ -18,3 +80,14 @@
         right: 0.75rem;
         top: 0.5rem;
     }
+
+@media (max-width: 560px) {
+    .header-content {
+        min-height: 4rem;
+        padding: 0 1rem;
+    }
+
+    .page-content {
+        padding: 2rem 1rem 3rem;
+    }
+}
