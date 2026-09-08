@@ -1,6 +1,25 @@
-@Auktionshuset.Api_HostAddress = http://localhost:5133
+@Auktionshuset.Api_HostAddress = https://localhost:7061
 
 GET {{Auktionshuset.Api_HostAddress}}/weatherforecast/
 Accept: application/json
+
+###
+
+POST {{Auktionshuset.Api_HostAddress}}/api/lots
+Content-Type: application/json
+
+{
+  "name": "Arne Jacobsen chair",
+  "category": "Furniture",
+  "quantity": 1,
+  "estimatedValue": 12000.00,
+  "description": "An original Danish design chair in good condition.",
+  "tags": [
+    "chair",
+    "danish-design",
+    "furniture"
+  ],
+  "auctionHouseId": "8cc2c7dc-6244-41e7-805f-a90f9279c540"
+}
 
 ###

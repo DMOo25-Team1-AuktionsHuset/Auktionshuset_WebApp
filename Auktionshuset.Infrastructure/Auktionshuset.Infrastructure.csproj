@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Auktionshuset.Application\Auktionshuset.Application.csproj" />
+    <ProjectReference Include="..\Auktionshuset.Domain\Auktionshuset.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

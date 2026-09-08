@@ -1,8 +1,26 @@
+using Auktionshuset.Api.Endpoints.Admin;
+using Auktionshuset.Api.Events;
+using Auktionshuset.Api.Hubs;
+using Auktionshuset.Api.Events.Admin.Lot;
+using Auktionshuset.Api.Endpoints.Admin.CreateLot;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Infrastructure.Service;
+using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Infrastructure.EventHandling;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
+builder.Services.AddValidation();
+builder.Services.AddSignalR();
+
+builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
+builder.Services.AddScoped<CreateLotHandler>();
+builder.Services.AddScoped<IIntegrationEventPublisher, InProcessIntegrationEventPublisher>();
+builder.Services.AddScoped<IIntegrationEventHandler<CreateLotIntegrationEvent>, CreateLotRealTimeHandler>();
 
 var app = builder.Build();
 
@@ -13,5 +31,7 @@ if (app.Environment.IsDevelopment()) {
 
 app.UseHttpsRedirection();
 
+app.MapLotEndpoints();
+app.MapHub<LotHub>("/hubs/lot");
+
 app.Run();
- 
