@@ -2,9 +2,7 @@
 @rendermode InteractiveServer
 @using Auktionshuset.Contracts.Dto.Admin.Lot
 @using Auktionshuset.Models
-@using Auktionshuset.Services
 @using System.Globalization
-@inject LotService LotService
 
 <PageTitle>Lager | Auktionshuset</PageTitle>
 
@@ -18,64 +16,64 @@
             </div>
 
             <EditForm EditContext="editContext" OnValidSubmit="SubmitAsync" class="lot-form" novalidate>
-        <DataAnnotationsValidator />
+                <DataAnnotationsValidator />
 
-        <div class="form-grid">
-            <div class="field field-wide">
-                <label for="lot-name">Navn</label>
-                <InputText id="lot-name" @bind-Value="model.Name" autocomplete="off" />
-                <ValidationMessage For="@(() => model.Name)" />
-            </div>
+                <div class="form-grid">
+                    <div class="field field-wide">
+                        <label for="lot-name">Navn</label>
+                        <InputText id="lot-name" @bind-Value="model.Name" autocomplete="off" />
+                        <ValidationMessage For="@(() => model.Name)" />
+                    </div>
 
-            <div class="field">
-                <label for="lot-category">Kategori</label>
-                <InputText id="lot-category" @bind-Value="model.Category" autocomplete="off" />
-                <ValidationMessage For="@(() => model.Category)" />
-            </div>
+                    <div class="field">
+                        <label for="lot-category">Kategori</label>
+                        <InputText id="lot-category" @bind-Value="model.Category" autocomplete="off" />
+                        <ValidationMessage For="@(() => model.Category)" />
+                    </div>
 
-            <div class="field">
-                <label for="lot-quantity">Antal</label>
-                <InputNumber id="lot-quantity" @bind-Value="model.Quantity" min="1" />
-                <ValidationMessage For="@(() => model.Quantity)" />
-            </div>
+                    <div class="field">
+                        <label for="lot-quantity">Antal</label>
+                        <InputNumber id="lot-quantity" @bind-Value="model.Quantity" min="1" />
+                        <ValidationMessage For="@(() => model.Quantity)" />
+                    </div>
 
-            <div class="field">
-                <label for="lot-value">Estimeret værdi</label>
-                <div class="input-suffix">
-                    <InputNumber id="lot-value" @bind-Value="model.EstimatedValue" min="0.01" max="50000000" step="0.01" />
-                    <span aria-hidden="true">DKK</span>
+                    <div class="field">
+                        <label for="lot-value">Estimeret værdi</label>
+                        <div class="input-suffix">
+                            <InputNumber id="lot-value" @bind-Value="model.EstimatedValue" min="0.01" max="50000000" step="0.01" />
+                            <span aria-hidden="true">DKK</span>
+                        </div>
+                        <ValidationMessage For="@(() => model.EstimatedValue)" />
+                    </div>
+
+                    <div class="field">
+                        <label for="lot-auction-house">Auktionshus-id</label>
+                        <InputText id="lot-auction-house" @bind-Value="model.AuctionHouseId" autocomplete="off" />
+                        <ValidationMessage For="@(() => model.AuctionHouseId)" />
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="lot-description">Beskrivelse</label>
+                        <InputTextArea id="lot-description" @bind-Value="model.Description" rows="5" />
+                        <ValidationMessage For="@(() => model.Description)" />
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="lot-tags">Tags <span class="optional">(valgfrit)</span></label>
+                        <InputText id="lot-tags" @bind-Value="model.Tags" aria-describedby="tags-help" autocomplete="off" />
+                        <span id="tags-help" class="help-text">Adskil tags med komma. Dubletter fjernes automatisk. Maks. 20 tags.</span>
+                        <ValidationMessage For="@(() => model.Tags)" />
+                    </div>
                 </div>
-                <ValidationMessage For="@(() => model.EstimatedValue)" />
-            </div>
 
-            <div class="field">
-                <label for="lot-auction-house">Auktionshus-id</label>
-                <InputText id="lot-auction-house" @bind-Value="model.AuctionHouseId" autocomplete="off" />
-                <ValidationMessage For="@(() => model.AuctionHouseId)" />
-            </div>
-
-            <div class="field field-wide">
-                <label for="lot-description">Beskrivelse</label>
-                <InputTextArea id="lot-description" @bind-Value="model.Description" rows="5" />
-                <ValidationMessage For="@(() => model.Description)" />
-            </div>
-
-            <div class="field field-wide">
-                <label for="lot-tags">Tags <span class="optional">(valgfrit)</span></label>
-                <InputText id="lot-tags" @bind-Value="model.Tags" aria-describedby="tags-help" autocomplete="off" />
-                <span id="tags-help" class="help-text">Adskil tags med komma. Dubletter fjernes automatisk. Maks. 20 tags.</span>
-                <ValidationMessage For="@(() => model.Tags)" />
-            </div>
-        </div>
-
-        @if (!string.IsNullOrWhiteSpace(statusMessage))
-        {
-            <div class="status-message @(submissionSucceeded ? "success" : "error")"
-                 role="@(submissionSucceeded ? "status" : "alert")"
-                 aria-live="polite">
-                @statusMessage
-            </div>
-        }
+                @if (!string.IsNullOrWhiteSpace(statusMessage))
+                {
+                    <div class="status-message @(submissionSucceeded ? "success" : "error")"
+                         role="@(submissionSucceeded ? "status" : "alert")"
+                         aria-live="polite">
+                        @statusMessage
+                    </div>
+                }
 
                 <div class="form-actions">
                     <button type="submit" disabled="@isSubmitting">
@@ -152,102 +150,3 @@
         </section>
     </div>
 </section>
-
-@code {
-    private CreateLotFormModel model = new();
-    private EditContext editContext = default!;
-    private bool isSubmitting;
-    private bool submissionSucceeded;
-    private string? statusMessage;
-    private IReadOnlyList<LotListItemResponse> lots = [];
-    private bool isLoadingLots;
-    private string? lotListError;
-
-    protected override async Task OnInitializedAsync()
-    {
-        ResetForm();
-        await LoadLotsAsync();
-    }
-
-    private async Task SubmitAsync()
-    {
-        if (isSubmitting)
-        {
-            return;
-        }
-
-        isSubmitting = true;
-        submissionSucceeded = false;
-        statusMessage = null;
-
-        try
-        {
-            var request = new CreateLotRequest
-            {
-                Name = model.Name.Trim(),
-                Category = model.Category.Trim(),
-                Quantity = model.Quantity,
-                EstimatedValue = model.EstimatedValue,
-                Description = model.Description.Trim(),
-                Tags = model.GetTags(),
-                AuctionHouseId = Guid.Parse(model.AuctionHouseId)
-            };
-
-            var response = await LotService.CreateAsync(request);
-            var createdLotId = response.LotId;
-            ResetForm();
-            submissionSucceeded = true;
-            statusMessage = $"Lottet blev tilføjet. Lot-id: {createdLotId}";
-            await LoadLotsAsync();
-        }
-        catch (LotApiException exception)
-        {
-            statusMessage = exception.Message;
-        }
-        catch (HttpRequestException)
-        {
-            statusMessage = "Der kunne ikke oprettes forbindelse til serveren. Prøv igen om lidt.";
-        }
-        catch (TaskCanceledException)
-        {
-            statusMessage = "Anmodningen tog for lang tid. Prøv igen.";
-        }
-        finally
-        {
-            isSubmitting = false;
-        }
-    }
-
-    private async Task LoadLotsAsync()
-    {
-        isLoadingLots = true;
-        lotListError = null;
-
-        try
-        {
-            lots = await LotService.GetAllAsync();
-        }
-        catch (LotApiException exception)
-        {
-            lotListError = exception.Message;
-        }
-        catch (HttpRequestException)
-        {
-            lotListError = "Listen over lots kunne ikke hentes. Prøv igen om lidt.";
-        }
-        catch (TaskCanceledException)
-        {
-            lotListError = "Anmodningen om lotlisten tog for lang tid. Prøv igen.";
-        }
-        finally
-        {
-            isLoadingLots = false;
-        }
-    }
-
-    private void ResetForm()
-    {
-        model = new CreateLotFormModel();
-        editContext = new EditContext(model);
-    }
-}
