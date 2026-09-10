@@ -7,11 +7,12 @@ namespace Auktionshuset.Domain.Entities {
         public required Guid LotId { get; set; }
         public required string Name { get; set; }
         public required string Category { get; set; }
-        public required int Quatity { get; set; }
+        public required int Quantity { get; set; }
         public required decimal EstimatedValue { get; set; }
         public required string Description { get; set; }
         public required List<string> Tags { get; set; } = new List<string>();
 
-        public required AuctionHouse AuctionHouseId { get; set; }
+        public required Guid AuctionHouseId { get; set; }
+        public AuctionHouse? AuctionHouse { get; set; }
     }
 }
