@@ -3,7 +3,11 @@
 
 name: .NET
 
-on: [push, pull_request ]
+on:
+  push:
+    branches: [ "main", "Feature/AddLot" ]
+  pull_request:
+    branches: [ "main", "Feature/AddLot" ]
 
 jobs:
   build:
