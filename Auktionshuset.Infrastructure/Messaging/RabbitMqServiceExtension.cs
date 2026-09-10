@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Infrastructure.Messaging.Consumers;
+using Microsoft.Extensions.DependencyInjection;
+using RabbitMQ.Client;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using Auktionshuset.Application.EventHandling;
-using RabbitMQ.Client;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
@@ -34,6 +35,8 @@ namespace Auktionshuset.Infrastructure.Messaging
             services.AddSingleton<
                 IIntegrationEventPublisher,
                 RabbitMqIntegrationEventPublisher>();
+
+            services.AddHostedService<LotCreatedConsumer>();
 
             return services;
         }
