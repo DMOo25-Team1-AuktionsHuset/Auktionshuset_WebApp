@@ -10,4 +10,5 @@
   <Project Path="Auktionshuset/Auktionshuset.csproj">
     <BuildDependency Project="Auktionshuset.Contracts/Auktionshuset.Contracts.csproj" />
   </Project>
+  <Project Path="Auktionshuset.Tests/Auktionshuset.Tests.csproj" />
 </Solution>

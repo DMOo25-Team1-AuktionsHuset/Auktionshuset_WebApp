@@ -1,0 +1,131 @@
+@page "/admin/auktioner/opret"
+@rendermode InteractiveServer
+@using Auktionshuset.Contracts.Dto.Admin.Lot
+@using Auktionshuset.Models
+@using System.Globalization
+
+<PageTitle>Opret auktion | Auktionshuset</PageTitle>
+
+<section class="auction-page" aria-labelledby="auction-heading">
+    <div class="page-heading">
+        <p class="eyebrow">Administration</p>
+        <h1 id="auction-heading">Opret auktion</h1>
+        <p>Vælg dato og tidspunkt for auktionens start. Du kan vælge at vedhæfte en eller flere af lagerets lots, men det er også muligt at oprette auktionen uden.</p>
+    </div>
+
+    <EditForm EditContext="editContext" OnValidSubmit="SubmitAsync" class="auction-form" novalidate>
+        <DataAnnotationsValidator />
+
+        <div class="form-section">
+            <h2>Auktionstidspunkt</h2>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="auction-start-date">Startdato</label>
+                    <InputDate id="auction-start-date" @bind-Value="model.StartDate" />
+                    <ValidationMessage For="@(() => model.StartDate)" />
+                </div>
+
+                <div class="field">
+                    <label for="auction-start-time">Starttidspunkt</label>
+                    <InputText id="auction-start-time" type="time" @bind-Value="model.StartTime" />
+                    <ValidationMessage For="@(() => model.StartTime)" />
+                </div>
+            </div>
+        </div>
+
+        <fieldset class="form-section lot-selection" aria-busy="@isLoadingLots">
+            <legend>
+                Tilføj lots
+                <span class="optional">(valgfrit)</span>
+            </legend>
+            <p class="section-help">Vælg de lots fra lageret, der skal med på auktionen.</p>
+
+            @if (isLoadingLots)
+            {
+                <p class="list-state" role="status">Henter lots...</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(lotListError))
+            {
+                <p class="list-state list-error" role="alert">@lotListError</p>
+            }
+            else if (lots.Count == 0)
+            {
+                <p class="list-state">Der er endnu ingen lots i lageret. Du kan stadig oprette auktionen uden lots.</p>
+            }
+            else
+            {
+                <ul class="lot-options">
+                    @foreach (var lot in lots)
+                    {
+                        var isSelected = selectedLotIds.Contains(lot.LotId);
+                        <li class="lot-option @(isSelected ? "selected" : null)">
+                            <input id="@($"lot-{lot.LotId}")"
+                                   type="checkbox"
+                                   checked="@isSelected"
+                                   @onchange="changeEventArgs => ToggleLot(lot.LotId, changeEventArgs)" />
+                            <label for="@($"lot-{lot.LotId}")" class="lot-option-label">
+                                <span class="lot-option-header">
+                                    <span class="lot-option-name">@lot.Name</span>
+                                    <span class="lot-option-value">@lot.EstimatedValue.ToString("N2", CultureInfo.GetCultureInfo("da-DK")) DKK</span>
+                                </span>
+                                <span class="lot-option-meta">@lot.Category &middot; @lot.Quantity stk.</span>
+                                @if (lot.Tags.Count > 0)
+                                {
+                                    <span class="lot-option-tags">
+                                        @foreach (var tag in lot.Tags)
+                                        {
+                                            <span class="tag">@tag</span>
+                                        }
+                                    </span>
+                                }
+                            </label>
+                        </li>
+                    }
+                </ul>
+            }
+        </fieldset>
+
+        <div class="selection-summary">
+            @if (selectedLotIds.Count == 0)
+            {
+                <p role="status" aria-live="polite">Ingen lots valgt. Auktionen oprettes uden lots.</p>
+            }
+            else
+            {
+                <div class="selection-summary-head">
+                    <p role="status" aria-live="polite"><strong>@selectedLotIds.Count</strong> lot@(selectedLotIds.Count == 1 ? string.Empty : "s") valgt</p>
+                    <button type="button" class="clear-button" @onclick="ClearSelection">Ryd valg</button>
+                </div>
+                <ul class="selection-list">
+                    @foreach (var lot in SelectedLots)
+                    {
+                        <li>@lot.Name</li>
+                    }
+                </ul>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(statusMessage))
+        {
+            <div class="status-message @(submissionSucceeded ? "success" : "error")"
+                 role="@(submissionSucceeded ? "status" : "alert")"
+                 aria-live="polite">
+                @statusMessage
+            </div>
+        }
+
+        <div class="form-actions">
+            <button type="submit" disabled="@isSubmitting">
+                @if (isSubmitting)
+                {
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span>Opretter...</span>
+                }
+                else
+                {
+                    <span>Opret auktion</span>
+                }
+            </button>
+        </div>
+    </EditForm>
+</section>
