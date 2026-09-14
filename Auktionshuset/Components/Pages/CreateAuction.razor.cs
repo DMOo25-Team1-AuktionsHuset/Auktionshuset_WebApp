@@ -7,23 +7,31 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace Auktionshuset.Components.Pages;
 
-public partial class OpretAuktion
+public partial class CreateAuction : IDisposable
 {
+    private const int MaxLiveAuctions = 5;
+
     [Inject]
     private LotService LotService { get; set; } = default!;
 
     [Inject]
     private AuctionService AuctionService { get; set; } = default!;
 
+    [Inject]
+    private AuctionRealtimeService AuctionRealtimeService { get; set; } = default!;
+
     private CreateAuctionFormModel model = new();
     private EditContext editContext = default!;
     private readonly HashSet<Guid> selectedLotIds = [];
+    private readonly List<CreateAuctionNotification> liveAuctions = [];
     private IReadOnlyList<LotListItemResponse> lots = [];
     private bool isLoadingLots;
     private string? lotListError;
+    private string? realtimeError;
     private bool isSubmitting;
     private bool submissionSucceeded;
     private string? statusMessage;
+    private bool isDisposed;
 
     private IReadOnlyList<LotListItemResponse> SelectedLots =>
         lots.Where(lot => selectedLotIds.Contains(lot.LotId)).ToArray();
@@ -32,6 +40,52 @@ public partial class OpretAuktion
     {
         ResetForm();
         await LoadLotsAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        AuctionRealtimeService.AuctionCreated += OnAuctionCreatedAsync;
+
+        try
+        {
+            await AuctionRealtimeService.StartAsync();
+        }
+        catch (Exception)
+        {
+            realtimeError = "Liveforbindelsen til auktioner kunne ikke startes. Genindlæs siden for at prøve igen.";
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        isDisposed = true;
+        AuctionRealtimeService.AuctionCreated -= OnAuctionCreatedAsync;
+    }
+
+    private Task OnAuctionCreatedAsync(CreateAuctionNotification notification)
+    {
+        if (isDisposed)
+        {
+            return Task.CompletedTask;
+        }
+
+        return InvokeAsync(() =>
+        {
+            liveAuctions.Insert(0, notification);
+
+            if (liveAuctions.Count > MaxLiveAuctions)
+            {
+                liveAuctions.RemoveAt(liveAuctions.Count - 1);
+            }
+
+            StateHasChanged();
+        });
     }
 
     private async Task SubmitAsync()

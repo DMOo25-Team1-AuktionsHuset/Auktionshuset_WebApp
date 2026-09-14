@@ -37,6 +37,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                 RabbitMqIntegrationEventPublisher>();
 
             services.AddHostedService<LotCreatedConsumer>();
+            services.AddHostedService<AuctionCreatedConsumer>();
 
             return services;
         }

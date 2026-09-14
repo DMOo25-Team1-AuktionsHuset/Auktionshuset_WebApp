@@ -1,4 +1,4 @@
-@page "/admin/auktioner/opret"
+@page "/admin/auctions/create"
 @rendermode InteractiveServer
 @using Auktionshuset.Contracts.Dto.Admin.Lot
 @using Auktionshuset.Models
@@ -128,4 +128,25 @@
             </button>
         </div>
     </EditForm>
+
+    @if (!string.IsNullOrWhiteSpace(realtimeError))
+    {
+        <p class="list-state list-error live-state" role="alert">@realtimeError</p>
+    }
+    else if (liveAuctions.Count > 0)
+    {
+        <section class="live-panel" aria-labelledby="live-auctions-heading">
+            <h2 id="live-auctions-heading">Auktioner oprettet i realtid</h2>
+            <p class="section-help">Listen opdateres automatisk, også når der oprettes auktioner på en anden server.</p>
+            <ul class="live-list" aria-live="polite">
+                @foreach (var notification in liveAuctions)
+                {
+                    <li>
+                        <span class="live-auction-id">@notification.AuctionId</span>
+                        <span class="live-auction-meta">@notification.StartsAt.ToString("g", CultureInfo.GetCultureInfo("da-DK")) &middot; @notification.LotCount lot@(notification.LotCount == 1 ? string.Empty : "s")</span>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
 </section>

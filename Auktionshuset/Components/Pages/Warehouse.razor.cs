@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace Auktionshuset.Components.Pages;
 
-public partial class Lager
+public partial class Warehouse
 {
     [Inject]
     private LotService LotService { get; set; } = default!;

@@ -1,4 +1,5 @@
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
@@ -6,7 +7,8 @@ namespace Auktionshuset.Application.Abstraction.Admin.Auctions;
 
 public sealed class CreateAuctionHandler(
     IAuctionRepository auctionRepository,
-    ILotRepository lotRepository)
+    ILotRepository lotRepository,
+    IIntegrationEventPublisher eventPublisher)
 {
     private const string PlannedStatus = "Planlagt";
 
@@ -61,6 +63,15 @@ public sealed class CreateAuctionHandler(
         }
 
         await auctionRepository.AddAsync(auction, auctionLots, cancellationToken);
+
+        var integrationEvent = new AuctionCreatedIntegrationEvent(
+            EventId: Guid.NewGuid(),
+            AuctionId: auction.AuctionId,
+            StartsAt: auction.StartsAt,
+            LotCount: auctionLots.Count,
+            OccurredAt: DateTime.Now);
+
+        await eventPublisher.PublishAsync(integrationEvent, cancellationToken);
 
         return CreateAuctionResult.Created(auction.AuctionId, auctionLots.Count);
     }

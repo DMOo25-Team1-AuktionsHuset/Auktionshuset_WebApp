@@ -5,7 +5,7 @@
         <div class="header-content">
             <NavLink href="/" class="brand" Match="NavLinkMatch.All">Auktionshuset</NavLink>
             <nav aria-label="Primær navigation">
-                <NavLink href="lager" Match="NavLinkMatch.Prefix">Lager</NavLink>
+                <NavLink href="warehouse" Match="NavLinkMatch.Prefix">Lager</NavLink>
 
                 <details class="nav-group" open="@(IsAdministrationSection ? "open" : null)">
                     <summary class="nav-group-toggle @(IsAdministrationSection ? "active" : null)">
@@ -14,7 +14,7 @@
                     </summary>
                     <ul class="nav-sublist">
                         <li>
-                            <NavLink href="admin/auktioner/opret" Match="NavLinkMatch.Prefix">Opret Auktion</NavLink>
+                            <NavLink href="admin/auctions/create" Match="NavLinkMatch.Prefix">Opret Auktion</NavLink>
                         </li>
                     </ul>
                 </details>

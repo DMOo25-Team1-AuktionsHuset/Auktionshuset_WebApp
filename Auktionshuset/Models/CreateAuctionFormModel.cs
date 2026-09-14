@@ -5,11 +5,14 @@ namespace Auktionshuset.Models;
 
 public sealed class CreateAuctionFormModel : IValidatableObject
 {
+    // Browsers may report a time input as "HH:mm:ss", so both formats are accepted.
+    private static readonly string[] TimeFormats = ["HH:mm", "HH:mm:ss"];
+
     [Required(ErrorMessage = "Vælg en startdato.")]
     public DateTime? StartDate { get; set; }
 
     [Required(ErrorMessage = "Angiv et starttidspunkt.")]
-    [RegularExpression(@"^([01]\d|2[0-3]):[0-5]\d$", ErrorMessage = "Starttidspunktet skal angives som tt:mm.")]
+    [RegularExpression(@"^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$", ErrorMessage = "Starttidspunktet skal angives som tt:mm.")]
     public string StartTime { get; set; } = string.Empty;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -29,8 +32,8 @@ public sealed class CreateAuctionFormModel : IValidatableObject
 
     public DateTime GetStartsAt() =>
         StartDate!.Value.Date.Add(
-            TimeOnly.ParseExact(StartTime, "HH:mm", CultureInfo.InvariantCulture).ToTimeSpan());
+            TimeOnly.ParseExact(StartTime, TimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None).ToTimeSpan());
 
     private bool TryGetStartTime(out TimeOnly startTime) =>
-        TimeOnly.TryParseExact(StartTime, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out startTime);
+        TimeOnly.TryParseExact(StartTime, TimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out startTime);
 }

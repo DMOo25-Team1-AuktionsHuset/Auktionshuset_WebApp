@@ -12,11 +12,15 @@ namespace Auktionshuset.Infrastructure.Messaging
         {
             public const string LotCreated =
                 "auktionshuset.lot-created";
+
+            public const string AuctionCreated =
+                "auktionshuset.auction-created";
         }
 
         public static class RoutingKeys
         {
             public const string LotCreated = "lot.created.v1";
+            public const string AuctionCreated = "auction.created.v1";
         }
     }
 }

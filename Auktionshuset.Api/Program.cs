@@ -1,5 +1,6 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.CreateLot;
+using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
@@ -33,6 +34,10 @@ builder.Services.AddScoped<
     IIntegrationEventHandler<LotCreatedIntegrationEvent>,
     CreateLotRealTimeHandler>();
 
+builder.Services.AddScoped<
+    IIntegrationEventHandler<AuctionCreatedIntegrationEvent>,
+    CreateAuctionRealTimeHandler>();
+
 //Infrastructure Services
 builder.Services.AddInfrastructure();
 
@@ -49,5 +54,6 @@ app.UseHttpsRedirection();
 app.MapLotEndpoints();
 app.MapAuctionEndpoints();
 app.MapHub<LotHub>("/hubs/lot");
+app.MapHub<AuctionHub>("/hubs/auction");
 
 app.Run();

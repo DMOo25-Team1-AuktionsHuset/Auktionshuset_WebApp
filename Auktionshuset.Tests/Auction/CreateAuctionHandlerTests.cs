@@ -1,4 +1,5 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
 using Xunit;
@@ -19,7 +20,7 @@ public class CreateAuctionHandlerTests
         AuctionHouseId = Guid.NewGuid()
     };
 
-    private static async Task<(CreateAuctionHandler Handler, InMemoryAuctionRepository Auctions)> CreateHandlerAsync(
+    private static async Task<(CreateAuctionHandler Handler, InMemoryAuctionRepository Auctions, RecordingIntegrationEventPublisher Publisher)> CreateHandlerAsync(
         params Lot[] lots)
     {
         var lotRepository = new InMemoryLotRepository();
@@ -29,8 +30,9 @@ public class CreateAuctionHandlerTests
         }
 
         var auctionRepository = new InMemoryAuctionRepository();
+        var publisher = new RecordingIntegrationEventPublisher();
 
-        return (new CreateAuctionHandler(auctionRepository, lotRepository), auctionRepository);
+        return (new CreateAuctionHandler(auctionRepository, lotRepository, publisher), auctionRepository, publisher);
     }
 
     [Fact]
@@ -38,7 +40,7 @@ public class CreateAuctionHandlerTests
     {
         var first = CreateLot("Stol");
         var second = CreateLot("Bord");
-        var (handler, auctions) = await CreateHandlerAsync(first, second);
+        var (handler, auctions, _) = await CreateHandlerAsync(first, second);
 
         var result = await handler.HandleAsync(
             new CreateAuctionCommand(DateTime.Now.AddDays(7), [first.LotId, second.LotId]),
@@ -61,7 +63,7 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithoutLots_CreatesAuctionWithNoRelationships()
     {
-        var (handler, auctions) = await CreateHandlerAsync();
+        var (handler, auctions, _) = await CreateHandlerAsync();
 
         var result = await handler.HandleAsync(
             new CreateAuctionCommand(DateTime.Now.AddDays(1), []),
@@ -79,7 +81,7 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithPastDate_ReturnsInvalid()
     {
-        var (handler, auctions) = await CreateHandlerAsync();
+        var (handler, auctions, _) = await CreateHandlerAsync();
 
         var result = await handler.HandleAsync(
             new CreateAuctionCommand(DateTime.Now.AddDays(-1), []),
@@ -95,7 +97,7 @@ public class CreateAuctionHandlerTests
     public async Task HandleAsync_WithDuplicateLotIds_ReturnsInvalid()
     {
         var lot = CreateLot("Lampe");
-        var (handler, _) = await CreateHandlerAsync(lot);
+        var (handler, _, _) = await CreateHandlerAsync(lot);
 
         var result = await handler.HandleAsync(
             new CreateAuctionCommand(DateTime.Now.AddDays(2), [lot.LotId, lot.LotId]),
@@ -108,7 +110,7 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithUnknownLot_ReturnsInvalid()
     {
-        var (handler, _) = await CreateHandlerAsync();
+        var (handler, _, _) = await CreateHandlerAsync();
 
         var result = await handler.HandleAsync(
             new CreateAuctionCommand(DateTime.Now.AddDays(2), [Guid.NewGuid()]),
@@ -116,5 +118,71 @@ public class CreateAuctionHandlerTests
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, error => error.Contains("findes ikke"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithSelectedLots_PublishesAuctionCreatedIntegrationEvent()
+    {
+        var lot = CreateLot("Bord");
+        var startsAt = DateTime.Now.AddDays(5);
+        var (handler, _, publisher) = await CreateHandlerAsync(lot);
+
+        var result = await handler.HandleAsync(
+            new CreateAuctionCommand(startsAt, [lot.LotId]),
+            CancellationToken.None);
+
+        var published = Assert.Single(publisher.AuctionCreated);
+        Assert.NotEqual(Guid.Empty, published.EventId);
+        Assert.Equal(result.AuctionId, published.AuctionId);
+        Assert.Equal(startsAt, published.StartsAt);
+        Assert.Equal(1, published.LotCount);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithoutLots_PublishesAuctionCreatedIntegrationEvent()
+    {
+        var (handler, _, publisher) = await CreateHandlerAsync();
+
+        var result = await handler.HandleAsync(
+            new CreateAuctionCommand(DateTime.Now.AddDays(3), []),
+            CancellationToken.None);
+
+        var published = Assert.Single(publisher.AuctionCreated);
+        Assert.Equal(result.AuctionId, published.AuctionId);
+        Assert.Equal(0, published.LotCount);
+    }
+
+    [Theory]
+    [InlineData(-1, false)]
+    [InlineData(2, true)]
+    public async Task HandleAsync_WithInvalidCommand_DoesNotPublishIntegrationEvent(int daysFromNow, bool duplicateLotIds)
+    {
+        var lot = CreateLot("Tavle");
+        var (handler, _, publisher) = await CreateHandlerAsync(lot);
+
+        var lotIds = duplicateLotIds ? [lot.LotId, lot.LotId] : Array.Empty<Guid>();
+
+        var result = await handler.HandleAsync(
+            new CreateAuctionCommand(DateTime.Now.AddDays(daysFromNow), lotIds),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Empty(publisher.AuctionCreated);
+    }
+
+    private sealed class RecordingIntegrationEventPublisher : IIntegrationEventPublisher
+    {
+        public List<AuctionCreatedIntegrationEvent> AuctionCreated { get; } = [];
+
+        public Task PublishAsync<TEvent>(TEvent message, CancellationToken cancellationToken)
+            where TEvent : IIntegrationEvent
+        {
+            if (message is AuctionCreatedIntegrationEvent auctionCreated)
+            {
+                AuctionCreated.Add(auctionCreated);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 }
