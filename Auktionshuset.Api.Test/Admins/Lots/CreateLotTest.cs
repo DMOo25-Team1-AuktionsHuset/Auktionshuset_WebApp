@@ -36,10 +36,10 @@ public class CreateLotTest {
         var repository = new RecordingLotRepository();
         var handler = new CreateLotHandler(repository, new RecordingEventPublisher());
         var request = CreateValidRequest(
-            name: "Antique vase",
-            category: "Ceramics",
-            description: "Hand-painted porcelain",
-            tags: ["antique", "Vase", "ANTIQUE"]);
+            name: "  Antique vase  ",
+            category: "  Ceramics  ",
+            description: "  Hand-painted porcelain  ",
+            tags: ["  antique  ", "Vase", "ANTIQUE"]);
 
         // Act
         await CreateLotEndpoint.HandleAsync(request, handler, CancellationToken.None);
