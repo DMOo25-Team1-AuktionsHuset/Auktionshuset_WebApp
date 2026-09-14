@@ -1,10 +1,11 @@
-﻿using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Auktionshuset.Application.Abstraction.Admin.Lots {
+namespace Auktionshuset.Application.Admin.Lots {
     public class CreateLotHandler(ILotRepository lotRepository, IIntegrationEventPublisher eventPublisher) {
         public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken) {
             var lot = new Domain.Entities.Lot {

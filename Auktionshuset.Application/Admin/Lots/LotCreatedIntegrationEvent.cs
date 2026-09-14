@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Application.EventHandling;
 
-namespace Auktionshuset.Application.Abstraction.Admin.Lots
+namespace Auktionshuset.Application.Admin.Lots
 {
     public sealed record LotCreatedIntegrationEvent(
 
@@ -16,4 +16,3 @@ namespace Auktionshuset.Application.Abstraction.Admin.Lots
             decimal EstimatedValue,
             DateTime OccurredAt) : IIntegrationEvent;
 }
-

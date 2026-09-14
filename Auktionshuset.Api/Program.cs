@@ -10,6 +10,7 @@ using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.EventHandling;
 using Auktionshuset.Infrastructure.Messaging;
 using RabbitMQ.Client;
+using Auktionshuset.Application.Admin.Lots;
 
 var builder = WebApplication.CreateBuilder(args);
 

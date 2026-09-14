@@ -1,6 +1,7 @@
+using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Domain.Entities;
 
-namespace Auktionshuset.Application.Abstraction.Admin.Lots;
+namespace Auktionshuset.Application.Admin.Lots;
 
 public sealed class GetLotsHandler(ILotRepository lotRepository)
 {
