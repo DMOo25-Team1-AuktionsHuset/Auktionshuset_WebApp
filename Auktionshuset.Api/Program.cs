@@ -2,6 +2,7 @@ using Auktionshuset.Api.Endpoints.Admin.CreateLot;
 using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure;
 using Auktionshuset.Infrastructure.Service;
