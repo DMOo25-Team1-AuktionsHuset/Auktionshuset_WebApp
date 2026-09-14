@@ -12,5 +12,7 @@ namespace Auktionshuset.Domain.Entities
         public required int CVRNumber { get; set; }
         public required string PhoneNumber { get; set; }
         public required string Email { get; set; }
+
+        public ICollection<Lot> Lots { get; set; }
     }
 }
