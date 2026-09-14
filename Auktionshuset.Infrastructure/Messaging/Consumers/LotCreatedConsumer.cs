@@ -4,16 +4,24 @@ using System.Text;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.EventHandling;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers
 {
     internal sealed class LotCreatedConsumer : BackgroundService
     {
         private readonly IConnection _connection;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public LotCreatedConsumer(IConnection connection)
+        public LotCreatedConsumer(
+            IConnection connection,
+            IServiceScopeFactory scopeFactory)
         {
             _connection = connection;
+            _scopeFactory = scopeFactory;
         }
 
         protected override async Task ExecuteAsync(
@@ -55,8 +63,18 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers
                 var body = eventArgs.Body.ToArray();
                 var json = Encoding.UTF8.GetString(body);
 
-                Console.WriteLine(
-                    $"LotCreated received: {json}");
+                var message = 
+                    JsonSerializer.Deserialize<LotCreatedIntegrationEvent>(json)
+                    ?? throw new InvalidOperationException(
+                        "Failed to deserialize LotCreatedIntegrationEvent");
+
+                await using var scope = _scopeFactory.CreateAsyncScope();
+
+                var handler = scope.ServiceProvider
+                    .GetRequiredService<
+                        IIntegrationEventHandler<LotCreatedIntegrationEvent>>();
+
+                await handler.HandleAsync(message, stoppingToken);
 
                 await channel.BasicAckAsync(
                     deliveryTag: eventArgs.DeliveryTag,

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "MultiLaunch",
+    "Projects": [
+      {
+        "Path": "Auktionshuset.Api\\Auktionshuset.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Auktionshuset\\Auktionshuset.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
