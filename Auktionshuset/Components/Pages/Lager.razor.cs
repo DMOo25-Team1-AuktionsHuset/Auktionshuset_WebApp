@@ -3,13 +3,17 @@ using Auktionshuset.Models;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Connections.Features;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Auktionshuset.Components.Pages;
 
-public partial class Lager
+public partial class Lager : IAsyncDisposable
 {
-    [Inject]
-    private LotService LotService { get; set; } = default!;
+    [Inject] private IConfiguration Configuration { get; set; } = default!;
+    private HubConnection? hubConnection;
+
+    [Inject] private LotService LotService { get; set; } = default!;
 
     private CreateLotFormModel model = new();
     private EditContext editContext = default!;
@@ -106,5 +110,61 @@ public partial class Lager
     {
         model = new CreateLotFormModel();
         editContext = new EditContext(model);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    private Task RefreshLotsAsync()
+    {
+        return InvokeAsync(async () =>
+        {
+            await LoadLotsAsync();
+            StateHasChanged();
+        });
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var apiBaseUrl = Configuration["Api:BaseUrl"]
+                         ?? throw new InvalidOperationException(
+                             "Configuration Value 'Api:BaseUrl' is required.");
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/hubs/lot")
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<CreateLotNotification>(
+            nameof(ILotClient.LotCreatedAsync),
+            notification => RefreshLotsAsync());
+
+        hubConnection.Reconnected +=
+            connectionId => RefreshLotsAsync();
+
+        try
+        {
+            await hubConnection.StartAsync();
+
+            // Hent igen efter tilslutning, så listen er ajour.
+            await RefreshLotsAsync();
+        }
+        catch (Exception)
+        {
+            lotListError =
+                "Liveforbindelsen kunne ikke startes. Genindlæs siden for at prøve igen.";
+
+            StateHasChanged();
+        }
     }
 }

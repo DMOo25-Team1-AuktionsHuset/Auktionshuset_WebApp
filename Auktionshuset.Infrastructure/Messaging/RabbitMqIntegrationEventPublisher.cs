@@ -26,7 +26,7 @@ namespace Auktionshuset.Infrastructure.Messaging
             where TEvent : IIntegrationEvent
 
         {
-            var routingkey = _routingKeyResolver.Resolve<TEvent>();
+            var routingKey = _routingKeyResolver.Resolve<TEvent>();
             await using var channel = await _connection.CreateChannelAsync(
                 cancellationToken: cancellationToken);
 
@@ -42,7 +42,6 @@ namespace Auktionshuset.Infrastructure.Messaging
             var json = JsonSerializer.Serialize(integrationEvent);
             var body = Encoding.UTF8.GetBytes(json);
 
-            var routingKey = typeof(TEvent).Name;
 
             await channel.BasicPublishAsync(
                 exchange: exchangeName,

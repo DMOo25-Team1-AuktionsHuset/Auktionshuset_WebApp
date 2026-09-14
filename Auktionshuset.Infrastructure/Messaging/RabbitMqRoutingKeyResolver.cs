@@ -1,8 +1,8 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Admin.Lots;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
