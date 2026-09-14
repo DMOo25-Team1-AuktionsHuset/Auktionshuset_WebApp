@@ -6,8 +6,8 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Admin.Lots;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers
 {
