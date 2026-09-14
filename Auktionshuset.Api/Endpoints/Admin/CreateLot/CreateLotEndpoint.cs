@@ -1,6 +1,6 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.Admin.Lots;
-using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
@@ -37,3 +37,4 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
         }
     }
 }
+

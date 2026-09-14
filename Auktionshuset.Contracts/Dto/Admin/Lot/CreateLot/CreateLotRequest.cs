@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Auktionshuset.Contracts.Dto.Admin.Lot {
+namespace Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot {
     public sealed class CreateLotRequest : IValidatableObject {
         [Required]
         [StringLength(100, MinimumLength = 2)]

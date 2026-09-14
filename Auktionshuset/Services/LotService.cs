@@ -2,11 +2,21 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 
 namespace Auktionshuset.Services;
 
 public sealed class LotService(HttpClient httpClient)
 {
+    public async Task DeleteAsync(Guid lotId, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.DeleteAsync($"api/lots/{lotId}", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var message = await ReadProblemMessageAsync(response, cancellationToken, "slettes");
+            throw new LotApiException(message, response.StatusCode);
+        }
+    }
     public async Task<IReadOnlyList<LotListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
@@ -110,3 +120,4 @@ public sealed class LotApiException(
 {
     public HttpStatusCode StatusCode { get; } = statusCode;
 }
+

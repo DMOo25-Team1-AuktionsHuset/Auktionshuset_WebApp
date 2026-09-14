@@ -1,4 +1,5 @@
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
