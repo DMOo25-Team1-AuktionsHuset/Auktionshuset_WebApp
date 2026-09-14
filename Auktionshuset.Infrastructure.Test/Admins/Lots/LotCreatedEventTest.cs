@@ -34,8 +34,8 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
             await channel.ExchangeDeclareAsync(
                 exchange,
                 ExchangeType.Topic,
-                durable: false,
-                autoDelete: true);
+                durable: true,
+                autoDelete: false);
 
             await channel.QueueDeclareAsync(
                 queue,
