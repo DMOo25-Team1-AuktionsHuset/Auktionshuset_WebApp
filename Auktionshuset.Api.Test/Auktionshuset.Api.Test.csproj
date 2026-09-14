@@ -18,4 +18,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Auktionshuset.Api\Auktionshuset.Api.csproj" />
+    <ProjectReference Include="..\Auktionshuset.Application\Auktionshuset.Application.csproj" />
+    <ProjectReference Include="..\Auktionshuset.Contracts\Auktionshuset.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>
