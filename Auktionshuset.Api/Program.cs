@@ -3,6 +3,7 @@ using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots;
+using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure;
 using Auktionshuset.Infrastructure.Service;
@@ -18,6 +19,7 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddScoped<CreateLotHandler>();
+builder.Services.AddScoped<UpdateLotHandler>();
 builder.Services.AddScoped<GetLotsHandler>();
 
 
@@ -28,6 +30,10 @@ builder.Services.AddScoped<GetLotsHandler>();
 builder.Services.AddScoped<
     IIntegrationEventHandler<LotCreatedIntegrationEvent>,
     CreateLotRealTimeHandler>();
+
+builder.Services.AddScoped<
+    IIntegrationEventHandler<LotUpdatedIntegrationEvent>,
+    UpdateLotRealTimeHandler>();
 
 //Infrastructure Services
 builder.Services.AddInfrastructure();

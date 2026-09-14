@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Admin.Lots;
+using Auktionshuset.Application.Admin.Lots.UpdateLot;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
@@ -15,6 +16,9 @@ namespace Auktionshuset.Infrastructure.Messaging
             {
                 var type when type == typeof(LotCreatedIntegrationEvent)
                     => RabbitMqTopology.RoutingKeys.LotCreated,
+
+                var type when type == typeof(LotUpdatedIntegrationEvent)
+                    => RabbitMqTopology.RoutingKeys.LotUpdated,
 
                 _ => throw new InvalidOperationException(
                     $"No routing key defined for event type {typeof(TEvent).Name}.")

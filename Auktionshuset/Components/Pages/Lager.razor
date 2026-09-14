@@ -15,7 +15,7 @@
                 <p>Registrér et ny genstand, som skal indgå i auktionshusets lager.</p>
             </div>
 
-            <EditForm EditContext="editContext" OnValidSubmit="SubmitAsync" class="lot-form" novalidate>
+            <EditForm @key="editContext" EditContext="editContext" OnValidSubmit="SubmitAsync" class="lot-form" novalidate>
                 <DataAnnotationsValidator />
 
                 <div class="form-grid">
@@ -77,7 +77,7 @@
 
                 <div class="form-actions">
                     <button type="submit" disabled="@isSubmitting">
-                        @if (isSubmitting)
+                        @if (isSubmitting && !editingLotId.HasValue)
                         {
                             <span class="spinner" aria-hidden="true"></span>
                             <span>Tilføjer...</span>
@@ -87,6 +87,28 @@
                             <span>Tilføj</span>
                         }
                     </button>
+
+                    <button type="button" disabled="@(isSubmitting || !editingLotId.HasValue)" @onclick="UpdateAsync">
+                        @if(isSubmitting && editingLotId.HasValue)
+                        {
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>Opdaterer...</span>
+                        } 
+                        else
+                        {
+                            <span>Opdater</span>
+                        }
+                    </button>
+
+                    @if(editingLotId.HasValue)
+                    {
+                        <button type="button"
+                                class="secondary-button"
+                                disabled="@isSubmitting"
+                                @onclick="CancelEdit">
+                            Annuller
+                        </button>
+                    }
                 </div>
             </EditForm>
         </div>
@@ -143,6 +165,13 @@
                                     }
                                 </ul>
                             }
+                            <div class="lot-card-actions">
+                                <button type="button"
+                                        class="secondary-button"
+                                        @onclick="() => BeginEdit(lot)">
+                                    Rediger
+                                </button>
+                            </div>
                         </li>
                     }
                 </ol>

@@ -392,3 +392,25 @@ button:disabled {
         animation-duration: 1.5s;
     }
 }
+
+.form-actions {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.lot-card-actions {
+    border-top: 1px solid #e5e9e6;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.secondary-button {
+    background: #68736c;
+}
+
+.secondary-button:hover:not(:disabled) {
+    background: #4e5952;
+}

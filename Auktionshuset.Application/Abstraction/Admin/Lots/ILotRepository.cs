@@ -7,5 +7,7 @@ namespace Auktionshuset.Application.Abstraction.Admin.Lots {
     public interface ILotRepository {
         Task AddAsync(Lot lot, CancellationToken cancellationToken);
         Task<IReadOnlyList<Lot>> GetAllAsync(CancellationToken cancellationToken);
+        Task<Lot?> GetByIdAsync(Guid lotId, CancellationToken cancellationToken);
+        Task UpdateAsync(Lot lot, CancellationToken cancellationToken);
     }
 }

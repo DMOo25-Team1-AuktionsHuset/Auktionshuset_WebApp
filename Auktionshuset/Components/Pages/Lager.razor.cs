@@ -1,10 +1,12 @@
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Net;
 
 namespace Auktionshuset.Components.Pages;
 
@@ -15,7 +17,7 @@ public partial class Lager : IAsyncDisposable
 
     [Inject] private LotService LotService { get; set; } = default!;
 
-    private CreateLotFormModel model = new();
+    private LotFormModel model = new();
     private EditContext editContext = default!;
     private bool isSubmitting;
     private bool submissionSucceeded;
@@ -23,6 +25,7 @@ public partial class Lager : IAsyncDisposable
     private IReadOnlyList<LotListItemResponse> lots = [];
     private bool isLoadingLots;
     private string? lotListError;
+    private Guid? editingLotId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,7 +61,7 @@ public partial class Lager : IAsyncDisposable
             var createdLotId = response.LotId;
             ResetForm();
             submissionSucceeded = true;
-            statusMessage = $"Lottet blev tilføjet. Lot-id: {createdLotId}";
+            statusMessage = $"genstanden blev tilføjet. Lot-id: {createdLotId}";
             await LoadLotsAsync();
         }
         catch (LotApiException exception)
@@ -77,6 +80,84 @@ public partial class Lager : IAsyncDisposable
         {
             isSubmitting = false;
         }
+    }
+
+    private void BeginEdit(LotListItemResponse lot) {
+        editingLotId = lot.LotId;
+
+        model = new LotFormModel {
+            Name = lot.Name,
+            Category = lot.Category,
+            Quantity = lot.Quantity,
+            EstimatedValue = lot.EstimatedValue,
+            Description = lot.Description,
+            Tags = string.Join(", ", lot.Tags),
+            AuctionHouseId = lot.AuctionHouseId.ToString()
+        };
+
+        editContext = new EditContext(model);
+        statusMessage = null;
+        submissionSucceeded = false;
+    }
+
+    private async Task UpdateAsync() {
+        var lotId = editingLotId;
+
+        if (lotId == null || isSubmitting) {
+            return;
+        }
+
+        if (!editContext.Validate()) {
+            return;
+        }
+
+        isSubmitting = true;
+        submissionSucceeded = false;
+        statusMessage = null;
+
+        try {
+            var request = new UpdateLotRequest {
+                Name = model.Name.Trim(),
+                Category = model.Category.Trim(),
+                Quantity = model.Quantity,
+                EstimatedValue = model.EstimatedValue,
+                Description = model.Description.Trim(),
+                Tags = model.GetTags(),
+                AuctionHouseId = Guid.Parse(model.AuctionHouseId)
+            };
+
+            var response = await LotService.UpdateAsync(lotId.Value, request);
+
+            editingLotId = null;
+            ResetForm();
+
+            submissionSucceeded = true;
+            statusMessage = $"genstanden blev opdateret. Lot-id: {response.LotId}";
+
+            await LoadLotsAsync();
+        } catch (LotApiException exception) {
+            if(exception.StatusCode == HttpStatusCode.NotFound) {
+                editingLotId = null;
+                ResetForm();
+            }
+
+            statusMessage = exception.Message;
+        } catch (HttpRequestException) {
+            statusMessage = "Der kunne ikke oprettes forbindelse til serveren. Prøv igen om lidt.";
+        } catch (TaskCanceledException) {
+            statusMessage = "Anmodningen tog for lang tid. Prøv igen.";
+        }
+        finally {
+            isSubmitting = false;
+        }
+    }
+
+    private void CancelEdit() {
+        editingLotId = null;
+        statusMessage = null;
+        submissionSucceeded = false;
+
+        ResetForm();
     }
 
     private async Task LoadLotsAsync()
@@ -108,7 +189,7 @@ public partial class Lager : IAsyncDisposable
 
     private void ResetForm()
     {
-        model = new CreateLotFormModel();
+        model = new LotFormModel();
         editContext = new EditContext(model);
     }
 
@@ -149,8 +230,13 @@ public partial class Lager : IAsyncDisposable
             nameof(ILotClient.LotCreatedAsync),
             notification => RefreshLotsAsync());
 
+        hubConnection.On<UpdateLotNotification>(
+            nameof(ILotClient),
+            _ => RefreshLotsAsync());
+
         hubConnection.Reconnected +=
             connectionId => RefreshLotsAsync();
+
 
         try
         {
