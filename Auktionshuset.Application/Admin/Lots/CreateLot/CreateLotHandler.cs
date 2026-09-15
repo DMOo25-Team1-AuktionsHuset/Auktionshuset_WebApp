@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Auktionshuset.Application.Admin.Lots {
+namespace Auktionshuset.Application.Admin.Lots.CreateLot {
     public class CreateLotHandler(ILotRepository lotRepository, IIntegrationEventPublisher eventPublisher) {
         public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken) {
             var lot = new Domain.Entities.Lot {

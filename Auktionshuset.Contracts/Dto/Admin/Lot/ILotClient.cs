@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
+using System;
 using System.Collections.Generic;
 using System.Text;
 

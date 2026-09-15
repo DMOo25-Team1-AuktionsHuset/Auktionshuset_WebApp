@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Application.EventHandling;
 
-namespace Auktionshuset.Application.Admin.Lots
+namespace Auktionshuset.Application.Admin.Lots.CreateLot
 {
     public sealed record LotCreatedIntegrationEvent(
 
@@ -16,3 +16,4 @@ namespace Auktionshuset.Application.Admin.Lots
             decimal EstimatedValue,
             DateTime OccurredAt) : IIntegrationEvent;
 }
+
