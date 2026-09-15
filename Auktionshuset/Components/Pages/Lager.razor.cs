@@ -66,7 +66,7 @@ public partial class Lager : IAsyncDisposable
             var createdLotId = response.LotId;
             ResetForm();
             submissionSucceeded = true;
-            statusMessage = $"genstanden blev tilføjet. Lot-id: {createdLotId}";
+            statusMessage = $"Genstanden blev tilføjet.";
             await LoadLotsAsync();
         }
         catch (LotApiException exception)
@@ -137,7 +137,7 @@ public partial class Lager : IAsyncDisposable
             ResetForm();
 
             submissionSucceeded = true;
-            statusMessage = $"genstanden blev opdateret. Lot-id: {response.LotId}";
+            statusMessage = $"Genstanden blev opdateret.";
 
             await LoadLotsAsync();
         } catch (LotApiException exception) {
@@ -163,6 +163,8 @@ public partial class Lager : IAsyncDisposable
         submissionSucceeded = false;
 
         ResetForm();
+    }
+
     public async Task DeleteAsync(Guid lotId)
     {
 

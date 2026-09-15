@@ -116,7 +116,7 @@
 
             @if (isLoadingLots)
             {
-                <p class="list-state" role="status">Henter lots...</p>
+                <p class="list-state" role="status">Henter genstande...</p>
             }
             else if (!string.IsNullOrWhiteSpace(lotListError))
             {
@@ -124,7 +124,7 @@
             }
             else if (lots.Count == 0)
             {
-                <p class="list-state">Der er endnu ingen lots i lageret.</p>
+                <p class="list-state">Der er endnu ingen genstande i lageret.</p>
             }
             else
             {

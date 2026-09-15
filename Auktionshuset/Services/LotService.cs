@@ -58,21 +58,24 @@ public sealed class LotService(HttpClient httpClient)
     public async Task<UpdateLotResponse> UpdateAsync(Guid lotId, UpdateLotRequest request, CancellationToken cancellationToken = default) {
         using var response = await httpClient.PutAsJsonAsync($"api/lots/{lotId}", request, cancellationToken);
 
-        if(response.StatusCode == HttpStatusCode.NotFound) {
+        if (response.StatusCode == HttpStatusCode.NotFound) {
             throw new LotApiException("Lot not found, the list could have been changed", response.StatusCode);
         }
 
-        if(response.IsSuccessStatusCode) {
+        if (response.IsSuccessStatusCode) {
             try {
                 return await response.Content
-                    .ReadFromJsonAsync<UpdateLotResponse>(cancellationToken) 
+                    .ReadFromJsonAsync<UpdateLotResponse>(cancellationToken)
                     ?? throw new LotApiException("The server did not return a valid lot id", response.StatusCode);
-            } catch(JsonException ex) {
+            } catch (JsonException ex) {
                 throw new LotApiException("The server did not return a valid lot id", response.StatusCode, ex);
             }
         }
 
         var message = await ReadProblemMessageAsync(response, cancellationToken, "updating");
+
+        throw new LotApiException(message, response.StatusCode);
+    }
 
     public async Task DeleteAsync(
         Guid lotId, CancellationToken cancellationToken = default)

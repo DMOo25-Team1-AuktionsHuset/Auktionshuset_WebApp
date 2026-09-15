@@ -1,4 +1,5 @@
 ﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
 using System;
 using System.Collections.Generic;
