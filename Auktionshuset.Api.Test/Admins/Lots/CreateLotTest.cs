@@ -206,6 +206,14 @@ public class CreateLotTest {
 
         public Task<IReadOnlyList<Lot>> GetAllAsync(CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<Lot?> GetByIdAsync(Guid lotId, CancellationToken cancellationToken) {
+            throw new NotImplementedException();
+        }
+
+        public Task UpdateAsync(Lot lot, CancellationToken cancellationToken) {
+            throw new NotImplementedException();
+        }
     }
 
     private sealed class RecordingEventPublisher : IIntegrationEventPublisher {
