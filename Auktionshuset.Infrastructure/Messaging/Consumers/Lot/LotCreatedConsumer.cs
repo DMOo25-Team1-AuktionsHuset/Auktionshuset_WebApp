@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 
-namespace Auktionshuset.Infrastructure.Messaging.Consumers
+namespace Auktionshuset.Infrastructure.Messaging.Consumers.Lot
 {
     internal sealed class LotCreatedConsumer : BackgroundService
     {
@@ -32,7 +32,7 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers
                     cancellationToken: stoppingToken);
 
             var exchangeName = RabbitMqTopology.EventExchange;
-            var queueName = RabbitMqTopology.Queues.LotCreated;
+            var queueName = RabbitMqTopology.Queues.Admin;
             var routingKey = RabbitMqTopology.RoutingKeys.LotCreated;
 
             await channel.ExchangeDeclareAsync(

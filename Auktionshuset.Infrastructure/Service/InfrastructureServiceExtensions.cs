@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
-using Auktionshuset.Infrastructure.Messaging;
 
-namespace Auktionshuset.Infrastructure
+namespace Auktionshuset.Infrastructure.Service
 {
     public static class InfrastructureServiceExtensions
     {

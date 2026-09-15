@@ -10,11 +10,8 @@ namespace Auktionshuset.Infrastructure.Messaging
 
         internal static class Queues
         {
-            public const string LotCreated =
-                "auktionshuset.lot-created";
-
-            public const string LotUpdated =
-                "auktionshuset.lot-updated";
+            public const string Admin =
+                "auktionshuset.admin";
         }
 
         public static class RoutingKeys
@@ -24,6 +21,9 @@ namespace Auktionshuset.Infrastructure.Messaging
 
             public const string LotUpdated =
                 "lot.updated.v1";
+
+            public const string LotDeleted =
+                "lot.deleted.v1";
         }
     }
 }

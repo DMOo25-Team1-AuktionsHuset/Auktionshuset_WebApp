@@ -1,12 +1,13 @@
 ﻿using Auktionshuset.Application.EventHandling;
-using Auktionshuset.Infrastructure.Messaging.Consumers;
+using Auktionshuset.Infrastructure.Messaging;
+using Auktionshuset.Infrastructure.Messaging.Consumers.Lot;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Service
 {
     internal static class RabbitMqServiceExtension
     {
@@ -37,8 +38,8 @@ namespace Auktionshuset.Infrastructure.Messaging
                 RabbitMqIntegrationEventPublisher>();
 
             services.AddHostedService<LotCreatedConsumer>();
-
             services.AddHostedService<LotUpdatedConsumer>();
+            services.AddHostedService<LotDeletedConsumer>();
 
             return services;
         }

@@ -1,12 +1,13 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateLot;
 using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Hubs;
+using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
+using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.EventHandling;
-using Auktionshuset.Infrastructure;
 using Auktionshuset.Infrastructure.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,23 +20,9 @@ builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
-builder.Services.AddScoped<CreateLotHandler>();
-builder.Services.AddScoped<UpdateLotHandler>();
-builder.Services.AddScoped<GetLotsHandler>();
-builder.Services.AddScoped<Auktionshuset.Application.Admin.Lots.DeleteLot.DeleteLotHandler>();
 
-
-//builder.Services.AddScoped<
-//    IIntegrationEventPublisher, 
-//    InProcessIntegrationEventPublisher>();
-
-builder.Services.AddScoped<
-    IIntegrationEventHandler<LotCreatedIntegrationEvent>,
-    CreateLotRealTimeHandler>();
-
-builder.Services.AddScoped<
-    IIntegrationEventHandler<LotUpdatedIntegrationEvent>,
-    UpdateLotRealTimeHandler>();
+//API Services
+builder.Services.AddApiServices();
 
 //Infrastructure Services
 builder.Services.AddInfrastructure();
