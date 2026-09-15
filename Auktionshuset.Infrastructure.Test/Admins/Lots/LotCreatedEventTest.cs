@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
+using Auktionshuset.Infrastructure.Messaging.Consumers.Lot;
 
 namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {
