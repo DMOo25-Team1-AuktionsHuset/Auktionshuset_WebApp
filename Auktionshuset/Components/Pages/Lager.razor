@@ -46,12 +46,6 @@
                         <ValidationMessage For="@(() => model.EstimatedValue)" />
                     </div>
 
-                    <div class="field">
-                        <label for="lot-auction-house">Auktionshus-id</label>
-                        <InputText id="lot-auction-house" @bind-Value="model.AuctionHouseId" autocomplete="off" />
-                        <ValidationMessage For="@(() => model.AuctionHouseId)" />
-                    </div>
-
                     <div class="field field-wide">
                         <label for="lot-description">Beskrivelse</label>
                         <InputTextArea id="lot-description" @bind-Value="model.Description" rows="5" />
@@ -150,10 +144,6 @@
                                 <div>
                                     <dt>Antal</dt>
                                     <dd>@lot.Quantity stk.</dd>
-                                </div>
-                                <div>
-                                    <dt>Auktionshus</dt>
-                                    <dd title="@lot.AuctionHouseId">@lot.AuctionHouseId</dd>
                                 </div>
                             </dl>
                             @if (lot.Tags.Count > 0)

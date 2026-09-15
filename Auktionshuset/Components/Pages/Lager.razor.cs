@@ -27,6 +27,8 @@ public partial class Lager : IAsyncDisposable
     private string? lotListError;
     private Guid? editingLotId;
 
+    private static readonly Guid DefaultAuctionHouseId = Guid.Parse("8cc2c7dc-6244-41e7-805f-a90f9279c540");
+
     protected override async Task OnInitializedAsync()
     {
         ResetForm();
@@ -54,7 +56,7 @@ public partial class Lager : IAsyncDisposable
                 EstimatedValue = model.EstimatedValue,
                 Description = model.Description.Trim(),
                 Tags = model.GetTags(),
-                AuctionHouseId = Guid.Parse(model.AuctionHouseId)
+                AuctionHouseId = DefaultAuctionHouseId
             };
 
             var response = await LotService.CreateAsync(request);
@@ -92,7 +94,7 @@ public partial class Lager : IAsyncDisposable
             EstimatedValue = lot.EstimatedValue,
             Description = lot.Description,
             Tags = string.Join(", ", lot.Tags),
-            AuctionHouseId = lot.AuctionHouseId.ToString()
+            AuctionHouseId = DefaultAuctionHouseId.ToString()
         };
 
         editContext = new EditContext(model);
@@ -189,7 +191,9 @@ public partial class Lager : IAsyncDisposable
 
     private void ResetForm()
     {
-        model = new LotFormModel();
+        model = new LotFormModel {
+            AuctionHouseId = DefaultAuctionHouseId.ToString()
+        };
         editContext = new EditContext(model);
     }
 
