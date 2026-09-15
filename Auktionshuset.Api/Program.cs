@@ -4,6 +4,7 @@ using Auktionshuset.Api.Hubs;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure;
 using Auktionshuset.Infrastructure.Service;
@@ -21,6 +22,7 @@ builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddScoped<CreateLotHandler>();
 builder.Services.AddScoped<UpdateLotHandler>();
 builder.Services.AddScoped<GetLotsHandler>();
+builder.Services.AddScoped<Auktionshuset.Application.Admin.Lots.DeleteLot.DeleteLotHandler>();
 
 
 //builder.Services.AddScoped<
@@ -52,3 +54,4 @@ app.MapLotEndpoints();
 app.MapHub<LotHub>("/hubs/lot");
 
 app.Run();
+

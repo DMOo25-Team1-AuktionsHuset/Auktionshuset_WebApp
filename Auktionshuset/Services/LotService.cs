@@ -3,11 +3,13 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 
 namespace Auktionshuset.Services;
 
 public sealed class LotService(HttpClient httpClient)
 {
+
     public async Task<IReadOnlyList<LotListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
@@ -72,6 +74,22 @@ public sealed class LotService(HttpClient httpClient)
 
         var message = await ReadProblemMessageAsync(response, cancellationToken, "updating");
 
+    public async Task DeleteAsync(
+        Guid lotId, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.DeleteAsync($"api/lots/{lotId}", cancellationToken);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new LotApiException("Lot blev ikke fundet.", response.StatusCode);
+        }
+
+        var message = await ReadProblemMessageAsync(response, cancellationToken, "slettes");
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -133,3 +151,4 @@ public sealed class LotApiException(
 {
     public HttpStatusCode StatusCode { get; } = statusCode;
 }
+

@@ -414,3 +414,10 @@ button:disabled {
 .secondary-button:hover:not(:disabled) {
     background: #4e5952;
 }
+.danger-button {
+    background: #852323;
+}
+
+.danger-button:hover:not(:disabled) {
+    background: #641b1b;
+}

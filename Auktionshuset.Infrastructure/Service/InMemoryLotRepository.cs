@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Domain.Entities;
 using System;
 using System.Collections.Concurrent;
@@ -8,6 +8,11 @@ using System.Text;
 namespace Auktionshuset.Infrastructure.Service {
     public class InMemoryLotRepository : ILotRepository {
         private readonly ConcurrentDictionary<Guid, Domain.Entities.Lot> _lots = [];
+
+        public Task<bool> DeleteAsync(Guid lotId, CancellationToken cancellationToken) {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(_lots.TryRemove(lotId, out _));
+        }
 
         public Task AddAsync(Domain.Entities.Lot lot, CancellationToken cancellationToken) {
             if(!_lots.TryAdd(lot.LotId, lot)) {
@@ -48,3 +53,4 @@ namespace Auktionshuset.Infrastructure.Service {
         }
     }
 }
+

@@ -162,6 +162,18 @@
                                     Rediger
                                 </button>
                             </div>
+                            
+                            <button type="button" class="danger-button" disabled="@(isDeleting || isSubmitting)" @onclick="() =>DeleteAsync(lot.LotId)">
+                                @if (isDeleting)
+                                {
+                                    <span class="spinner" aria-hidden="true"></span>
+                                    <span>Sletter...</span>
+                                }
+                                else
+                                {
+                                    <span>Slet</span>
+                                }
+                            </button>
                         </li>
                     }
                 </ol>

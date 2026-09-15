@@ -1,5 +1,4 @@
-﻿using Auktionshuset.Application.Admin.Lots;
-using Auktionshuset.Application.Abstraction.Admin.Lots;
+﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 using Microsoft.Extensions.DependencyInjection;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
@@ -10,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
 
 namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {

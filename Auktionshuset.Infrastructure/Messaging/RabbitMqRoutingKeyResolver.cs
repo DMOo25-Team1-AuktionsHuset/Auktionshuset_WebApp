@@ -4,6 +4,7 @@ using System.Text;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {

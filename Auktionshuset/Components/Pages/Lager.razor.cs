@@ -1,5 +1,6 @@
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
+
 
 namespace Auktionshuset.Components.Pages;
 
@@ -28,6 +30,7 @@ public partial class Lager : IAsyncDisposable
     private Guid? editingLotId;
 
     private static readonly Guid DefaultAuctionHouseId = Guid.Parse("8cc2c7dc-6244-41e7-805f-a90f9279c540");
+    private bool isDeleting;
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,6 +163,42 @@ public partial class Lager : IAsyncDisposable
         submissionSucceeded = false;
 
         ResetForm();
+    public async Task DeleteAsync(Guid lotId)
+    {
+
+        if (isDeleting || isSubmitting)
+        {
+            return;
+        }
+
+        isDeleting = true;
+        submissionSucceeded = false;
+        statusMessage = null;
+
+        try
+        {
+            await LotService.DeleteAsync(lotId, cancellationToken: default);
+            submissionSucceeded = true;
+            statusMessage = "Genstanden blev slettet.";
+            await LoadLotsAsync();
+            ResetForm();
+        }
+        catch (LotApiException exception)
+        {
+            statusMessage = exception.Message;
+        }
+        catch (HttpRequestException)
+        {
+            statusMessage = "Der kunne ikke oprettes forbindelse til serveren. Prøv igen om lidt.";
+        }
+        catch (TaskCanceledException)
+        {
+            statusMessage = "Sletningen tog for lang tid. Prøv igen.";
+        }
+        finally
+        {
+            isDeleting = false;
+        }
     }
 
     private async Task LoadLotsAsync()
@@ -257,4 +296,6 @@ public partial class Lager : IAsyncDisposable
             StateHasChanged();
         }
     }
+
+    
 }

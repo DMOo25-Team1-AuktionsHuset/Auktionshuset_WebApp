@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using Auktionshuset.Api.Endpoints.Admin.CreateLot;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.Admin.Lots;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
-using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Api.Test.Admins.Lots;
@@ -191,6 +191,7 @@ public class CreateLotTest {
     }
 
     private sealed class RecordingLotRepository : ILotRepository {
+        public Task<bool> DeleteAsync(Guid lotId, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Lot? AddedLot { get; private set; }
         public CancellationToken CancellationToken { get; private set; }
         public Exception? ExceptionToThrow { get; init; }
@@ -219,3 +220,4 @@ public class CreateLotTest {
         }
     }
 }
+
