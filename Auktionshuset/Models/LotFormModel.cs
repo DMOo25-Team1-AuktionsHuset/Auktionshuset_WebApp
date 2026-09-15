@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Auktionshuset.Models;
 
-public sealed class CreateLotFormModel : IValidatableObject
-{
+public sealed class LotFormModel : IValidatableObject {
     [Required(ErrorMessage = "Navn er påkrævet.")]
     [StringLength(100, MinimumLength = 2, ErrorMessage = "Navn skal være mellem 2 og 100 tegn.")]
     public string Name { get; set; } = string.Empty;
@@ -33,18 +32,15 @@ public sealed class CreateLotFormModel : IValidatableObject
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToArray();
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
         if (!string.IsNullOrWhiteSpace(AuctionHouseId)
-            && (!Guid.TryParse(AuctionHouseId, out var auctionHouseId) || auctionHouseId == Guid.Empty))
-        {
+            && (!Guid.TryParse(AuctionHouseId, out var auctionHouseId) || auctionHouseId == Guid.Empty)) {
             yield return new ValidationResult(
                 "Auktionshus-id skal være et gyldigt id og må ikke være tomt.",
                 [nameof(AuctionHouseId)]);
         }
 
-        if (GetTags().Length > 20)
-        {
+        if (GetTags().Length > 20) {
             yield return new ValidationResult(
                 "Du kan højst angive 20 tags.",
                 [nameof(Tags)]);

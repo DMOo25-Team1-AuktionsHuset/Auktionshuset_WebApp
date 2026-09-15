@@ -1,4 +1,5 @@
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Domain.Entities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -29,6 +30,26 @@ namespace Auktionshuset.Infrastructure.Service {
                 .ToArray();
 
             return Task.FromResult(lots);
+        }
+
+        public Task<Lot?> GetByIdAsync(Guid lotId, CancellationToken cancellationToken) {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _lots.TryGetValue(lotId, out var lot);
+
+            return Task.FromResult(lot);
+        }
+
+        public Task UpdateAsync(Lot lot, CancellationToken cancellationToken) {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_lots.ContainsKey(lot.LotId)) {
+                throw new KeyNotFoundException($"Lot {lot.LotId} was not found");
+            }
+
+            _lots[lot.LotId] = lot;
+
+            return Task.CompletedTask;
         }
     }
 }

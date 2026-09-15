@@ -8,6 +8,8 @@ namespace Auktionshuset.Application.Abstraction.Admin.Lots {
         Task AddAsync(Lot lot, CancellationToken cancellationToken);
         Task<bool> DeleteAsync(Guid lotId, CancellationToken cancellationToken);
         Task<IReadOnlyList<Lot>> GetAllAsync(CancellationToken cancellationToken);
+        Task<Lot?> GetByIdAsync(Guid lotId, CancellationToken cancellationToken);
+        Task UpdateAsync(Lot lot, CancellationToken cancellationToken);
     }
 }
 

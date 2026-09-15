@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 
 namespace Auktionshuset.Services;
@@ -53,6 +54,25 @@ public sealed class LotService(HttpClient httpClient)
         var message = await ReadProblemMessageAsync(response, cancellationToken);
         throw new LotApiException(message, response.StatusCode);
     }
+
+    public async Task<UpdateLotResponse> UpdateAsync(Guid lotId, UpdateLotRequest request, CancellationToken cancellationToken = default) {
+        using var response = await httpClient.PutAsJsonAsync($"api/lots/{lotId}", request, cancellationToken);
+
+        if(response.StatusCode == HttpStatusCode.NotFound) {
+            throw new LotApiException("Lot not found, the list could have been changed", response.StatusCode);
+        }
+
+        if(response.IsSuccessStatusCode) {
+            try {
+                return await response.Content
+                    .ReadFromJsonAsync<UpdateLotResponse>(cancellationToken) 
+                    ?? throw new LotApiException("The server did not return a valid lot id", response.StatusCode);
+            } catch(JsonException ex) {
+                throw new LotApiException("The server did not return a valid lot id", response.StatusCode, ex);
+            }
+        }
+
+        var message = await ReadProblemMessageAsync(response, cancellationToken, "updating");
 
     public async Task DeleteAsync(
         Guid lotId, CancellationToken cancellationToken = default)

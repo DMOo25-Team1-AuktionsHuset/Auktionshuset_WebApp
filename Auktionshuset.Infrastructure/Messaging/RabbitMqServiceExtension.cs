@@ -38,6 +38,8 @@ namespace Auktionshuset.Infrastructure.Messaging
 
             services.AddHostedService<LotCreatedConsumer>();
 
+            services.AddHostedService<LotUpdatedConsumer>();
+
             return services;
         }
     }
