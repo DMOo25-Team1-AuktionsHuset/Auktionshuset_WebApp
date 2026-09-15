@@ -392,3 +392,11 @@ button:disabled {
         animation-duration: 1.5s;
     }
 }
+
+.danger-button {
+    background: #852323;
+}
+
+.danger-button:hover:not(:disabled) {
+    background: #641b1b;
+}
