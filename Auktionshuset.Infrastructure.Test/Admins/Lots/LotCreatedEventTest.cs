@@ -137,7 +137,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                 await connection.CreateChannelAsync();
 
             const string exchangeName = "auktionshuset.events";
-            const string queueName = "auktionshuset.lot-created";
+            const string queueName = "auktionshuset.admin";
             const string routingKey = "lot.created.v1";
 
             await publishChannel.ExchangeDeclareAsync(
