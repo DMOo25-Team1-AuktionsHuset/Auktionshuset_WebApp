@@ -29,7 +29,6 @@ namespace Auktionshuset.Api.Services
                 IIntegrationEventHandler<LotDeletedIntegrationEvent>,
                 DeleteLotRealTimeHandler>();
 
-
             return services;
         }
     }
