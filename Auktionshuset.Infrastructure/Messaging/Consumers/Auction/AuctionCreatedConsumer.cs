@@ -8,7 +8,7 @@ using System;
 using System.Text;
 using System.Text.Json;
 
-namespace Auktionshuset.Infrastructure.Messaging.Consumers
+namespace Auktionshuset.Infrastructure.Messaging.Consumers.Auction
 {
     internal sealed class AuctionCreatedConsumer : BackgroundService
     {
@@ -25,7 +25,7 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers
 
             // Each server instance gets its own queue, so every running instance
             // receives the event and can notify its own connected clients.
-            _queueName = $"{RabbitMqTopology.Queues.AuctionCreated}.{Guid.NewGuid():N}";
+            //_queueName = $"{RabbitMqTopology.Queues.Admin}.{Guid.NewGuid():N}";
         }
 
         protected override async Task ExecuteAsync(
@@ -36,6 +36,7 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers
                     cancellationToken: stoppingToken);
 
             var exchangeName = RabbitMqTopology.EventExchange;
+            var queueName = RabbitMqTopology.Queues.Admin;
             var routingKey = RabbitMqTopology.RoutingKeys.AuctionCreated;
 
             await channel.ExchangeDeclareAsync(

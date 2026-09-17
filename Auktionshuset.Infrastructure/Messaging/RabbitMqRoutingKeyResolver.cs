@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;

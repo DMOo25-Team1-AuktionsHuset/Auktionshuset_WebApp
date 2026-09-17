@@ -20,7 +20,8 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers.Lot {
         }
 
         protected override async Task ExecuteAsync(
-            CancellationToken stoppingToken) {
+            CancellationToken stoppingToken) 
+        {
             await using var channel =
                 await _connection.CreateChannelAsync(
                     cancellationToken: stoppingToken);

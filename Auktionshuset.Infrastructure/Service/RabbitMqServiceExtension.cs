@@ -1,11 +1,13 @@
 ﻿using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Messaging.Consumers.Lot;
+using Auktionshuset.Infrastructure.Messaging.Consumers.Auction;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Text;
+
 
 namespace Auktionshuset.Infrastructure.Service
 {
