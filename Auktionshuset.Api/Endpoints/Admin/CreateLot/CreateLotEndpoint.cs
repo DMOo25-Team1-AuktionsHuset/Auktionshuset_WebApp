@@ -10,9 +10,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
                 .WithName("CreateLot")
                 .WithSummary("Creates a new auction lot")
                 .Produces<CreateLotResponse>(StatusCodes.Status201Created)
-                .ProducesValidationProblem();
-                //.ProducesProblem(StatusCodes.Status404NotFound)
-                //.RequireAuthorization("CanCreateLot");
+                .ProducesValidationProblem()
+                .RequireAuthorization("CanCreateLot");
             return group;
         }
 

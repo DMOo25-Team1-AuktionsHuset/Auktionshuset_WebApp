@@ -11,7 +11,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.UpdateLot {
                 .WithSummary("Updates a lot")
                 .Produces<UpdateLotResponse>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status404NotFound)
-                .ProducesValidationProblem();
+                .ProducesValidationProblem()
+                .RequireAuthorization("CanUpdateLot");
 
             return group;
         }

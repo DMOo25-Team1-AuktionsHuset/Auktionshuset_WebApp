@@ -12,8 +12,8 @@ public static class DeleteLotEndpoint
             .WithName("DeleteLot")
             .WithSummary("Deletes an auction lot")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status404NotFound);
-
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization("CanDeleteLot");
         return group;
     }
 

@@ -19,6 +19,37 @@ builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
+//builder.Services.AddAuthentication(builder.Configuration)
+//    .AddJwtBearer
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireRole("Admin");
+    });
+
+    options.AddPolicy("CanCreateLot", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("permission", "lots.create");
+    });
+
+    options.AddPolicy("CanUpdateLot", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("permission", "lots.update");
+    });
+
+    options.AddPolicy("CanDeleteLot", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("permission", "lots.delete");
+    });
+});
+
+
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 
 //API Services
@@ -39,6 +70,7 @@ app.UseHttpsRedirection();
 
 app.MapLotEndpoints();
 app.MapHub<LotHub>("/hubs/lot");
+    .RequireAuthorization("Admin");
 
 app.Run();
 

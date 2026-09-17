@@ -11,7 +11,8 @@ public static class GetLotsEndpoint
         group.MapGet("/", HandleAsync)
             .WithName("GetLots")
             .WithSummary("Gets all auction lots")
-            .Produces<IReadOnlyList<LotListItemResponse>>();
+            .Produces<IReadOnlyList<LotListItemResponse>>()
+            .RequireAuthorization("CanViewLots");
 
         return group;
     }
