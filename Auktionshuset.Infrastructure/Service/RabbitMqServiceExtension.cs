@@ -8,10 +8,16 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+
 namespace Auktionshuset.Infrastructure.Service
 {
     internal static class RabbitMqServiceExtension
     {
+        /// <summary>
+        /// Registers the RabbitMQ connection, the event publisher and the lot consumers.
+        /// </summary>
+        /// <param name="services">The service collection to add the messaging services to.</param>
+        /// <returns>The same service collection so that further calls can be chained.</returns>
         internal static IServiceCollection AddRabbitMq(
             this IServiceCollection services,
             IConfiguration configuration)
@@ -52,9 +58,7 @@ namespace Auktionshuset.Infrastructure.Service
                 IIntegrationEventPublisher,
                 RabbitMqIntegrationEventPublisher>();
 
-            services.AddHostedService<LotCreatedConsumer>();
-            services.AddHostedService<LotUpdatedConsumer>();
-            services.AddHostedService<LotDeletedConsumer>();
+            services.AddHostedService<AdminEventsConsumer>();
 
             return services;
         }

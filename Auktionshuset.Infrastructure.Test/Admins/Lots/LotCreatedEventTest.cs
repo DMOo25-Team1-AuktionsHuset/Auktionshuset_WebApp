@@ -10,12 +10,15 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
-using Auktionshuset.Infrastructure.Messaging.Consumers.Lot;
 
 namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {
     public class LotCreatedEventTest
     {
+        /// <summary>
+        /// Round-trips a lot-created event through RabbitMQ to verify the exchange, binding and
+        /// routing key. Requires a local RabbitMQ broker.
+        /// </summary>
         [Fact]
         public async Task LotCreatedEvent_CanBePublishedToRabbitMq()
         {
@@ -93,8 +96,12 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
             Assert.Equal("lot.created.v1", result.RoutingKey);
         }
 
+        /// <summary>
+        /// Verifies that the consumer deserializes a published lot-created event and forwards it to
+        /// the registered handler. Requires a local RabbitMQ broker.
+        /// </summary>
         [Fact]
-        public async Task Consumer_CallsHandler_WhenLotCreatedEventIsReceived()
+        public async Task AdminConsumer_CallsLotCreatedHandler_WhenLotCreatedEventIsReceived()
         {
             var receivedEvent =
                 new TaskCompletionSource<LotCreatedIntegrationEvent>(
@@ -159,8 +166,8 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 
             await publishChannel.QueuePurgeAsync(queueName);
 
-        using var consumer =
-            new LotCreatedConsumer(connection, scopeFactory);
+            using var consumer =
+                new AdminEventsConsumer(connection, scopeFactory);
 
             using var cancellationSource =
                 new CancellationTokenSource(TimeSpan.FromSeconds(10));

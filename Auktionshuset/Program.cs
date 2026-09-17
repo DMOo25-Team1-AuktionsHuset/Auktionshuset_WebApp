@@ -15,6 +15,13 @@ builder.Services.AddHttpClient<LotService>(client =>
     client.BaseAddress = new Uri(apiBaseUrl);
 });
 
+builder.Services.AddHttpClient<AuctionService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+});
+
+builder.Services.AddScoped<AuctionRealtimeService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

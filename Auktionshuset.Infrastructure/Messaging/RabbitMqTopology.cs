@@ -24,6 +24,9 @@ namespace Auktionshuset.Infrastructure.Messaging
 
             public const string LotDeleted =
                 "lot.deleted.v1";
+
+            public const string AuctionCreated = 
+                "auction.created.v1";
         }
     }
 }

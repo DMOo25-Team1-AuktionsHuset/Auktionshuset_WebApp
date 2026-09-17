@@ -5,6 +5,11 @@ using Auktionshuset.Application.Admin.Lots.UpdateLot;
 
 namespace Auktionshuset.Api.Endpoints.Admin.UpdateLot {
     public static class UpdateLotEndpoint {
+        /// <summary>
+        /// Maps the update-lot endpoint onto the supplied route group.
+        /// </summary>
+        /// <param name="group">The route group that the endpoint is mapped onto.</param>
+        /// <returns>The same route group so that further endpoints can be chained.</returns>
         public static RouteGroupBuilder MapUpdateLot(this RouteGroupBuilder group) {
             group.MapPut("/{lotId:guid}", HandleAsync)
                 .WithName("UpdateLot")
@@ -17,6 +22,13 @@ namespace Auktionshuset.Api.Endpoints.Admin.UpdateLot {
             return group;
         }
 
+        /// <summary>
+        /// Trims and de-duplicates the request values and updates the lot identified by the route.
+        /// </summary>
+        /// <param name="lotId">The identifier of the lot to update.</param>
+        /// <param name="request">The replacement values supplied by the client.</param>
+        /// <param name="handler">The handler that updates the lot.</param>
+        /// <returns>The updated lot identifier, or 404 when the lot does not exist.</returns>
         public static async Task<Results<Ok<UpdateLotResponse>, NotFound>> HandleAsync(
             Guid lotId, 
             UpdateLotRequest request, 

@@ -9,6 +9,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Auktionshuset.Infrastructure.Data.Configuration {
     public class LotConfiguration : IEntityTypeConfiguration<Lot>
     {
+        /// <summary>
+        /// Configures the <see cref="Lot"/> entity, including its required properties and its
+        /// relationship to <see cref="AuctionHouse"/>.
+        /// </summary>
+        /// <param name="entity">The builder used to configure the <see cref="Lot"/> entity.</param>
         public void Configure(EntityTypeBuilder<Lot> entity)
         {
             entity.HasKey(l => l.LotId);

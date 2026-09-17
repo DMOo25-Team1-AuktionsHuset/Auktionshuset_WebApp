@@ -8,6 +8,9 @@ namespace Auktionshuset.Api.Test.Admins.Lots;
 
 public class DeleteLotTest
 {
+    /// <summary>
+    /// Verifies that deleting removes only the requested lot and that deleting it again returns 404.
+    /// </summary>
     [Fact]
     public async Task Delete_RemovesOnlyRequestedLot_AndReturns404OnRepeat()
     {
@@ -27,6 +30,9 @@ public class DeleteLotTest
         Assert.IsType<NotFound>(repeated.Result);
     }
 
+    /// <summary>
+    /// Verifies that a cancelled request throws and leaves the lot untouched.
+    /// </summary>
     [Fact]
     public async Task Delete_WhenCancelled_DoesNotRemoveLot()
     {
@@ -42,6 +48,10 @@ public class DeleteLotTest
         Assert.Equal(lot.LotId, Assert.Single(await repository.GetAllAsync(CancellationToken.None)).LotId);
     }
 
+    /// <summary>
+    /// Builds a valid lot for use in the tests.
+    /// </summary>
+    /// <returns>A lot with valid values and a newly generated identifier.</returns>
     private static Lot CreateLot() => new()
     {
         LotId = Guid.NewGuid(), AuctionHouseId = Guid.NewGuid(),

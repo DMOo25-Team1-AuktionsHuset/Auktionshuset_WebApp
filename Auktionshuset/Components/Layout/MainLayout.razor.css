@@ -60,6 +60,82 @@ nav ::deep a.active {
     color: #fff;
 }
 
+.nav-group {
+    display: block;
+}
+
+.nav-group-toggle {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-left: 3px solid transparent;
+    color: #dbe4dd;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-weight: 600;
+    gap: 0.5rem;
+    justify-content: space-between;
+    list-style: none;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    text-align: left;
+    width: 100%;
+}
+
+.nav-group-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.nav-group-toggle:hover,
+.nav-group-toggle:focus-visible {
+    color: #fff;
+}
+
+.nav-group-toggle:focus-visible {
+    outline: 3px solid rgba(216, 173, 95, 0.5);
+    outline-offset: 2px;
+}
+
+.nav-group[open] > .nav-group-toggle {
+    color: #fff;
+}
+
+.nav-group-toggle.active {
+    border-left-color: #d8ad5f;
+    color: #fff;
+}
+
+.nav-group-chevron {
+    border-bottom: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    height: 0.45rem;
+    transform: rotate(45deg);
+    transition: transform 120ms ease;
+    width: 0.45rem;
+}
+
+.nav-group[open] .nav-group-chevron {
+    transform: rotate(-135deg);
+}
+
+.nav-sublist {
+    flex-direction: column;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0.25rem 0 0;
+}
+
+.nav-group[open] > .nav-sublist {
+    display: flex;
+}
+
+.nav-sublist ::deep a {
+    font-weight: 500;
+    padding-left: 1.5rem;
+}
+
 .page-content {
     box-sizing: border-box;
     margin: 0 auto;
@@ -121,6 +197,45 @@ nav ::deep a.active {
 
     nav ::deep a.active {
         border-bottom-color: #d8ad5f;
+    }
+
+    .nav-group {
+        position: relative;
+    }
+
+    .nav-group-toggle {
+        border-bottom: 3px solid transparent;
+        border-left: 0;
+        padding: 0 0.5rem;
+    }
+
+    .nav-group-toggle.active {
+        border-bottom-color: #d8ad5f;
+        border-left-color: transparent;
+    }
+
+    .nav-sublist {
+        background: #17211b;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0.45rem;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+        min-width: 12rem;
+        padding: 0.4rem;
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.35rem);
+        z-index: 30;
+    }
+
+    .nav-sublist ::deep a {
+        border-bottom: 0;
+        border-left: 3px solid transparent;
+        padding: 0 0.75rem;
+    }
+
+    .nav-sublist ::deep a.active {
+        border-bottom-color: transparent;
+        border-left-color: #d8ad5f;
     }
 
     .page-content {
