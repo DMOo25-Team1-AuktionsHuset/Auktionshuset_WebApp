@@ -1,4 +1,6 @@
-﻿using Auktionshuset.Api.Endpoints.Admin.GetLots;
+using Auktionshuset.Api.Endpoints.Admin.UpdateLot;
+using Auktionshuset.Api.Endpoints.Admin.DeleteLot;
+using Auktionshuset.Api.Endpoints.Admin.GetLots;
 
 namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
     public static class LotEndpoints {
@@ -8,9 +10,12 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
                 .WithTags("Lots");
 
             group.MapCreateLot();
+            group.MapUpdateLot();
             group.MapGetLots();
+            group.MapDeleteLot();
 
             return endpoints;
         }
     }
 }
+

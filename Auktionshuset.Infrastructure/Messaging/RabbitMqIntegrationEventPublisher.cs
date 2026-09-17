@@ -42,6 +42,10 @@ namespace Auktionshuset.Infrastructure.Messaging
             var json = JsonSerializer.Serialize(integrationEvent);
             var body = Encoding.UTF8.GetBytes(json);
 
+
+
+
+
             await channel.BasicPublishAsync(
                 exchange: exchangeName,
                 routingKey: routingKey,

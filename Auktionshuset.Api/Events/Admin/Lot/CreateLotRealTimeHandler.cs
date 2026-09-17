@@ -1,5 +1,6 @@
-﻿using Auktionshuset.Api.Hubs;
-using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
+using Auktionshuset.Api.Hubs;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Microsoft.AspNetCore.SignalR;
@@ -21,3 +22,4 @@ namespace Auktionshuset.Api.Events.Admin.Lot {
         }
     }
 }
+
