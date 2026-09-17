@@ -1,6 +1,6 @@
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Messaging;
-using Auktionshuset.Infrastructure.Messaging.Consumers.Lot;
+using Auktionshuset.Infrastructure.Messaging.Consumers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
