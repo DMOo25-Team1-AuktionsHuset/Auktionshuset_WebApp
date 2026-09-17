@@ -5,6 +5,11 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
     public static class CreateLotEndpoint {
+        /// <summary>
+        /// Maps the create-lot endpoint onto the supplied route group.
+        /// </summary>
+        /// <param name="group">The route group that the endpoint is mapped onto.</param>
+        /// <returns>The same route group so that further endpoints can be chained.</returns>
         public static RouteGroupBuilder MapCreateLot(this RouteGroupBuilder group) {
             group.MapPost("/", HandleAsync)
                 .WithName("CreateLot")
@@ -16,6 +21,13 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
             return group;
         }
 
+        /// <summary>
+        /// Trims and de-duplicates the request values, creates the lot through the handler and
+        /// returns the new lot's location.
+        /// </summary>
+        /// <param name="request">The lot data supplied by the client.</param>
+        /// <param name="handler">The handler that creates the lot.</param>
+        /// <returns>A 201 response carrying the new lot identifier.</returns>
         public static async Task<Created<CreateLotResponse>> HandleAsync(CreateLotRequest request, 
             CreateLotHandler handler, 
             CancellationToken cancellationToken) {

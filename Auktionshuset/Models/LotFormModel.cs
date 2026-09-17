@@ -27,11 +27,24 @@ public sealed class LotFormModel : IValidatableObject {
     [Required(ErrorMessage = "Auktionshus-id er påkrævet.")]
     public string AuctionHouseId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Splits the comma-separated tag input into trimmed, de-duplicated tags.
+    /// </summary>
+    /// <returns>
+    /// An array of tags with surrounding whitespace removed and duplicate entries discarded
+    /// case-insensitively; empty when no tags were entered.
+    /// </returns>
     public string[] GetTags() => Tags
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToArray();
 
+    /// <summary>
+    /// Validates that the auction house identifier is a non-empty GUID and that at most 20 tags
+    /// were supplied.
+    /// </summary>
+    /// <param name="validationContext">The context supplied by the validation framework.</param>
+    /// <returns>A sequence of <see cref="ValidationResult"/> instances describing every failure found; the sequence is empty when the form is valid.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
         if (!string.IsNullOrWhiteSpace(AuctionHouseId)
             && (!Guid.TryParse(AuctionHouseId, out var auctionHouseId) || auctionHouseId == Guid.Empty)) {

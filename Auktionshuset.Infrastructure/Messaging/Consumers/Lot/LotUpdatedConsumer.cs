@@ -12,6 +12,11 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers.Lot {
         private readonly IConnection _connection;
         private readonly IServiceScopeFactory _scopeFactory;
 
+        /// <summary>
+        /// Initializes a consumer that reads updated-lot events from RabbitMQ.
+        /// </summary>
+        /// <param name="connection">The RabbitMQ connection used to create the consuming channel.</param>
+        /// <param name="scopeFactory">The factory used to create a service scope for each received message.</param>
         public LotUpdatedConsumer(
             IConnection connection,
             IServiceScopeFactory scopeFactory) {
@@ -19,6 +24,11 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers.Lot {
             _scopeFactory = scopeFactory;
         }
 
+        /// <summary>
+        /// Declares the exchange, queue and binding, then dispatches every received lot event to its
+        /// registered handler until the host stops.
+        /// </summary>
+        /// <param name="stoppingToken">A token that is signalled when the host is shutting down.</param>
         protected override async Task ExecuteAsync(
             CancellationToken stoppingToken) {
             await using var channel =

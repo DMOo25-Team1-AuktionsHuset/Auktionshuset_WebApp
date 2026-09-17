@@ -6,6 +6,11 @@ namespace Auktionshuset.Api.Endpoints.Admin.DeleteLot;
 
 public static class DeleteLotEndpoint
 {
+    /// <summary>
+    /// Maps the delete-lot endpoint onto the supplied route group.
+    /// </summary>
+    /// <param name="group">The route group that the endpoint is mapped onto.</param>
+    /// <returns>The same route group so that further endpoints can be chained.</returns>
     public static RouteGroupBuilder MapDeleteLot(this RouteGroupBuilder group)
     {
         group.MapDelete("/{lotId:guid}", HandleAsync)
@@ -17,6 +22,12 @@ public static class DeleteLotEndpoint
         return group;
     }
 
+    /// <summary>
+    /// Deletes the lot with the given route identifier.
+    /// </summary>
+    /// <param name="lotId">The identifier of the lot to delete.</param>
+    /// <param name="handler">The handler that deletes the lot.</param>
+    /// <returns>204 when the lot was deleted, otherwise 404.</returns>
     public static async Task<Results<NoContent, NotFound>> HandleAsync(
         [FromRoute] Guid lotId,
         [FromServices] DeleteLotHandler handler,

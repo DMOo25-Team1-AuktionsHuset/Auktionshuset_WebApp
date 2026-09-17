@@ -26,6 +26,11 @@ namespace Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot {
 
         public Guid AuctionHouseId { get; init; }
 
+        /// <summary>
+        /// Validates that an auction house is selected and that no tag is blank.
+        /// </summary>
+        /// <param name="validationContext">The context supplied by the validation framework.</param>
+        /// <returns>A sequence of <see cref="ValidationResult"/> instances describing every failure found; the sequence is empty when the request is valid.</returns>
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
             if(AuctionHouseId == Guid.Empty) {
                 yield return new ValidationResult("Auction house ID is required", [nameof(AuctionHouseId)]);

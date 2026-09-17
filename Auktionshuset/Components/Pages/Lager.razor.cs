@@ -32,12 +32,19 @@ public partial class Lager : IAsyncDisposable
     private static readonly Guid DefaultAuctionHouseId = Guid.Parse("8cc2c7dc-6244-41e7-805f-a90f9279c540");
     private bool isDeleting;
 
+    /// <summary>
+    /// Resets the form and loads the current lot list.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         ResetForm();
         await LoadLotsAsync();
     }
 
+    /// <summary>
+    /// Creates a lot from the current form values and reloads the list.
+    /// Returns immediately when a submit is already in progress.
+    /// </summary>
     private async Task SubmitAsync()
     {
         if (isSubmitting)
@@ -87,6 +94,10 @@ public partial class Lager : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Copies the selected lot into the form and switches the page into edit mode.
+    /// </summary>
+    /// <param name="lot">The lot whose values are loaded into the form.</param>
     private void BeginEdit(LotListItemResponse lot) {
         editingLotId = lot.LotId;
 
@@ -105,6 +116,9 @@ public partial class Lager : IAsyncDisposable
         submissionSucceeded = false;
     }
 
+    /// <summary>
+    /// Saves the lot currently being edited and reloads the list.
+    /// </summary>
     private async Task UpdateAsync() {
         var lotId = editingLotId;
 
@@ -157,6 +171,9 @@ public partial class Lager : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Leaves edit mode and resets the form.
+    /// </summary>
     private void CancelEdit() {
         editingLotId = null;
         statusMessage = null;
@@ -165,6 +182,10 @@ public partial class Lager : IAsyncDisposable
         ResetForm();
     }
 
+    /// <summary>
+    /// Deletes the given lot and reloads the list.
+    /// </summary>
+    /// <param name="lotId">The identifier of the lot to delete.</param>
     public async Task DeleteAsync(Guid lotId)
     {
 
@@ -203,6 +224,9 @@ public partial class Lager : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Fetches the lot list and stores any failure in the list error state for display.
+    /// </summary>
     private async Task LoadLotsAsync()
     {
         isLoadingLots = true;
@@ -230,6 +254,9 @@ public partial class Lager : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Replaces the form with a fresh model bound to the default auction house.
+    /// </summary>
     private void ResetForm()
     {
         model = new LotFormModel {
@@ -238,6 +265,9 @@ public partial class Lager : IAsyncDisposable
         editContext = new EditContext(model);
     }
 
+    /// <summary>
+    /// Disposes the SignalR connection used for live lot updates.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)
@@ -246,6 +276,9 @@ public partial class Lager : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Reloads the lot list on the component's UI thread and re-renders it.
+    /// </summary>
     private Task RefreshLotsAsync()
     {
         return InvokeAsync(async () =>
@@ -255,6 +288,13 @@ public partial class Lager : IAsyncDisposable
         });
     }
 
+    /// <summary>
+    /// Starts the SignalR connection and subscribes to lot notifications after the first render.
+    /// </summary>
+    /// <param name="firstRender"><see langword="true"/> only for the component's first render.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the required configuration value <c>Api:BaseUrl</c> is missing.
+    /// </exception>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)

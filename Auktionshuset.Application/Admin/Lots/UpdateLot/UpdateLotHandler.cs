@@ -7,6 +7,11 @@ using System.Text;
 
 namespace Auktionshuset.Application.Admin.Lots.UpdateLot {
     public class UpdateLotHandler(ILotRepository lotRepository, IIntegrationEventPublisher eventPublisher) {
+        /// <summary>
+        /// Applies the command's values to an already stored lot and publishes an integration event
+        /// describing the result.
+        /// </summary>
+        /// <returns>The identifier of the updated lot, or <see langword="null"/> when no lot matches the command.</returns>
         public async Task<UpdateLotResult?> HandleAsync(UpdateLotCommand command, CancellationToken cancellationToken) {
             var lot = await lotRepository.GetByIdAsync(command.LotId, cancellationToken);
 

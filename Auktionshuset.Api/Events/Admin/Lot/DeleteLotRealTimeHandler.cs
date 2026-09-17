@@ -11,6 +11,11 @@ namespace Auktionshuset.Api.Events.Admin.Lot
         IHubContext<LotHub, ILotClient> hubContext)
         : IIntegrationEventHandler<LotDeletedIntegrationEvent>
     {
+        /// <summary>
+        /// Broadcasts a lot-deleted notification to all connected clients.
+        /// </summary>
+        /// <param name="message">The integration event describing the deleted lot.</param>
+        /// <returns>A task that completes once the notification has been broadcast.</returns>
         public Task HandleAsync(LotDeletedIntegrationEvent message, CancellationToken cancellationToken)
         {
             var notification = new DeleteLotNotification(

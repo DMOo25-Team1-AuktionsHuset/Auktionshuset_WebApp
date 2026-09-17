@@ -11,6 +11,17 @@ namespace Auktionshuset.Infrastructure.Messaging
 {
     internal sealed class RabbitMqRoutingKeyResolver
     {
+        /// <summary>
+        /// Returns the routing key configured for the given integration event type.
+        /// </summary>
+        /// <typeparam name="TEvent">The integration event type to resolve a routing key for.</typeparam>
+        /// <returns>
+        /// The routing key declared in <see cref="RabbitMqTopology.RoutingKeys"/> for
+        /// <typeparamref name="TEvent"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when no routing key is mapped to <typeparamref name="TEvent"/>.
+        /// </exception>
         public string Resolve<TEvent>()
             where TEvent : IIntegrationEvent
         {

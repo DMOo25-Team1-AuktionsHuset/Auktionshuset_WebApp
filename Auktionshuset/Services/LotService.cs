@@ -10,6 +10,13 @@ namespace Auktionshuset.Services;
 public sealed class LotService(HttpClient httpClient)
 {
 
+    /// <summary>
+    /// Fetches every lot from the API.
+    /// </summary>
+    /// <returns>A read-only list containing every lot returned by the API.</returns>
+    /// <exception cref="LotApiException">
+    /// Thrown when the API responds with an error status, or when the response body is not valid JSON.
+    /// </exception>
     public async Task<IReadOnlyList<LotListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
@@ -32,6 +39,15 @@ public sealed class LotService(HttpClient httpClient)
         }
     }
 
+    /// <summary>
+    /// Creates a lot through the API.
+    /// </summary>
+    /// <param name="request">The lot values to send to the API.</param>
+    /// <returns>The identifier assigned to the new lot.</returns>
+    /// <exception cref="LotApiException">
+    /// Thrown when the API rejects the request, or when the response body does not contain a valid
+    /// lot identifier.
+    /// </exception>
     public async Task<CreateLotResponse> CreateAsync(
         CreateLotRequest request,
         CancellationToken cancellationToken = default)
@@ -55,6 +71,16 @@ public sealed class LotService(HttpClient httpClient)
         throw new LotApiException(message, response.StatusCode);
     }
 
+    /// <summary>
+    /// Updates the lot with the given identifier through the API.
+    /// </summary>
+    /// <param name="lotId">The identifier of the lot to update.</param>
+    /// <param name="request">The replacement lot values to send to the API.</param>
+    /// <returns>The identifier of the updated lot.</returns>
+    /// <exception cref="LotApiException">
+    /// Thrown when the lot no longer exists, when the API rejects the request, or when the response
+    /// body is not valid JSON.
+    /// </exception>
     public async Task<UpdateLotResponse> UpdateAsync(Guid lotId, UpdateLotRequest request, CancellationToken cancellationToken = default) {
         using var response = await httpClient.PutAsJsonAsync($"api/lots/{lotId}", request, cancellationToken);
 
@@ -77,6 +103,14 @@ public sealed class LotService(HttpClient httpClient)
         throw new LotApiException(message, response.StatusCode);
     }
 
+    /// <summary>
+    /// Deletes the lot with the given identifier through the API.
+    /// </summary>
+    /// <param name="lotId">The identifier of the lot to delete.</param>
+    /// <returns>A task that completes when the API has processed the deletion.</returns>
+    /// <exception cref="LotApiException">
+    /// Thrown when the lot no longer exists or the API call otherwise fails.
+    /// </exception>
     public async Task DeleteAsync(
         Guid lotId, CancellationToken cancellationToken = default)
     {
@@ -96,6 +130,13 @@ public sealed class LotService(HttpClient httpClient)
         throw new LotApiException(message, response.StatusCode);
     }
 
+    /// <summary>
+    /// Extracts a user-facing error message from a failed API response, falling back to a generic
+    /// message derived from the status code.
+    /// </summary>
+    /// <param name="response">The failed response to read the message from.</param>
+    /// <param name="action">The Danish verb inserted into the fallback message, for example "oprettes".</param>
+    /// <returns>The message to display to the user.</returns>
     private static async Task<string> ReadProblemMessageAsync(
         HttpResponseMessage response,
         CancellationToken cancellationToken,
@@ -147,6 +188,9 @@ public sealed class LotService(HttpClient httpClient)
     }
 }
 
+/// <summary>
+/// Represents an error returned by the lot API, exposing the HTTP status code that caused it.
+/// </summary>
 public sealed class LotApiException(
     string message,
     HttpStatusCode statusCode,

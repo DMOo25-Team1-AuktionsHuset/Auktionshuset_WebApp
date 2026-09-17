@@ -9,6 +9,12 @@ namespace Auktionshuset.Api.Services
 {
     internal static class LotHandlerExtension
     {
+        /// <summary>
+        /// Registers the lot command handlers together with the real-time handlers that react to
+        /// their integration events.
+        /// </summary>
+        /// <param name="services">The service collection to add the lot handlers to.</param>
+        /// <returns>The same service collection so that further calls can be chained.</returns>
         internal static IServiceCollection AddLotHandler(
             this IServiceCollection services)
         {

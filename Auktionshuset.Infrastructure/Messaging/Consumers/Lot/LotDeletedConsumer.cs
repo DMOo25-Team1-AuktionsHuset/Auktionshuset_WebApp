@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -18,6 +17,9 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers.Lot
         private readonly IConnection _connection;
         private readonly IServiceScopeFactory _scopeFactory;
 
+        /// <summary>
+        /// Initializes a consumer that reads deleted-lot events from RabbitMQ.
+        /// </summary>
         public LotDeletedConsumer(
             IConnection connection,
             IServiceScopeFactory scopeFactory)
@@ -26,6 +28,10 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers.Lot
             _scopeFactory = scopeFactory;
         }
 
+        /// <summary>
+        /// Declares the exchange, queue and binding, then dispatches every received lot event to its
+        /// registered handler until the host stops.
+        /// </summary>
         protected override async Task ExecuteAsync(
             CancellationToken stoppingToken)
         {

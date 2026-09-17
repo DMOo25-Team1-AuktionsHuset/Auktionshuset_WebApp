@@ -16,6 +16,10 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {
     public class LotCreatedEventTest
     {
+        /// <summary>
+        /// Round-trips a lot-created event through RabbitMQ to verify the exchange, binding and
+        /// routing key. Requires a local RabbitMQ broker.
+        /// </summary>
         [Fact]
         public async Task LotCreatedEvent_CanBePublishedToRabbitMq()
         {
@@ -93,6 +97,10 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
             Assert.Equal("lot.created.v1", result.RoutingKey);
         }
 
+        /// <summary>
+        /// Verifies that the consumer deserializes a published lot-created event and forwards it to
+        /// the registered handler. Requires a local RabbitMQ broker.
+        /// </summary>
         [Fact]
         public async Task Consumer_CallsHandler_WhenLotCreatedEventIsReceived()
         {
