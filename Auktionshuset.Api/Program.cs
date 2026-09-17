@@ -9,6 +9,9 @@ using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Service;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +22,29 @@ builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
-//builder.Services.AddAuthentication(builder.Configuration)
-//    .AddJwtBearer
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var signingKey = builder.Configuration["Authentication:SigningKey"]
+            ?? throw new InvalidOperationException(
+                "Missing configuration value 'Authentication:SigningKey'.");
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Authentication:Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Authentication:Audience"],
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(signingKey)),
+
+            ValidateLifetime = true
+        };
+    });
 
 builder.Services.AddAuthorization(options =>
 {
@@ -47,6 +71,12 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
         policy.RequireClaim("permission", "lots.delete");
     });
+
+    options.AddPolicy("CanViewLots", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("permission", "lots.read");
+    });
 });
 
 
@@ -67,6 +97,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapLotEndpoints();
 app.MapHub<LotHub>("/hubs/lot")
