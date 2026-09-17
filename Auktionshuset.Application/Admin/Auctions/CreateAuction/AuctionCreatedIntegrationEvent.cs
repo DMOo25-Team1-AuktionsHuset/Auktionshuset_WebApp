@@ -1,6 +1,6 @@
 using Auktionshuset.Application.EventHandling;
 
-namespace Auktionshuset.Application.Abstraction.Admin.Auctions;
+namespace Auktionshuset.Application.Admin.Auctions.CreateAuction;
 
 public sealed record AuctionCreatedIntegrationEvent(
     Guid EventId,

@@ -1,4 +1,4 @@
-using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;

@@ -12,6 +12,7 @@ using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Service;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,5 +1,5 @@
 using Auktionshuset.Api.Hubs;
-using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.SignalR;

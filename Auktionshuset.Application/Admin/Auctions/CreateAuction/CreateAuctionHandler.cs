@@ -1,9 +1,10 @@
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
-namespace Auktionshuset.Application.Abstraction.Admin.Auctions;
+namespace Auktionshuset.Application.Admin.Auctions.CreateAuction;
 
 public sealed class CreateAuctionHandler(
     IAuctionRepository auctionRepository,

@@ -1,4 +1,4 @@
-using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.EventHandling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,7 +25,7 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers.Auction
 
             // Each server instance gets its own queue, so every running instance
             // receives the event and can notify its own connected clients.
-            //_queueName = $"{RabbitMqTopology.Queues.Admin}.{Guid.NewGuid():N}";
+            _queueName = $"{RabbitMqTopology.Queues.Admin}.{Guid.NewGuid():N}";
         }
 
         protected override async Task ExecuteAsync(
@@ -36,7 +36,7 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers.Auction
                     cancellationToken: stoppingToken);
 
             var exchangeName = RabbitMqTopology.EventExchange;
-            var queueName = RabbitMqTopology.Queues.Admin;
+            //var queueName = RabbitMqTopology.Queues.Admin;
             var routingKey = RabbitMqTopology.RoutingKeys.AuctionCreated;
 
             await channel.ExchangeDeclareAsync(
