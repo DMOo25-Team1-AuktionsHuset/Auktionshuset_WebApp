@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
-using Auktionshuset.Infrastructure.Messaging.Consumers.Lot;
 
 namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {
@@ -102,7 +101,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
         /// the registered handler. Requires a local RabbitMQ broker.
         /// </summary>
         [Fact]
-        public async Task Consumer_CallsHandler_WhenLotCreatedEventIsReceived()
+        public async Task AdminConsumer_CallsLotCreatedHandler_WhenLotCreatedEventIsReceived()
         {
             var receivedEvent =
                 new TaskCompletionSource<LotCreatedIntegrationEvent>(
@@ -167,8 +166,8 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 
             await publishChannel.QueuePurgeAsync(queueName);
 
-        using var consumer =
-            new LotCreatedConsumer(connection, scopeFactory);
+            using var consumer =
+                new AdminEventsConsumer(connection, scopeFactory);
 
             using var cancellationSource =
                 new CancellationTokenSource(TimeSpan.FromSeconds(10));

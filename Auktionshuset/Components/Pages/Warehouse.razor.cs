@@ -12,7 +12,7 @@ using System.Net;
 
 namespace Auktionshuset.Components.Pages;
 
-public partial class Lager : IAsyncDisposable
+public partial class Warehouse : IAsyncDisposable
 {
     [Inject] private IConfiguration Configuration { get; set; } = default!;
     private HubConnection? hubConnection;
@@ -316,7 +316,7 @@ public partial class Lager : IAsyncDisposable
             notification => RefreshLotsAsync());
 
         hubConnection.On<UpdateLotNotification>(
-            nameof(ILotClient),
+            nameof(ILotClient.LotUpdatedAsync),
             _ => RefreshLotsAsync());
 
         hubConnection.Reconnected +=
@@ -338,6 +338,4 @@ public partial class Lager : IAsyncDisposable
             StateHasChanged();
         }
     }
-
-    
 }

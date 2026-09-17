@@ -6,6 +6,7 @@ using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
@@ -29,6 +30,9 @@ namespace Auktionshuset.Infrastructure.Messaging
             {
                 var type when type == typeof(LotCreatedIntegrationEvent)
                     => RabbitMqTopology.RoutingKeys.LotCreated,
+
+                var type when type == typeof(AuctionCreatedIntegrationEvent)
+                    => RabbitMqTopology.RoutingKeys.AuctionCreated,
 
                 var type when type == typeof(LotUpdatedIntegrationEvent)
                     => RabbitMqTopology.RoutingKeys.LotUpdated,

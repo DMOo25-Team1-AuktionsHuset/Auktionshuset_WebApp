@@ -59,6 +59,9 @@ namespace Auktionshuset.Infrastructure.Messaging
             var body = Encoding.UTF8.GetBytes(json);
 
 
+
+
+
             await channel.BasicPublishAsync(
                 exchange: exchangeName,
                 routingKey: routingKey,
