@@ -10,7 +10,6 @@
     <div class="page-heading">
         <p class="eyebrow">Administration</p>
         <h1 id="auction-heading">Opret auktion</h1>
-        <p>Vælg dato og tidspunkt for auktionens start. Du kan vælge at vedhæfte en eller flere af lagerets lots, men det er også muligt at oprette auktionen uden.</p>
     </div>
 
     <EditForm EditContext="editContext" OnValidSubmit="SubmitAsync" class="auction-form" novalidate>
@@ -35,14 +34,14 @@
 
         <fieldset class="form-section lot-selection" aria-busy="@isLoadingLots">
             <legend>
-                Tilføj lots
+                Tilføj genstande
                 <span class="optional">(valgfrit)</span>
             </legend>
-            <p class="section-help">Vælg de lots fra lageret, der skal med på auktionen.</p>
+            <p class="section-help">Vælg de genstande fra lageret, der skal med på auktionen.</p>
 
             @if (isLoadingLots)
             {
-                <p class="list-state" role="status">Henter lots...</p>
+                <p class="list-state" role="status">Henter genstande...</p>
             }
             else if (!string.IsNullOrWhiteSpace(lotListError))
             {
@@ -50,7 +49,7 @@
             }
             else if (lots.Count == 0)
             {
-                <p class="list-state">Der er endnu ingen lots i lageret. Du kan stadig oprette auktionen uden lots.</p>
+                <p class="list-state">Der er endnu ingen genstande i lageret. Du kan stadig oprette auktionen uden genstande.</p>
             }
             else
             {
@@ -88,12 +87,12 @@
         <div class="selection-summary">
             @if (selectedLotIds.Count == 0)
             {
-                <p role="status" aria-live="polite">Ingen lots valgt. Auktionen oprettes uden lots.</p>
+                <p role="status" aria-live="polite">Ingen genstande valgt. Auktionen oprettes uden genstande.</p>
             }
             else
             {
                 <div class="selection-summary-head">
-                    <p role="status" aria-live="polite"><strong>@selectedLotIds.Count</strong> lot@(selectedLotIds.Count == 1 ? string.Empty : "s") valgt</p>
+                    <p role="status" aria-live="polite"><strong>@selectedLotIds.Count</strong> genstand@(selectedLotIds.Count == 1 ? string.Empty : "e") valgt</p>
                     <button type="button" class="clear-button" @onclick="ClearSelection">Ryd valg</button>
                 </div>
                 <ul class="selection-list">
@@ -136,14 +135,13 @@
     else if (liveAuctions.Count > 0)
     {
         <section class="live-panel" aria-labelledby="live-auctions-heading">
-            <h2 id="live-auctions-heading">Auktioner oprettet i realtid</h2>
-            <p class="section-help">Listen opdateres automatisk, også når der oprettes auktioner på en anden server.</p>
+            <h2 id="live-auctions-heading">Auktioner oprettet</h2>
             <ul class="live-list" aria-live="polite">
                 @foreach (var notification in liveAuctions)
                 {
                     <li>
                         <span class="live-auction-id">@notification.AuctionId</span>
-                        <span class="live-auction-meta">@notification.StartsAt.ToString("g", CultureInfo.GetCultureInfo("da-DK")) &middot; @notification.LotCount lot@(notification.LotCount == 1 ? string.Empty : "s")</span>
+                        <span class="live-auction-meta">@notification.StartsAt.ToString("g", CultureInfo.GetCultureInfo("da-DK")) &middot; @notification.LotCount genstand@(notification.LotCount == 1 ? string.Empty : "e")</span>
                     </li>
                 }
             </ul>

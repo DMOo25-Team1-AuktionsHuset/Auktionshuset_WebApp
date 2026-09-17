@@ -113,10 +113,10 @@ public partial class CreateAuction : IDisposable
             submissionSucceeded = true;
 
             var lotsText = response.LotCount == 0
-                ? "uden lots"
-                : $"med {response.LotCount} lot{(response.LotCount == 1 ? string.Empty : "s")}";
+                ? "uden genstande"
+                : $"med {response.LotCount} genstand{(response.LotCount == 1 ? string.Empty : "e")}";
 
-            statusMessage = $"Auktionen blev oprettet {lotsText}. Auktions-id: {response.AuctionId}";
+            statusMessage = $"Auktionen blev oprettet {lotsText}.";
         }
         catch (AuctionApiException exception)
         {
@@ -151,11 +151,11 @@ public partial class CreateAuction : IDisposable
         }
         catch (HttpRequestException)
         {
-            lotListError = "Listen over lots kunne ikke hentes. Prøv igen om lidt.";
+            lotListError = "Listen over genstande kunne ikke hentes. Prøv igen om lidt.";
         }
         catch (TaskCanceledException)
         {
-            lotListError = "Anmodningen om lotlisten tog for lang tid. Prøv igen.";
+            lotListError = "Anmodningen om listen over genstande tog for lang tid. Prøv igen.";
         }
         finally
         {
