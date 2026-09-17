@@ -124,7 +124,6 @@ app.MapLotEndpoints();
 app.MapHub<LotHub>("/hubs/lot")
     .RequireAuthorization("Admin");
 app.MapAuctionEndpoints();
-app.MapHub<LotHub>("/hubs/lot");
 app.MapHub<AuctionHub>("/hubs/auction");
 
 app.Run();
