@@ -69,7 +69,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapLotEndpoints();
-app.MapHub<LotHub>("/hubs/lot");
+app.MapHub<LotHub>("/hubs/lot")
     .RequireAuthorization("Admin");
 
 app.Run();
