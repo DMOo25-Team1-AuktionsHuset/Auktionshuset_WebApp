@@ -1,6 +1,7 @@
-﻿using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Messaging.Consumers.Lot;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System;
@@ -12,26 +13,40 @@ namespace Auktionshuset.Infrastructure.Service
     internal static class RabbitMqServiceExtension
     {
         internal static IServiceCollection AddRabbitMq(
-            this IServiceCollection services)
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
             services.AddSingleton<RabbitMqRoutingKeyResolver>();
 
             services.AddSingleton<IConnection>(_ =>
             {
-            // OBS: Kun til lokal test
-            var factory = new ConnectionFactory
-            {
-                HostName = "localhost",
-                UserName = "guest",
-                Password = "guest"
+                var hostName = GetRequiredConfigurationValue(
+                    configuration,
+                    "RabbitMQ:HostName");
 
-            };
+                var userName = GetRequiredConfigurationValue(
+                    configuration,
+                    "RabbitMQ:UserName");
 
-            return factory
-                .CreateConnectionAsync()
-                .GetAwaiter()
-                .GetResult();
-        });
+                var password = GetRequiredConfigurationValue(
+                    configuration,
+                    "RabbitMQ:Password");
+
+                var port = GetRequiredRabbitMqPort(configuration);
+
+                var factory = new ConnectionFactory
+                {
+                    HostName = hostName,
+                    Port = port,
+                    UserName = userName,
+                    Password = password
+                };
+
+                return factory
+                    .CreateConnectionAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            });
 
             services.AddSingleton<
                 IIntegrationEventPublisher,
@@ -42,6 +57,37 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddHostedService<LotDeletedConsumer>();
 
             return services;
+        }
+
+        private static string GetRequiredConfigurationValue(
+            IConfiguration configuration,
+            string key)
+        {
+            var value = configuration[key];
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new InvalidOperationException(
+                    $"Missing required configuration value '{key}'.");
+            }
+
+            return value;
+        }
+
+        private static int GetRequiredRabbitMqPort(
+            IConfiguration configuration)
+        {
+            var value = GetRequiredConfigurationValue(
+                configuration,
+                "RabbitMQ:Port");
+
+            if (!int.TryParse(value, out var port) || port <= 0)
+            {
+                throw new InvalidOperationException(
+                    "Configuration value 'RabbitMQ:Port' must be a positive integer.");
+            }
+
+            return port;
         }
     }
 }

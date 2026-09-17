@@ -25,7 +25,7 @@ builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddApiServices();
 
 //Infrastructure Services
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
