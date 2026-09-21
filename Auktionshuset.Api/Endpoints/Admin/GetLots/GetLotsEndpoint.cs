@@ -1,5 +1,6 @@
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Auktionshuset.Api.Endpoints.Admin.GetLots;
@@ -41,7 +42,8 @@ public static class GetLotsEndpoint
                 lot.EstimatedValue,
                 lot.Description,
                 lot.Tags,
-                lot.AuctionHouseId))
+                lot.AuctionHouseId,
+                LotImagePaths.ToUrl(lot.ImageFileName)))
             .ToArray();
 
         return TypedResults.Ok<IReadOnlyList<LotListItemResponse>>(response);

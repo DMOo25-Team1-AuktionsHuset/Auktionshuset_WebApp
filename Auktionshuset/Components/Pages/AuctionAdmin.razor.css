@@ -1,0 +1,532 @@
+.auction-page {
+    display: grid;
+    gap: 1.5rem;
+    margin: 0 auto;
+    max-width: 1500px;
+}
+
+.admin-top {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+}
+
+.form-card,
+.picker-card,
+.dashboard-card {
+    min-width: 0;
+    padding: 1.5rem;
+}
+
+.card-heading {
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+}
+
+.card-heading h2 {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.card-heading p {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    margin: 0.35rem 0 0;
+}
+
+.mode-badge {
+    flex: 0 0 auto;
+}
+
+/* --- Formular ----------------------------------------------------------- */
+
+.form-grid {
+    display: grid;
+    gap: 1.1rem 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field-wide {
+    grid-column: 1 / -1;
+}
+
+.status-preview {
+    margin: 0;
+    min-height: 2.4rem;
+    padding: 0.45rem 0;
+}
+
+.inline-state {
+    background: var(--surface-muted);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.86rem;
+    margin: 0;
+    padding: 0.6rem 0.7rem;
+}
+
+.selection-summary {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 1.25rem;
+    padding: 0.9rem 1rem;
+}
+
+.selection-summary p {
+    margin: 0;
+}
+
+.selection-summary-head {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+    justify-content: space-between;
+}
+
+.selection-list {
+    color: var(--dark-slate-grey);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    list-style: none;
+    margin: 0.7rem 0 0;
+    padding: 0;
+}
+
+.selection-list li::before {
+    content: "•";
+    margin-right: 0.4rem;
+}
+
+.form-actions {
+    align-items: center;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.4rem;
+    padding-top: 1.2rem;
+}
+
+.status-message {
+    margin-top: 1.15rem;
+}
+
+/* --- Vælger ------------------------------------------------------------- */
+
+.picker-search {
+    margin-bottom: 0.9rem;
+}
+
+.lot-options {
+    display: grid;
+    gap: 0.6rem;
+    list-style: none;
+    margin: 0;
+    max-height: 32rem;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.lot-option {
+    align-items: start;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: auto 2.6rem minmax(0, 1fr);
+    padding: 0.65rem;
+}
+
+.lot-option.is-selected {
+    background: var(--camel-soft);
+    border-color: var(--camel-line);
+}
+
+.lot-option > input[type="checkbox"] {
+    height: 1.15rem;
+    margin: 0.35rem 0 0;
+    width: 1.15rem;
+}
+
+.lot-option > input[type="checkbox"]:focus-visible {
+    box-shadow: var(--focus-ring);
+    outline: none;
+}
+
+.picker-thumb {
+    align-items: center;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    height: 2.6rem;
+    justify-content: center;
+    overflow: hidden;
+    width: 2.6rem;
+}
+
+.picker-thumb img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.picker-thumb-empty {
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    line-height: 1.15;
+    padding: 0 0.15rem;
+    text-align: center;
+}
+
+.lot-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.lot-option-name {
+    color: var(--charcoal-blue);
+    cursor: pointer;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.lot-option-meta {
+    color: var(--text-muted);
+    font-size: 0.83rem;
+    overflow-wrap: anywhere;
+}
+
+.lot-option-quantity {
+    grid-column: 3;
+    max-width: 10rem;
+}
+
+.lot-option-quantity input {
+    min-height: 2.2rem;
+}
+
+/* --- Dashboard ---------------------------------------------------------- */
+
+.dashboard-heading {
+    align-items: flex-end;
+}
+
+.dashboard-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.dashboard-tools .field {
+    flex: 1 1 8rem;
+    min-width: 7rem;
+}
+
+.dashboard-tools input,
+.dashboard-tools select {
+    min-height: 2.4rem;
+}
+
+.table-scroll {
+    overflow-x: auto;
+}
+
+.auction-table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.auction-table .col-images { width: 8%; }
+.auction-table .col-id { width: 6%; }
+.auction-table .col-name { width: 16%; }
+.auction-table .col-status { width: 8%; }
+.auction-table .col-employee { width: 12%; }
+.auction-table .col-lots { width: 12%; }
+.auction-table .col-start { width: 12%; }
+.auction-table .col-end { width: 12%; }
+.auction-table .col-actions { width: 14%; }
+
+.auction-table th {
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 0 0.55rem 0.55rem;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.column-help {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.auction-table td {
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.85rem;
+    padding: 0.6rem 0.55rem;
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.auction-table tbody tr {
+    cursor: pointer;
+}
+
+.auction-table tbody tr:hover {
+    background: var(--soft-linen);
+}
+
+.auction-table tbody tr.is-selected {
+    background: var(--camel-soft);
+    box-shadow: inset 3px 0 0 var(--camel);
+}
+
+.auction-table tbody tr:focus-within {
+    outline: 2px solid var(--camel);
+    outline-offset: -2px;
+}
+
+.cell-images {
+    padding-top: 0.7rem;
+}
+
+.thumb-strip {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+}
+
+.dash-thumb {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: block;
+    height: 2rem;
+    object-fit: cover;
+    width: 2rem;
+}
+
+.thumb-more {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.cell-id code {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.cell-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.row-activator {
+    background: none;
+    border: 0;
+    color: var(--charcoal-blue);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    padding: 0;
+    text-align: left;
+}
+
+.row-activator:hover {
+    text-decoration: underline;
+}
+
+.row-activator:focus-visible {
+    border-radius: var(--radius-sm);
+    box-shadow: var(--focus-ring);
+    outline: none;
+}
+
+.selected-badge {
+    align-self: flex-start;
+}
+
+.cell-date {
+    white-space: nowrap;
+}
+
+.cell-actions {
+    padding-top: 0.5rem;
+}
+
+.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.row-confirm {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.row-confirm-text {
+    color: var(--danger-text);
+    flex: 1 1 100%;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.pagination {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1.15rem;
+}
+
+.pagination-status {
+    color: var(--text-muted);
+    font-size: 0.86rem;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
+}
+
+/* --- Responsivt --------------------------------------------------------- */
+
+@media (max-width: 1200px) {
+    .admin-top {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .form-card,
+    .picker-card,
+    .dashboard-card {
+        padding: 1.1rem;
+    }
+
+    .dashboard-tools {
+        width: 100%;
+    }
+
+    .table-scroll {
+        overflow-x: visible;
+    }
+
+    .auction-table,
+    .auction-table tbody,
+    .auction-table tr,
+    .auction-table td {
+        display: block;
+        width: auto;
+    }
+
+    .auction-table colgroup,
+    .auction-table thead {
+        display: none;
+    }
+
+    .auction-table {
+        table-layout: auto;
+    }
+
+    .auction-table tbody tr {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        display: grid;
+        gap: 0.35rem 0.75rem;
+        grid-template-columns: 4.5rem minmax(0, 1fr);
+        grid-template-areas:
+            "images name"
+            "images status"
+            "images employee"
+            "images lots"
+            "images start"
+            "images end"
+            "images id"
+            "images actions";
+        margin-bottom: 0.7rem;
+        padding: 0.7rem;
+    }
+
+    .auction-table tbody tr.is-selected {
+        box-shadow: inset 3px 0 0 var(--camel), var(--shadow-sm);
+    }
+
+    .auction-table td {
+        border: 0;
+        padding: 0;
+    }
+
+    .cell-images { grid-area: images; }
+    .cell-id { grid-area: id; }
+    .cell-name { grid-area: name; }
+    .cell-status { grid-area: status; }
+    .cell-employee { grid-area: employee; }
+    .cell-lots { grid-area: lots; }
+    .cell-start { grid-area: start; }
+    .cell-end { grid-area: end; }
+    .cell-actions { grid-area: actions; }
+
+    .auction-table td[data-label]:not(.cell-images):not(.cell-name)::before {
+        color: var(--text-muted);
+        content: attr(data-label) ": ";
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .cell-date {
+        white-space: normal;
+    }
+
+    .row-actions,
+    .row-confirm {
+        margin-top: 0.2rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+
+    .lot-option {
+        grid-template-columns: auto 2.4rem minmax(0, 1fr);
+    }
+
+    .lot-option-quantity {
+        grid-column: 1 / -1;
+        max-width: none;
+    }
+}

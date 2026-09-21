@@ -1,5 +1,4 @@
 ﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
 using System;
 using System.Collections.Generic;
@@ -29,7 +28,7 @@ namespace Auktionshuset.Application.Admin.Lots.UpdateLot {
 
             await lotRepository.UpdateAsync(lot, cancellationToken);
 
-            await eventPublisher.PublishAsync(new LotCreatedIntegrationEvent(
+            await eventPublisher.PublishAsync(new LotUpdatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 LotId: lot.LotId,
                 AuctionHouseId: lot.AuctionHouseId,
@@ -37,7 +36,10 @@ namespace Auktionshuset.Application.Admin.Lots.UpdateLot {
                 Category: lot.Category,
                 Quantity: lot.Quantity,
                 EstimatedValue: lot.EstimatedValue,
-                OccurredAt: DateTime.Now),
+                Description: lot.Description,
+                Tags: lot.Tags,
+                OccurredAt: DateTime.Now,
+                ImageFileName: lot.ImageFileName),
                 cancellationToken);
 
             return new UpdateLotResult(lot.LotId);

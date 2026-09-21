@@ -10,8 +10,8 @@
         public static IServiceCollection AddApiServices(
             this IServiceCollection services)
         {
-            // Add API services here
             services.AddLotHandler();
+            services.AddAuctionHandlers();
 
             return services;
         }

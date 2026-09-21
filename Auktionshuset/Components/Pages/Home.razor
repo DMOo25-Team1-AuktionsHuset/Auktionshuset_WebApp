@@ -1,7 +1,25 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Haderslev Auktionshus</PageTitle>
 
-<h1>Hello, world!</h1>
+<section class="home-page" aria-labelledby="home-heading">
+    <div class="page-heading">
+        <p class="eyebrow">Haderslev Auktionshus</p>
+        <h1 id="home-heading">Administration af auktioner og genstande</h1>
+        <p>Registrér genstande i lageret, og sammensæt dem til auktioner med auktionarius og tidspunkt.</p>
+    </div>
 
-Welcome to your new app.
+    <div class="home-links">
+        <a class="card home-link" href="warehouse">
+            <h2>Lager</h2>
+            <p>Opret, redigér og slet genstande, og vedhæft et billede til hver genstand.</p>
+            <span class="home-link-action">Gå til lageret</span>
+        </a>
+
+        <a class="card home-link" href="admin/auctions">
+            <h2>Auktioner</h2>
+            <p>Opret og redigér auktioner, vælg genstande med antal, og følg alle auktioner.</p>
+            <span class="home-link-action">Gå til auktioner</span>
+        </a>
+    </div>
+</section>

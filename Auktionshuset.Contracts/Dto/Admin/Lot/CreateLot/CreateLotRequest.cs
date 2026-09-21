@@ -33,11 +33,11 @@ namespace Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot {
         /// <returns>A sequence of <see cref="ValidationResult"/> instances describing every failure found; the sequence is empty when the request is valid.</returns>
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
             if(AuctionHouseId == Guid.Empty) {
-                yield return new ValidationResult("Auction house ID is required", [nameof(AuctionHouseId)]);
+                yield return new ValidationResult("Der skal være valgt et auktionshus.", [nameof(AuctionHouseId)]);
             }
 
             if(Tags.Any(string.IsNullOrWhiteSpace)) {
-                yield return new ValidationResult("Tags cannot be empty", [nameof(Tags)]);
+                yield return new ValidationResult("Et tag må ikke være tomt.", [nameof(Tags)]);
             }
         }
     }

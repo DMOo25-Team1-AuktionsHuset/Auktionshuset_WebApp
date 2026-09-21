@@ -1,244 +1,200 @@
 .app-shell {
+    background: var(--page-background);
     display: grid;
-    grid-template-columns: 15rem minmax(0, 1fr);
+    grid-template-columns: 14.5rem minmax(0, 1fr);
     min-height: 100vh;
 }
 
 .site-header {
-    background: #17211b;
-    border-right: 1px solid rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--jet-black);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-inverse);
 }
 
 .header-content {
-    align-items: stretch;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.75rem;
     min-height: 100%;
-    padding: 2rem 1.25rem;
+    padding: 1.5rem 1rem;
 }
 
 .header-content ::deep .brand {
-    color: #fff;
-    font-size: 1.15rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    align-items: center;
+    color: var(--text-inverse);
+    display: flex;
+    gap: 0.7rem;
     text-decoration: none;
 }
 
-.header-content ::deep .brand:hover,
 .header-content ::deep .brand:focus-visible {
-    color: #fff;
-    text-decoration: none;
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius);
 }
 
-nav {
+.brand-logo {
+    background: var(--surface);
+    border-radius: 50%;
+    flex: 0 0 auto;
+    height: 2.6rem;
+    object-fit: contain;
+    padding: 0.15rem;
+    width: 2.6rem;
+}
+
+.brand-text {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    line-height: 1.15;
+    min-width: 0;
 }
 
-nav ::deep a {
-    align-items: center;
-    border-left: 3px solid transparent;
-    color: #dbe4dd;
+.brand-text strong {
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.brand-text span {
+    color: var(--camel);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.primary-nav {
     display: flex;
-    font-weight: 600;
-    min-height: 2.75rem;
-    padding: 0 0.75rem;
-    text-decoration: none;
-}
-
-nav ::deep a:hover,
-nav ::deep a:focus-visible {
-    color: #fff;
-}
-
-nav ::deep a.active {
-    border-left-color: #d8ad5f;
-    color: #fff;
-}
-
-.nav-group {
-    display: block;
-}
-
-.nav-group-toggle {
-    align-items: center;
-    background: transparent;
-    border: 0;
-    border-left: 3px solid transparent;
-    color: #dbe4dd;
-    cursor: pointer;
-    display: flex;
-    font: inherit;
-    font-weight: 600;
-    gap: 0.5rem;
-    justify-content: space-between;
-    list-style: none;
-    min-height: 2.75rem;
-    padding: 0 0.75rem;
-    text-align: left;
-    width: 100%;
-}
-
-.nav-group-toggle::-webkit-details-marker {
-    display: none;
-}
-
-.nav-group-toggle:hover,
-.nav-group-toggle:focus-visible {
-    color: #fff;
-}
-
-.nav-group-toggle:focus-visible {
-    outline: 3px solid rgba(216, 173, 95, 0.5);
-    outline-offset: 2px;
-}
-
-.nav-group[open] > .nav-group-toggle {
-    color: #fff;
-}
-
-.nav-group-toggle.active {
-    border-left-color: #d8ad5f;
-    color: #fff;
-}
-
-.nav-group-chevron {
-    border-bottom: 2px solid currentColor;
-    border-right: 2px solid currentColor;
-    height: 0.45rem;
-    transform: rotate(45deg);
-    transition: transform 120ms ease;
-    width: 0.45rem;
-}
-
-.nav-group[open] .nav-group-chevron {
-    transform: rotate(-135deg);
-}
-
-.nav-sublist {
     flex-direction: column;
-    gap: 0.25rem;
-    list-style: none;
-    margin: 0;
-    padding: 0.25rem 0 0;
+    gap: 0.15rem;
 }
 
-.nav-group[open] > .nav-sublist {
+.primary-nav ::deep a {
+    align-items: center;
+    border-left: 3px solid transparent;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: #D7E0E3;
     display: flex;
+    font-weight: 600;
+    min-height: 2.7rem;
+    padding: 0 0.8rem;
+    text-decoration: none;
+    transition: background-color 120ms ease, color 120ms ease;
 }
 
-.nav-sublist ::deep a {
-    font-weight: 500;
-    padding-left: 1.5rem;
+.primary-nav ::deep a:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-inverse);
+}
+
+.primary-nav ::deep a:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.primary-nav ::deep a.active {
+    background: rgba(182, 144, 109, 0.16);
+    border-left-color: var(--camel);
+    color: var(--text-inverse);
 }
 
 .page-content {
     box-sizing: border-box;
     margin: 0 auto;
-    max-width: 1440px;
+    max-width: 1500px;
     min-width: 0;
-    padding: 3rem 1.5rem 4rem;
+    padding: 2.25rem 1.5rem 4rem;
     width: 100%;
 }
 
 #blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
+    background: var(--danger-bg);
+    border-top: 2px solid var(--danger-border);
     bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
+    color: var(--danger-text);
+    color-scheme: light only;
     display: none;
     left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    padding: 0.75rem 3rem 0.8rem 1.25rem;
     position: fixed;
     width: 100%;
     z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+#blazor-error-ui .reload {
+    color: var(--danger-text);
+    font-weight: 700;
+}
 
-@media (max-width: 700px) {
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.9rem;
+    top: 0.6rem;
+}
+
+@media (max-width: 860px) {
     .app-shell {
         display: block;
     }
 
     .site-header {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         border-right: 0;
+        position: sticky;
+        top: 0;
+        z-index: 40;
     }
 
     .header-content {
         align-items: center;
         flex-direction: row;
+        gap: 1rem;
         justify-content: space-between;
-        min-height: 4rem;
-        padding: 0 1rem;
+        min-height: 3.75rem;
+        padding: 0.5rem 0.9rem;
     }
 
-    nav {
-        align-self: stretch;
+    .brand-logo {
+        height: 2.1rem;
+        width: 2.1rem;
+    }
+
+    .brand-text span {
+        display: none;
+    }
+
+    .primary-nav {
         flex-direction: row;
+        gap: 0.1rem;
     }
 
-    nav ::deep a {
+    .primary-nav ::deep a {
         border-bottom: 3px solid transparent;
         border-left: 0;
-        padding: 0 0.5rem;
+        border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        min-height: 2.7rem;
+        padding: 0 0.65rem;
     }
 
-    nav ::deep a.active {
-        border-bottom-color: #d8ad5f;
-    }
-
-    .nav-group {
-        position: relative;
-    }
-
-    .nav-group-toggle {
-        border-bottom: 3px solid transparent;
-        border-left: 0;
-        padding: 0 0.5rem;
-    }
-
-    .nav-group-toggle.active {
-        border-bottom-color: #d8ad5f;
-        border-left-color: transparent;
-    }
-
-    .nav-sublist {
-        background: #17211b;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 0.45rem;
-        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
-        min-width: 12rem;
-        padding: 0.4rem;
-        position: absolute;
-        right: 0;
-        top: calc(100% + 0.35rem);
-        z-index: 30;
-    }
-
-    .nav-sublist ::deep a {
-        border-bottom: 0;
-        border-left: 3px solid transparent;
-        padding: 0 0.75rem;
-    }
-
-    .nav-sublist ::deep a.active {
-        border-bottom-color: transparent;
-        border-left-color: #d8ad5f;
+    .primary-nav ::deep a.active {
+        background: transparent;
+        border-bottom-color: var(--camel);
     }
 
     .page-content {
-        padding: 2rem 1rem 3rem;
+        padding: 1.5rem 0.9rem 3rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .brand-text strong {
+        font-size: 0.9rem;
+    }
+
+    .primary-nav ::deep a {
+        padding: 0 0.5rem;
     }
 }

@@ -14,6 +14,9 @@ namespace Auktionshuset.Infrastructure.Data {
 
         public DbSet<AuctionHouse> AuctionHouse => Set<AuctionHouse>();
         public DbSet<Lot> Lot => Set<Lot>();
+        public DbSet<Auction> Auction => Set<Auction>();
+        public DbSet<AuctionLot> AuctionLot => Set<AuctionLot>();
+        public DbSet<Employee> Employee => Set<Employee>();
 
         /// <summary>
         /// Applies every <c>IEntityTypeConfiguration</c> declared in the infrastructure assembly.

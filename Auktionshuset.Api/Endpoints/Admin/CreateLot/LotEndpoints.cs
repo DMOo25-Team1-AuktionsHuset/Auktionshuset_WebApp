@@ -1,3 +1,4 @@
+using Auktionshuset.Api.Endpoints.Admin.LotImage;
 using Auktionshuset.Api.Endpoints.Admin.UpdateLot;
 using Auktionshuset.Api.Endpoints.Admin.DeleteLot;
 using Auktionshuset.Api.Endpoints.Admin.GetLots;
@@ -18,9 +19,9 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
             group.MapUpdateLot();
             group.MapGetLots();
             group.MapDeleteLot();
+            group.MapLotImageEndpoints();
 
             return endpoints;
         }
     }
 }
-

@@ -1,3 +1,4 @@
+using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -6,6 +7,11 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
 {
     public static class CreateAuctionEndpoint
     {
+        /// <summary>
+        /// Maps the create-auction endpoint onto the supplied route group.
+        /// </summary>
+        /// <param name="group">The route group that the endpoint is mapped onto.</param>
+        /// <returns>The same route group so that further endpoints can be chained.</returns>
         public static RouteGroupBuilder MapCreateAuction(this RouteGroupBuilder group)
         {
             group.MapPost("/", HandleAsync)
@@ -17,27 +23,35 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
             return group;
         }
 
-        private static async Task<Results<Created<CreateAuctionResponse>, ValidationProblem>> HandleAsync(
+        /// <summary>
+        /// Validates the request through the create-auction handler and returns the new auction's
+        /// location.
+        /// </summary>
+        /// <param name="request">The auction data supplied by the client.</param>
+        /// <param name="handler">The handler that creates the auction.</param>
+        /// <param name="cancellationToken">The token used to cancel the operation.</param>
+        /// <returns>A 201 response carrying the new auction, or a validation problem.</returns>
+        public static async Task<Results<Created<CreateAuctionResponse>, ValidationProblem>> HandleAsync(
             CreateAuctionRequest request,
             CreateAuctionHandler handler,
             CancellationToken cancellationToken)
         {
             var command = new CreateAuctionCommand(
+                Name: request.Name.Trim(),
                 StartsAt: request.StartsAt!.Value,
-                LotIds: request.LotIds ?? []);
+                EndsAt: request.EndsAt!.Value,
+                EmployeeId: request.EmployeeId!.Value,
+                AuctionHouseId: request.AuctionHouseId,
+                Lots: AuctionEndpointMapping.ToSelections(request.Lots));
 
             var result = await handler.HandleAsync(command, cancellationToken);
 
             if (!result.Succeeded)
             {
-                var errors = result.Errors
-                    .Select((message, index) => (Key: $"request[{index}]", Messages: new[] { message }))
-                    .ToDictionary(error => error.Key, error => error.Messages);
-
-                return TypedResults.ValidationProblem(errors);
+                return TypedResults.ValidationProblem(AuctionEndpointMapping.ToValidationErrors(result.Errors));
             }
 
-            var response = new CreateAuctionResponse(result.AuctionId, result.LotCount);
+            var response = new CreateAuctionResponse(result.AuctionId, result.LotCount, result.ItemCount);
 
             return TypedResults.Created($"/api/auctions/{result.AuctionId}", response);
         }

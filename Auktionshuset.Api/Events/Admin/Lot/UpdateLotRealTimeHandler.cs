@@ -2,6 +2,7 @@
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Microsoft.AspNetCore.SignalR;
 
@@ -21,6 +22,7 @@ namespace Auktionshuset.Api.Events.Admin.Lot {
                 Category: message.Category,
                 Quantity: message.Quantity,
                 EstimatedValue: message.EstimatedValue,
+                ImageUrl: LotImagePaths.ToUrl(message.ImageFileName),
                 OccurredAt: message.OccurredAt);
 
             return hubContext.Clients.All.LotUpdatedAsync(notification);

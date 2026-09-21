@@ -23,6 +23,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration {
             entity.Property(l => l.EstimatedValue).IsRequired();
             entity.Property(l => l.Description).IsRequired();
             entity.Property(l => l.Tags).IsRequired();
+            entity.Property(l => l.ImageFileName).HasMaxLength(128);
 
             entity.HasOne(l => l.AuctionHouse)
                 .WithMany(ah => ah.Lots)
