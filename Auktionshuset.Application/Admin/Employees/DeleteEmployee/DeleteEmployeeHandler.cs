@@ -14,6 +14,5 @@ namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
         /// <returns><see langword="true"/> if the employee was found and deleted; otherwise, <see langword="false"/>.</returns>
         public Task<bool> HandleAsync(DeleteEmployeeCommand command, CancellationToken cancellationToken) =>
             employeeRepository.DeleteAsync(command.EmployeeId, cancellationToken);
-    {
     }
 }
