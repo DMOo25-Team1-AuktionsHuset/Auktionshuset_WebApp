@@ -3,6 +3,7 @@ using Auktionshuset.Api.Endpoints.Admin.CreateLot;
 using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Hubs;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
@@ -12,9 +13,6 @@ using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Service;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,62 +24,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        var signingKey = builder.Configuration["Authentication:SigningKey"]
-            ?? throw new InvalidOperationException(
-                "Missing configuration value 'Authentication:SigningKey'.");
-
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Authentication:Issuer"],
-
-            ValidateAudience = true,
-            ValidAudience = builder.Configuration["Authentication:Audience"],
-
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(signingKey)),
-
-            ValidateLifetime = true
-        };
-    });
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("Admin", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireRole("Admin");
-    });
-
-    options.AddPolicy("CanCreateLot", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.create");
-    });
-
-    options.AddPolicy("CanUpdateLot", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.update");
-    });
-
-    options.AddPolicy("CanDeleteLot", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.delete");
-    });
-
-    options.AddPolicy("CanViewLots", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.read");
-    });
-});
+builder.Services.AddSecurityServices(builder.Configuration);
 
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
@@ -112,7 +55,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
@@ -122,9 +65,10 @@ app.UseAuthorization();
 
 app.MapLotEndpoints();
 app.MapHub<LotHub>("/hubs/lot")
-    .AllowAnonymous();
+    .RequireAuthorization(SecurityPolicies.Admin);
 app.MapAuctionEndpoints();
-app.MapHub<AuctionHub>("/hubs/auction");
+app.MapHub<AuctionHub>("/hubs/auction")
+    .RequireAuthorization(SecurityPolicies.Admin);
 
 app.Run();
 

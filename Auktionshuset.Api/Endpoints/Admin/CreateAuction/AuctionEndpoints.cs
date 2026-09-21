@@ -1,3 +1,5 @@
+using Auktionshuset.Api.Security;
+
 namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
 {
     public static class AuctionEndpoints
@@ -6,7 +8,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
         {
             var group = endpoints
                 .MapGroup("/api/auctions")
-                .WithTags("Auctions");
+                .WithTags("Auctions")
+                .RequireAuthorization(SecurityPolicies.CanCreateAuction);
 
             group.MapCreateAuction();
 
