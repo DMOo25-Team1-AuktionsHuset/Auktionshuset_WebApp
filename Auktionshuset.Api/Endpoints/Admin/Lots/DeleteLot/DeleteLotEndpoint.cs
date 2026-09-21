@@ -2,7 +2,7 @@ using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.DeleteLot;
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.DeleteLot;
 
 public static class DeleteLotEndpoint
 {

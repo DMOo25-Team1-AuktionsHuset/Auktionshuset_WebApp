@@ -1,8 +1,8 @@
-using Auktionshuset.Api.Endpoints.Admin.UpdateLot;
-using Auktionshuset.Api.Endpoints.Admin.DeleteLot;
-using Auktionshuset.Api.Endpoints.Admin.GetLots;
+using Auktionshuset.Api.Endpoints.Admin.Lot.DeleteLot;
+using Auktionshuset.Api.Endpoints.Admin.Lot.GetLots;
+using Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot;
 
-namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.CreateLot {
     public static class LotEndpoints {
         /// <summary>
         /// Maps every lot endpoint under the <c>/api/lots</c> route group.

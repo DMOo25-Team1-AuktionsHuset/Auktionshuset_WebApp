@@ -2,7 +2,7 @@ using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Auktionshuset.Api.Endpoints.Admin.GetLots;
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.GetLots;
 
 public static class GetLotsEndpoint
 {

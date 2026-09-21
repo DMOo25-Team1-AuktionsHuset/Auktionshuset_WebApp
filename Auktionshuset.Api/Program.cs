@@ -1,5 +1,4 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
-using Auktionshuset.Api.Endpoints.Admin.CreateLot;
 using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Events.Admin.Lot;
 using Auktionshuset.Api.Hubs;
@@ -16,6 +15,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
+using Auktionshuset.Api.Endpoints.Admin.Lot.CreateLot;
 
 var builder = WebApplication.CreateBuilder(args);
 

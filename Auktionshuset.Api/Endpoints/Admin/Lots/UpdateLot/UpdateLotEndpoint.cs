@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 
-namespace Auktionshuset.Api.Endpoints.Admin.UpdateLot {
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot {
     public static class UpdateLotEndpoint {
         /// <summary>
         /// Maps the update-lot endpoint onto the supplied route group.
