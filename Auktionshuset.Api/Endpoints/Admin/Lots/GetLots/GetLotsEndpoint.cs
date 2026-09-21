@@ -1,9 +1,11 @@
 using Auktionshuset.Application.Admin.Lots;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.GetLots;
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.GetLots;
 
 public static class GetLotsEndpoint
 {
@@ -18,7 +20,7 @@ public static class GetLotsEndpoint
             .WithName("GetLots")
             .WithSummary("Gets all auction lots")
             .Produces<IReadOnlyList<LotListItemResponse>>()
-            .AllowAnonymous();
+            .RequireAuthorization(SecurityPolicies.CanViewLots);
 
         return group;
     }
@@ -27,9 +29,10 @@ public static class GetLotsEndpoint
     /// Returns all lots projected into the list item contract.
     /// </summary>
     /// <param name="handler">The handler that supplies all lots.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>A 200 response containing every lot projected into <see cref="LotListItemResponse"/>.</returns>
-    private static async Task<Ok<IReadOnlyList<LotListItemResponse>>> HandleAsync(
-        GetLotsHandler handler,
+    public static async Task<Ok<IReadOnlyList<LotListItemResponse>>> HandleAsync(
+        [FromServices]GetLotsHandler handler,
         CancellationToken cancellationToken)
     {
         var lots = await handler.HandleAsync(cancellationToken);

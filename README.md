@@ -94,9 +94,7 @@ Kør multilaunch på AuktionsHuset og AuktionsHuset.API
 ```
 
 Brugere i systemet:
-- Brugernavn: DevUser   - Password: DevUser123!
-- Brugernavn: Employee  - Password: Medarbejder123!
-- Brugernavn: Test      - Password: Test123!
+- Brugernavn: Test      - Password: 
 
 ---
 ## Kør med Docker

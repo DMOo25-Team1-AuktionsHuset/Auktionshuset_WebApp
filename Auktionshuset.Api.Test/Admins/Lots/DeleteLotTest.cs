@@ -1,4 +1,4 @@
-using Auktionshuset.Api.Endpoints.Admin.DeleteLot;
+using Auktionshuset.Api.Endpoints.Admin.Lot.DeleteLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
@@ -19,7 +19,7 @@ public class DeleteLotTest
         var other = CreateLot();
         await repository.AddAsync(target, CancellationToken.None);
         await repository.AddAsync(other, CancellationToken.None);
-        var handler = new DeleteLotHandler(repository);
+        var handler = new DeleteLotHandler(repository, new RecordingEventPublisher());
 
         var result = await DeleteLotEndpoint.HandleAsync(target.LotId, handler, CancellationToken.None);
 
@@ -43,7 +43,10 @@ public class DeleteLotTest
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            DeleteLotEndpoint.HandleAsync(lot.LotId, new DeleteLotHandler(repository), cancellation.Token));
+            DeleteLotEndpoint.HandleAsync(
+                lot.LotId,
+                new DeleteLotHandler(repository, new RecordingEventPublisher()),
+                cancellation.Token));
 
         Assert.Equal(lot.LotId, Assert.Single(await repository.GetAllAsync(CancellationToken.None)).LotId);
     }

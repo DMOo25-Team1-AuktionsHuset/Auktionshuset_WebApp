@@ -35,6 +35,10 @@ public class AuctionEndpointsTest
         Assert.Equal(1, created.Value.LotCount);
         Assert.Equal(2, created.Value.ItemCount);
         Assert.Equal($"/api/auctions/{created.Value.AuctionId}", created.Location);
+
+        var published = Assert.Single(context.Publisher.OfType<AuctionCreatedIntegrationEvent>());
+        Assert.Equal(created.Value.AuctionId, published.AuctionId);
+        Assert.Equal(created.Value.ItemCount, published.ItemCount);
     }
 
     /// <summary>
@@ -114,6 +118,51 @@ public class AuctionEndpointsTest
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("kun 2 stk."));
+    }
+
+    /// <summary>
+    /// Verifies that an auction whose end precedes its start is rejected during creation.
+    /// </summary>
+    [Fact]
+    public async Task Create_WithEndBeforeStart_ReturnsValidationProblem()
+    {
+        var (context, employee, _) = await CreateContextAsync();
+        var startsAt = DateTime.Now.AddDays(3);
+
+        var result = await CreateAuctionEndpoint.HandleAsync(
+            CreateValidRequest(
+                employee.EmployeeId,
+                [],
+                startsAt: startsAt,
+                endsAt: startsAt.AddMinutes(-1)),
+            CreateHandler(context),
+            CancellationToken.None);
+
+        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        Assert.Contains(
+            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
+            message => message.Contains("efter starttidspunktet"));
+        Assert.Empty(context.Publisher.Published);
+    }
+
+    /// <summary>
+    /// Verifies that the same lot cannot be selected more than once in an auction.
+    /// </summary>
+    [Fact]
+    public async Task Create_WithDuplicateLot_ReturnsValidationProblem()
+    {
+        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 4);
+
+        var result = await CreateAuctionEndpoint.HandleAsync(
+            CreateValidRequest(employee.EmployeeId, [(lot.LotId, 1), (lot.LotId, 1)]),
+            CreateHandler(context),
+            CancellationToken.None);
+
+        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        Assert.Contains(
+            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
+            message => message.Contains("mere end én gang"));
+        Assert.Empty(context.Publisher.Published);
     }
 
     /// <summary>
@@ -230,6 +279,10 @@ public class AuctionEndpointsTest
         var ok = Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
         Assert.Equal(1, ok.Value!.LotCount);
         Assert.Equal(5, ok.Value.ItemCount);
+
+        var published = Assert.Single(context.Publisher.OfType<AuctionUpdatedIntegrationEvent>());
+        Assert.Equal(auctionId, published.AuctionId);
+        Assert.Equal(5, published.ItemCount);
     }
 
     /// <summary>

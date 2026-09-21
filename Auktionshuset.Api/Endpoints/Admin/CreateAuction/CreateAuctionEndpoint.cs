@@ -2,6 +2,7 @@ using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
 {
@@ -24,16 +25,15 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
         }
 
         /// <summary>
-        /// Validates the request through the create-auction handler and returns the new auction's
-        /// location.
+        /// Creates an auction from the supplied request.
         /// </summary>
-        /// <param name="request">The auction data supplied by the client.</param>
+        /// <param name="request">The auction values and lot selections.</param>
         /// <param name="handler">The handler that creates the auction.</param>
         /// <param name="cancellationToken">The token used to cancel the operation.</param>
-        /// <returns>A 201 response carrying the new auction, or a validation problem.</returns>
+        /// <returns>The created auction response or a validation problem.</returns>
         public static async Task<Results<Created<CreateAuctionResponse>, ValidationProblem>> HandleAsync(
-            CreateAuctionRequest request,
-            CreateAuctionHandler handler,
+            [FromBody]CreateAuctionRequest request,
+            [FromServices]CreateAuctionHandler handler,
             CancellationToken cancellationToken)
         {
             var command = new CreateAuctionCommand(

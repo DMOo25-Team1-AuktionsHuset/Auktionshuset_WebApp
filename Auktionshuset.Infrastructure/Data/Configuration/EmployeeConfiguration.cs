@@ -24,9 +24,9 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.Property(e => e.BirthDate).IsRequired();
             entity.Property(e => e.Address).IsRequired().HasMaxLength(200);
 
-            entity.HasOne(e => e.AuctionHouseId)
-                .WithMany()
-                .HasForeignKey("AuctionHouseId")
+            entity.HasOne(e => e.AuctionHouse)
+                .WithMany(e => e.Employees)
+                .HasForeignKey(e => e.AuctionHouseId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

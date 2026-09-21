@@ -11,6 +11,7 @@
             this IServiceCollection services)
         {
             services.AddLotHandler();
+            services.AddEmployeeHandler();
             services.AddAuctionHandlers();
 
             return services;

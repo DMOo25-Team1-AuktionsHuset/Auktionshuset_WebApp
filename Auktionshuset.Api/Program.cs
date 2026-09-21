@@ -1,18 +1,21 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
-using Auktionshuset.Api.Endpoints.Admin.CreateLot;
-using Auktionshuset.Api.Endpoints.Admin.GetEmployees;
+using Auktionshuset.Api.Events.Admin.Auction;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
+using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Hubs;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Auktionshuset.Infrastructure.Service;
 using Auktionshuset.Infrastructure.Service.Lots;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Auktionshuset.Application.Admin.Auctions.CreateAuction;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,69 +26,23 @@ builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        var signingKey = builder.Configuration["Authentication:SigningKey"]
-            ?? throw new InvalidOperationException(
-                "Missing configuration value 'Authentication:SigningKey'.");
+builder.Services.AddSecurityServices(builder.Configuration);
 
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Authentication:Issuer"],
 
-            ValidateAudience = true,
-            ValidAudience = builder.Configuration["Authentication:Audience"],
 
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(signingKey)),
-
-            ValidateLifetime = true
-        };
-    });
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("Admin", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireRole("Admin");
-    });
-
-    options.AddPolicy("CanCreateLot", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.create");
-    });
-
-    options.AddPolicy("CanUpdateLot", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.update");
-    });
-
-    options.AddPolicy("CanDeleteLot", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.delete");
-    });
-
-    options.AddPolicy("CanViewLots", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("permission", "lots.read");
-    });
-});
-
+// needs its own service class
+builder.Services.AddScoped<CreateAuctionHandler>();
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
+builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
 
 //API Services
 builder.Services.AddApiServices();
+
+builder.Services.AddScoped<
+    IIntegrationEventHandler<AuctionCreatedIntegrationEvent>,
+    CreateAuctionRealTimeHandler>();
 
 //Infrastructure Services
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -95,7 +52,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
@@ -114,11 +71,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapLotEndpoints();
-app.MapHub<LotHub>("/hubs/lot")
-    .AllowAnonymous();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
-app.MapHub<LotHub>("/hubs/lot");
+
 app.MapHub<AuctionHub>("/hubs/auction");
+app.MapHub<EmployeeHub>("/hubs/employee");
+app.MapHub<LotHub>("/hubs/lot")
+    .RequireAuthorization(SecurityPolicies.Admin);
 
 app.Run();

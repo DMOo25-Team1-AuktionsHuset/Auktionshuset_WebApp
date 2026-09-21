@@ -1,9 +1,11 @@
 ﻿using Auktionshuset.Application.Admin.Lots;
+using Auktionshuset.Api.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.UpdateLot {
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot {
     public static class UpdateLotEndpoint {
         /// <summary>
         /// Maps the update-lot endpoint onto the supplied route group.
@@ -17,7 +19,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.UpdateLot {
                 .Produces<UpdateLotResponse>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status404NotFound)
                 .ProducesValidationProblem()
-                .AllowAnonymous();
+                .RequireAuthorization(SecurityPolicies.CanUpdateLot);
 
             return group;
         }
@@ -30,9 +32,9 @@ namespace Auktionshuset.Api.Endpoints.Admin.UpdateLot {
         /// <param name="handler">The handler that updates the lot.</param>
         /// <returns>The updated lot identifier, or 404 when the lot does not exist.</returns>
         public static async Task<Results<Ok<UpdateLotResponse>, NotFound>> HandleAsync(
-            Guid lotId, 
-            UpdateLotRequest request, 
-            UpdateLotHandler handler, 
+            [FromRoute]Guid lotId, 
+            [FromBody]UpdateLotRequest request, 
+            [FromServices]UpdateLotHandler handler, 
             CancellationToken cancellationToken) 
         {
             var command = new UpdateLotCommand(
