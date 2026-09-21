@@ -9,7 +9,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
-using Auktionshuset.Application.Admin.Employee.CreateEmployee;
+using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
