@@ -9,6 +9,8 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
+using Auktionshuset.Application.Admin.Employee.CreateEmployee;
+using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
 
@@ -102,6 +104,20 @@ internal sealed class AdminEventsConsumer : BackgroundService
                     await HandleAsync<AuctionCreatedIntegrationEvent>(
                         json,
                         stoppingToken);
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeCreated:
+                    await HandleAsync<EmployeeCreatedIntegrationEvent>(
+                        json,
+                        stoppingToken);
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeDeleted:
+                    await HandleAsync<EmployeeDeletedIntegrationEvent>(
+                        json,
+                        stoppingToken); 
                     break;
 
                 default:
