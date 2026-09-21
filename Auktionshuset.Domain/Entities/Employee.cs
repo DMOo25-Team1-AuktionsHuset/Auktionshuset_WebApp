@@ -13,6 +13,6 @@ namespace Auktionshuset.Domain.Entities
         public required DateOnly BirthDate { get; set; }
         public required string Address { get; set; }
 
-        public AuctionHouse AuctionHouse { get; set; }
+        public AuctionHouse? AuctionHouse { get; set; }
     }
 }

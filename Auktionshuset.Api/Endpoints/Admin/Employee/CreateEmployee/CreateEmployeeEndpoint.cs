@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Auktionshuset.Application.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
+using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee {
     public static class CreateEmployeeEndpoint {

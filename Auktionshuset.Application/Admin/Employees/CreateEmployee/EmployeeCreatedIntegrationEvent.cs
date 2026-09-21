@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Auktionshuset.Application.Admin.Employee.CreateEmployee {
+namespace Auktionshuset.Application.Admin.Employees.CreateEmployee {
     public sealed record EmployeeCreatedIntegrationEvent(
         Guid EventId,
         Guid EmployeeId,
