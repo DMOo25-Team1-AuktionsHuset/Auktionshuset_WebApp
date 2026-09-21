@@ -29,8 +29,9 @@ public static class GetLotsEndpoint
     /// Returns all lots projected into the list item contract.
     /// </summary>
     /// <param name="handler">The handler that supplies all lots.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>A 200 response containing every lot projected into <see cref="LotListItemResponse"/>.</returns>
-    private static async Task<Ok<IReadOnlyList<LotListItemResponse>>> HandleAsync(
+    public static async Task<Ok<IReadOnlyList<LotListItemResponse>>> HandleAsync(
         [FromServices]GetLotsHandler handler,
         CancellationToken cancellationToken)
     {

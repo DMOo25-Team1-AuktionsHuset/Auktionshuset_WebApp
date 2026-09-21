@@ -97,6 +97,51 @@ public class LotImageEndpointsTest
     }
 
     /// <summary>
+    /// Verifies that an upload larger than the endpoint limit is rejected before storage begins.
+    /// </summary>
+    [Fact]
+    public async Task Upload_WithOversizedFile_ReturnsValidationProblem()
+    {
+        var lot = CreateLot();
+        var repository = await CreateRepositoryAsync(lot);
+        var imageStore = new FakeLotImageStore();
+        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+
+        var result = await LotImageEndpoints.HandleUploadAsync(
+            lot.LotId,
+            CreateMultipartRequest(
+                new byte[checked((int)LotImageValidator.MaxSizeInBytes + 1)],
+                "large.png",
+                "image/png"),
+            handler,
+            CancellationToken.None);
+
+        AssertValidationMessage(result, "5 MB");
+        Assert.Empty(imageStore.Deleted);
+    }
+
+    /// <summary>
+    /// Verifies that image content is validated from its signature rather than its file extension.
+    /// </summary>
+    [Fact]
+    public async Task Upload_WithUnsupportedImageContent_ReturnsValidationProblem()
+    {
+        var lot = CreateLot();
+        var repository = await CreateRepositoryAsync(lot);
+        var imageStore = new FakeLotImageStore();
+        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+
+        var result = await LotImageEndpoints.HandleUploadAsync(
+            lot.LotId,
+            CreateMultipartRequest([0x01, 0x02, 0x03, 0x04], "looks-like.png", "image/png"),
+            handler,
+            CancellationToken.None);
+
+        AssertValidationMessage(result, "JPEG, PNG eller WebP");
+        Assert.Empty(imageStore.Deleted);
+    }
+
+    /// <summary>
     /// Verifies that the removed image is reported as no longer present.
     /// </summary>
     [Fact]
