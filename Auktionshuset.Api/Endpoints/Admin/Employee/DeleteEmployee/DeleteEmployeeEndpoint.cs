@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Application.Admin.Employee.DeleteEmployee;
+﻿using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 

@@ -1,8 +1,5 @@
 ﻿using Auktionshuset.Api.Events.Admin.Employee;
-using Auktionshuset.Application.Admin.Employee.CreateEmployee;
-using Auktionshuset.Application.Admin.Employee.DeleteEmployee;
-using Auktionshuset.Application.Admin.Employee.UpdateEmployee;
-using Auktionshuset.Application.Admin.Employees.DeleteEmployees;
+using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.EventHandling;
 
 namespace Auktionshuset.Api.Services

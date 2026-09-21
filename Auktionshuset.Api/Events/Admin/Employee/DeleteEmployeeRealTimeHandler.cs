@@ -1,7 +1,7 @@
 ﻿using Auktionshuset.Application.EventHandling;
 using Microsoft.AspNetCore.SignalR;
 using Auktionshuset.Api.Hubs;
-using Auktionshuset.Application.Admin.Employee.DeleteEmployee;
+using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
