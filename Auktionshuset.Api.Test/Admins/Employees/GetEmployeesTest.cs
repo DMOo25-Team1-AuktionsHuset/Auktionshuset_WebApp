@@ -1,4 +1,4 @@
-using Auktionshuset.Api.Endpoints.Admin.GetEmployees;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
@@ -24,14 +24,14 @@ public class GetEmployeesTest
 
         Assert.NotEmpty(employees);
         Assert.All(employees, employee => Assert.NotEqual(Guid.Empty, employee.EmployeeId));
-        Assert.All(employees, employee => Assert.False(string.IsNullOrWhiteSpace(employee.FullName)));
+        Assert.All(employees, employee => Assert.False(string.IsNullOrWhiteSpace(employee.FirstName)));
     }
 
     /// <summary>
-    /// Verifies that every employee carries both an identifier and a full display name.
+    /// Verifies that the endpoint preserves the employee's separate name fields.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_BuildsFullNameFromFirstAndLastName()
+    public async Task HandleAsync_PreservesFirstAndLastName()
     {
         var result = await GetEmployeesEndpoint.HandleAsync(
             new GetEmployeesHandler(new InMemoryEmployeeRepository()),
@@ -39,7 +39,9 @@ public class GetEmployeesTest
 
         var employees = Assert.IsType<Ok<IReadOnlyList<EmployeeListItemResponse>>>(result).Value!;
 
-        Assert.Contains(employees, employee => employee.FullName.Contains(' ', StringComparison.Ordinal));
+        Assert.Contains(
+            employees,
+            employee => employee.FirstName == "Mette" && employee.LastName == "Jørgensen");
     }
 
     /// <summary>
@@ -60,10 +62,25 @@ public class GetEmployeesTest
     /// </summary>
     private sealed class EmptyEmployeeRepository : IEmployeeRepository
     {
+        public Task AddAsync(Employee employee, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> DeleteAsync(Guid employeeId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IReadOnlyList<Employee>> GetAllAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Employee>>([]);
 
         public Task<Employee?> GetByIdAsync(Guid employeeId, CancellationToken cancellationToken) =>
             Task.FromResult<Employee?>(null);
+
+        public Task UpdateAsync(Employee employee, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

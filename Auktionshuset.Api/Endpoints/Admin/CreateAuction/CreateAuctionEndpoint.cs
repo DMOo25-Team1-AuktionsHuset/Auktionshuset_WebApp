@@ -24,7 +24,14 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
             return group;
         }
 
-        private static async Task<Results<Created<CreateAuctionResponse>, ValidationProblem>> HandleAsync(
+        /// <summary>
+        /// Creates an auction from the supplied request.
+        /// </summary>
+        /// <param name="request">The auction values and lot selections.</param>
+        /// <param name="handler">The handler that creates the auction.</param>
+        /// <param name="cancellationToken">The token used to cancel the operation.</param>
+        /// <returns>The created auction response or a validation problem.</returns>
+        public static async Task<Results<Created<CreateAuctionResponse>, ValidationProblem>> HandleAsync(
             [FromBody]CreateAuctionRequest request,
             [FromServices]CreateAuctionHandler handler,
             CancellationToken cancellationToken)
