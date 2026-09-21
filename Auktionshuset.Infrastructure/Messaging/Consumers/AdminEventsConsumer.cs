@@ -64,7 +64,7 @@ internal sealed class AdminEventsConsumer : BackgroundService
             RabbitMqTopology.RoutingKeys.AuctionCreated,
             RabbitMqTopology.RoutingKeys.EmployeeCreated,
             RabbitMqTopology.RoutingKeys.EmployeeUpdated,
-            RabbitMqTopology.RoutingKeys.EmployeeDeleted
+            RabbitMqTopology.RoutingKeys.EmployeeDeleted,
             RabbitMqTopology.RoutingKeys.AuctionCreated,
             RabbitMqTopology.RoutingKeys.AuctionUpdated,
             RabbitMqTopology.RoutingKeys.AuctionDeleted

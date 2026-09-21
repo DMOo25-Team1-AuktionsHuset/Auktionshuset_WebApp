@@ -90,7 +90,7 @@
                                 <option value="">Vælg auktionarius</option>
                                 @foreach (var employee in employees)
                                 {
-                                    <option value="@employee.EmployeeId">@employee.FullName</option>
+                                    <option value="@employee.EmployeeId">@employee.FirstName @employee.LastName</option>
                                 }
                             </InputSelect>
                         }

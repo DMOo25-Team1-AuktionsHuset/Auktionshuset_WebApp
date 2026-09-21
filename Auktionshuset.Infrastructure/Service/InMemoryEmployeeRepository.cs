@@ -33,7 +33,7 @@ namespace Auktionshuset.Infrastructure.Service
             Add(new Employee
             {
                 EmployeeId = Guid.Parse("8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60"),
-                AuctionHouseId = auctionHouse,
+                AuctionHouseId = AuctionHouseId,
                 FirstName = "Mette",
                 LastName = "Jørgensen",
                 BirthDate = new DateOnly(1979, 4, 12),
@@ -43,7 +43,7 @@ namespace Auktionshuset.Infrastructure.Service
             Add(new Employee
             {
                 EmployeeId = Guid.Parse("3a7d9e04-5c81-4f2b-8d69-7b0c1a2e4f51"),
-                AuctionHouseId = auctionHouse,
+                AuctionHouseId = AuctionHouseId,
                 FirstName = "Henrik",
                 LastName = "Sørensen",
                 BirthDate = new DateOnly(1985, 11, 3),
@@ -53,12 +53,22 @@ namespace Auktionshuset.Infrastructure.Service
             Add(new Employee
         {
                 EmployeeId = Guid.Parse("c14b6f38-9e2a-4715-a8d0-5f3e2c7b9a02"),
-                AuctionHouseId = auctionHouse,
+                AuctionHouseId = AuctionHouseId,
                 FirstName = "Louise",
                 LastName = "Bertelsen",
                 BirthDate = new DateOnly(1992, 7, 21),
                 Address = "Skolegade 8, 6100 Haderslev"
             });
+        }
+
+        public Task AddAsync(Employee employee, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> DeleteAsync(Guid employeeId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

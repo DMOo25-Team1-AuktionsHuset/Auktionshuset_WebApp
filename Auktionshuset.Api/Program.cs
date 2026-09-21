@@ -1,31 +1,21 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Events.Admin.Auction;
-using Auktionshuset.Api.Events.Admin.Lot;
-using Auktionshuset.Api.Endpoints.Admin.CreateLot;
-using Auktionshuset.Api.Endpoints.Admin.GetEmployees;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
+using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Application.Admin.Lots;
-using Auktionshuset.Application.Admin.Lots.UpdateLot;
-using Auktionshuset.Application.Admin.Lots.CreateLot;
-using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Auktionshuset.Infrastructure.Service;
 using Auktionshuset.Infrastructure.Service.Lots;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Api.Endpoints.Admin.Lots;
-using Auktionshuset.Api.Events.Admin.Employee;
-using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
-using Auktionshuset.Api.Endpoints.Admin.Employee;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,12 +71,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapLotEndpoints();
-app.MapHub<LotHub>("/hubs/lot")
-    .RequireAuthorization(SecurityPolicies.Admin);
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
+
 app.MapHub<AuctionHub>("/hubs/auction");
-app.MapEmployeeEndpoints();
 app.MapHub<EmployeeHub>("/hubs/employee");
+app.MapHub<LotHub>("/hubs/lot")
+    .RequireAuthorization(SecurityPolicies.Admin);
 
 app.Run();

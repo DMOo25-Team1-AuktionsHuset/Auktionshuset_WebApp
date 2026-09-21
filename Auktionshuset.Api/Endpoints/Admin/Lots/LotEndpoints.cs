@@ -1,7 +1,8 @@
-using Auktionshuset.Api.Endpoints.Admin.Lot.CreateLot;
 using Auktionshuset.Api.Endpoints.Admin.Lot.DeleteLot;
 using Auktionshuset.Api.Endpoints.Admin.Lot.GetLots;
 using Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot;
+using Auktionshuset.Api.Endpoints.Admin.LotImage;
+using Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Lots {
     public static class LotEndpoints {

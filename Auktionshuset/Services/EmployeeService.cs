@@ -17,7 +17,7 @@ public sealed class EmployeeService(HttpClient httpClient)
     public async Task<IReadOnlyList<EmployeeListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync("api/employees", cancellationToken);
+        using var response = await httpClient.GetAsync("api/employee", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
