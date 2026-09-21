@@ -18,6 +18,7 @@ using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Events.Admin.Employee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
+using Auktionshuset.Api.Endpoints.Admin.Employee;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -117,6 +118,8 @@ app.MapHub<LotHub>("/hubs/lot")
     .AllowAnonymous();
 app.MapAuctionEndpoints();
 app.MapHub<AuctionHub>("/hubs/auction");
+app.MapEmployeeEndpoints();
+app.MapHub<EmployeeHub>("/hubs/employee");
 
 app.Run();
 

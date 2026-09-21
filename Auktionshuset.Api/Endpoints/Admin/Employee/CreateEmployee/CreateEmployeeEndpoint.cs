@@ -22,12 +22,12 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee {
                 FirstName: request.FirstName.Trim(),
                 LastName: request.LastName.Trim(),
                 BirthDate: request.BirthDate,
-                Address: request.Address,
+                Address: request.Address.Trim(),
                 AuctionHouseId: request.AuctionHouseId);
 
             var result = await handler.HandleAsync(command, cancellationToken);
 
-            return TypedResults.Created($"/api/employees/{result.EmployeeId}", new CreateEmployeeResponse(result.EmployeeId));
+            return TypedResults.Created($"/api/employee/{result.EmployeeId}", new CreateEmployeeResponse(result.EmployeeId));
         }
     }
 }
