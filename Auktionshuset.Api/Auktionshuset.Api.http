@@ -86,3 +86,33 @@ Content-Type: application/json
 }
 
 ###
+
+POST {{Auktionshuset.Api_HostAddress}}/api/employee
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "lastName": "Jensen",
+  "birthDate": "1995-04-12",
+  "address": "Old Street 1",
+  "auctionHouseId": "8cc2c7dc-6244-41e7-805f-a90f9279c540"
+}
+
+###
+
+// to test, update employee id according to the one given when running POST request above
+@employeeId = ce097c79-2c43-4821-a7d2-a22e425559c4
+
+PUT {{Auktionshuset.Api_HostAddress}}/api/employee/{{employeeId}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "lastName": "Jensen",
+  "birthDate": "1995-04-12",
+  "address": "New Street 12",
+  "auctionHouseId": "8cc2c7dc-6244-41e7-805f-a90f9279c540"
+}
+
+###

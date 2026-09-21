@@ -9,6 +9,7 @@ using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
+using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
@@ -47,6 +48,9 @@ namespace Auktionshuset.Infrastructure.Messaging
 
                 var type when type == typeof(EmployeeCreatedIntegrationEvent)
                     => RabbitMqTopology.RoutingKeys.EmployeeCreated,
+
+                var type when type == typeof(EmployeeUpdatedIntegrationEvent)
+                    => RabbitMqTopology.RoutingKeys.EmployeeUpdated,
 
                 _ => throw new InvalidOperationException(
                     $"No routing key defined for event type {typeof(TEvent).Name}.")

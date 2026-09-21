@@ -33,6 +33,9 @@ namespace Auktionshuset.Infrastructure.Messaging
 
             public const string EmployeeCreated =
                 "employee.created.v1";
+
+            public const string EmployeeUpdated =
+                "employee.updated.v1";
         }
     }
 }
