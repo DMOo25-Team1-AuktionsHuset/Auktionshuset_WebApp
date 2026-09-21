@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Auktionshuset.Api.Endpoints.Admin.CreateLot;
+using Auktionshuset.Api.Endpoints.Admin.Lot.CreateLot;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;

@@ -3,8 +3,9 @@ using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.CreateLot {
     public static class CreateLotEndpoint {
         /// <summary>
         /// Maps the create-lot endpoint onto the supplied route group.
@@ -28,8 +29,9 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
         /// <param name="request">The lot data supplied by the client.</param>
         /// <param name="handler">The handler that creates the lot.</param>
         /// <returns>A 201 response carrying the new lot identifier.</returns>
-        public static async Task<Created<CreateLotResponse>> HandleAsync(CreateLotRequest request, 
-            CreateLotHandler handler, 
+        public static async Task<Created<CreateLotResponse>> HandleAsync(
+            [FromBody]CreateLotRequest request, 
+            [FromServices]CreateLotHandler handler, 
             CancellationToken cancellationToken) {
             var command = new CreateLotCommand(
                 Name: request.Name.Trim(),

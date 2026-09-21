@@ -1,9 +1,10 @@
 ﻿using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 ﻿using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
+
 
 namespace Auktionshuset.Contracts.Dto.Admin.Lot {
     public interface ILotClient {

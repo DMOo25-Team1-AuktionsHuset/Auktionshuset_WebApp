@@ -9,6 +9,10 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
+using Auktionshuset.Application.Admin.Employees.CreateEmployee;
+using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
+using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
+using System.Reflection.Metadata;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
 
@@ -55,7 +59,10 @@ internal sealed class AdminEventsConsumer : BackgroundService
             RabbitMqTopology.RoutingKeys.LotCreated,
             RabbitMqTopology.RoutingKeys.LotUpdated,
             RabbitMqTopology.RoutingKeys.LotDeleted,
-            RabbitMqTopology.RoutingKeys.AuctionCreated
+            RabbitMqTopology.RoutingKeys.AuctionCreated,
+            RabbitMqTopology.RoutingKeys.EmployeeCreated,
+            RabbitMqTopology.RoutingKeys.EmployeeUpdated,
+            RabbitMqTopology.RoutingKeys.EmployeeDeleted
         })
         {
             await channel.QueueBindAsync(
@@ -76,29 +83,43 @@ internal sealed class AdminEventsConsumer : BackgroundService
                 case var routingKey
                     when routingKey == RabbitMqTopology.RoutingKeys.LotCreated:
                     await HandleAsync<LotCreatedIntegrationEvent>(
-                        json,
-                        stoppingToken);
+                        json, stoppingToken);
                     break;
 
                 case var routingKey
                     when routingKey == RabbitMqTopology.RoutingKeys.LotUpdated:
                     await HandleAsync<LotUpdatedIntegrationEvent>(
-                        json,
-                        stoppingToken);
+                        json, stoppingToken);
                     break;
 
                 case var routingKey
                     when routingKey == RabbitMqTopology.RoutingKeys.LotDeleted:
                     await HandleAsync<LotDeletedIntegrationEvent>(
-                        json,
-                        stoppingToken);
+                        json, stoppingToken);
                     break;
 
                 case var routingKey
                     when routingKey == RabbitMqTopology.RoutingKeys.AuctionCreated:
                     await HandleAsync<AuctionCreatedIntegrationEvent>(
-                        json,
-                        stoppingToken);
+                        json, stoppingToken);
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeCreated:
+                    await HandleAsync<EmployeeCreatedIntegrationEvent>(
+                        json, stoppingToken);
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeDeleted:
+                    await HandleAsync<EmployeeDeletedIntegrationEvent>(
+                        json, stoppingToken); 
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeUpdated:
+                    await HandleAsync<EmployeeUpdatedIntegrationEvent>(
+                        json, stoppingToken);
                     break;
 
                 default:
