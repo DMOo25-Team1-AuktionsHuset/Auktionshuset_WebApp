@@ -5,6 +5,7 @@ using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
@@ -87,6 +88,7 @@ builder.Services.AddAuthorization(options =>
 
 
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
+builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 
 //API Services
 builder.Services.AddApiServices();
