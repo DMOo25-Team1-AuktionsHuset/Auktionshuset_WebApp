@@ -10,12 +10,12 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee {
         /// </summary>
         /// <param name="endpoints">The endpoint route builder that the route group is added to.</param>
         /// <returns>The same endpoint route builder so that further routes can be mapped.</returns>
-        public static IEndpointRouteBuilder MapLotEndpoints(this IEndpointRouteBuilder endpoints) {
+        public static IEndpointRouteBuilder MapEmployeeEndpoints(this IEndpointRouteBuilder endpoints) {
             var group = endpoints
-                .MapGroup("/api/employees")
+                .MapGroup("/api/employee")
                 .WithTags("Employee");
 
-            //group.MapCreateEmploye();
+            group.MapCreateEmployee();
             //group.MapUpdateEmployes();
             //group.MapGetEmploye();
             //group.MapDeleteEmploye();

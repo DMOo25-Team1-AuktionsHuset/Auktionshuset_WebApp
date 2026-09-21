@@ -1,4 +1,3 @@
-using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Microsoft.AspNetCore.Http.HttpResults;
