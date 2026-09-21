@@ -118,7 +118,6 @@ app.MapHub<LotHub>("/hubs/lot")
     .AllowAnonymous();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
-app.MapHub<LotHub>("/hubs/lot");
 app.MapHub<AuctionHub>("/hubs/auction");
 
 app.Run();
