@@ -1,4 +1,33 @@
-﻿namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee {
-    public class CreateEmployeeEndpoint {
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Auktionshuset.Application.Admin.Employee.CreateEmployee;
+using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
+
+namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee {
+    public static class CreateEmployeeEndpoint {
+        public static RouteGroupBuilder MapCreateEmployee(this RouteGroupBuilder group) {
+            group.MapPost("/", HandleAsync)
+                .WithName("CreateEmployee")
+                .WithSummary("Creates a new employee")
+                .Produces<CreateEmployeeResponse>(StatusCodes.Status201Created)
+                .ProducesValidationProblem()
+                .AllowAnonymous();
+            return group;
+        }
+
+        public static async Task<Created<CreateEmployeeResponse>> HandleAsync(CreateEmployeeRequest request, 
+            CreateEmployeeHandler handler, 
+            CancellationToken cancellationToken) 
+        {
+            var command = new CreateEmployeeCommand(
+                FirstName: request.FirstName.Trim(),
+                LastName: request.LastName.Trim(),
+                BirthDate: request.BirthDate,
+                Address: request.Address,
+                AuctionHouseId: request.AuctionHouseId);
+
+            var result = await handler.HandleAsync(command, cancellationToken);
+
+            return TypedResults.Created($"/api/employees/{result.EmployeeId}", new CreateEmployeeResponse(result.EmployeeId));
+        }
     }
 }

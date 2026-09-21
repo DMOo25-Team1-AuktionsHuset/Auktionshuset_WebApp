@@ -15,7 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee {
                 .MapGroup("/api/employee")
                 .WithTags("Employee");
 
-            //group.MapCreateEmployee();
+            group.MapCreateEmployee();
             //group.MapUpdateEmployee();
             //group.MapGetEmployee();
             group.MapDeleteEmployee();
