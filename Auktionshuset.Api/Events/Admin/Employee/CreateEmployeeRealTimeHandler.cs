@@ -1,5 +1,5 @@
 ﻿using Auktionshuset.Api.Hubs;
-using Auktionshuset.Application.Admin.Employee.CreateEmployee;
+using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;

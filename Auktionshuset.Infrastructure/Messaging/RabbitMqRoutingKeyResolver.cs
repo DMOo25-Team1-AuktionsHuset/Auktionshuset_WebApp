@@ -7,8 +7,8 @@ using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Application.Admin.Employee.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
+using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
