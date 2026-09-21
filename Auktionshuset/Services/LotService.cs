@@ -1,7 +1,9 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 
@@ -9,7 +11,6 @@ namespace Auktionshuset.Services;
 
 public sealed class LotService(HttpClient httpClient)
 {
-
     /// <summary>
     /// Fetches every lot from the API.
     /// </summary>
@@ -24,7 +25,7 @@ public sealed class LotService(HttpClient httpClient)
 
         if (!response.IsSuccessStatusCode)
         {
-            var message = await ReadProblemMessageAsync(response, cancellationToken, "hentes");
+            var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstandene", "hentes");
             throw new LotApiException(message, response.StatusCode);
         }
 
@@ -35,7 +36,7 @@ public sealed class LotService(HttpClient httpClient)
         }
         catch (JsonException exception)
         {
-            throw new LotApiException("Serveren returnerede ikke en gyldig lotliste.", response.StatusCode, exception);
+            throw new LotApiException("Serveren returnerede ikke en gyldig liste over genstande.", response.StatusCode, exception);
         }
     }
 
@@ -43,6 +44,7 @@ public sealed class LotService(HttpClient httpClient)
     /// Creates a lot through the API.
     /// </summary>
     /// <param name="request">The lot values to send to the API.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>The identifier assigned to the new lot.</returns>
     /// <exception cref="LotApiException">
     /// Thrown when the API rejects the request, or when the response body does not contain a valid
@@ -56,18 +58,13 @@ public sealed class LotService(HttpClient httpClient)
 
         if (response.IsSuccessStatusCode)
         {
-            try
-            {
-                return await response.Content.ReadFromJsonAsync<CreateLotResponse>(cancellationToken)
-                    ?? throw new LotApiException("Serveren returnerede ikke et gyldigt lot-id.", response.StatusCode);
-            }
-            catch (JsonException exception)
-            {
-                throw new LotApiException("Serveren returnerede ikke et gyldigt lot-id.", response.StatusCode, exception);
-            }
+            return await ReadAsync<CreateLotResponse>(
+                response,
+                "Serveren returnerede ikke et gyldigt id for genstanden.",
+                cancellationToken);
         }
 
-        var message = await ReadProblemMessageAsync(response, cancellationToken);
+        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "oprettes");
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -76,30 +73,35 @@ public sealed class LotService(HttpClient httpClient)
     /// </summary>
     /// <param name="lotId">The identifier of the lot to update.</param>
     /// <param name="request">The replacement lot values to send to the API.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>The identifier of the updated lot.</returns>
     /// <exception cref="LotApiException">
     /// Thrown when the lot no longer exists, when the API rejects the request, or when the response
     /// body is not valid JSON.
     /// </exception>
-    public async Task<UpdateLotResponse> UpdateAsync(Guid lotId, UpdateLotRequest request, CancellationToken cancellationToken = default) {
+    public async Task<UpdateLotResponse> UpdateAsync(
+        Guid lotId,
+        UpdateLotRequest request,
+        CancellationToken cancellationToken = default)
+    {
         using var response = await httpClient.PutAsJsonAsync($"api/lots/{lotId}", request, cancellationToken);
 
-        if (response.StatusCode == HttpStatusCode.NotFound) {
-            throw new LotApiException("Lot not found, the list could have been changed", response.StatusCode);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new LotApiException(
+                "Genstanden findes ikke længere. Listen kan være ændret af en anden bruger.",
+                response.StatusCode);
         }
 
-        if (response.IsSuccessStatusCode) {
-            try {
-                return await response.Content
-                    .ReadFromJsonAsync<UpdateLotResponse>(cancellationToken)
-                    ?? throw new LotApiException("The server did not return a valid lot id", response.StatusCode);
-            } catch (JsonException ex) {
-                throw new LotApiException("The server did not return a valid lot id", response.StatusCode, ex);
-            }
+        if (response.IsSuccessStatusCode)
+        {
+            return await ReadAsync<UpdateLotResponse>(
+                response,
+                "Serveren returnerede ikke et gyldigt id for genstanden.",
+                cancellationToken);
         }
 
-        var message = await ReadProblemMessageAsync(response, cancellationToken, "updating");
-
+        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "opdateres");
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -107,15 +109,17 @@ public sealed class LotService(HttpClient httpClient)
     /// Deletes the lot with the given identifier through the API.
     /// </summary>
     /// <param name="lotId">The identifier of the lot to delete.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>A task that completes when the API has processed the deletion.</returns>
     /// <exception cref="LotApiException">
     /// Thrown when the lot no longer exists or the API call otherwise fails.
     /// </exception>
     public async Task DeleteAsync(
-        Guid lotId, CancellationToken cancellationToken = default)
+        Guid lotId,
+        CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.DeleteAsync($"api/lots/{lotId}", cancellationToken);
-        
+
         if (response.IsSuccessStatusCode)
         {
             return;
@@ -123,79 +127,100 @@ public sealed class LotService(HttpClient httpClient)
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            throw new LotApiException("Lot blev ikke fundet.", response.StatusCode);
+            throw new LotApiException("Genstanden blev ikke fundet.", response.StatusCode);
         }
 
-        var message = await ReadProblemMessageAsync(response, cancellationToken, "slettes");
+        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "slettes");
         throw new LotApiException(message, response.StatusCode);
     }
 
     /// <summary>
-    /// Extracts a user-facing error message from a failed API response, falling back to a generic
-    /// message derived from the status code.
+    /// Attaches an image to a lot, replacing any image it already had.
     /// </summary>
-    /// <param name="response">The failed response to read the message from.</param>
-    /// <param name="action">The Danish verb inserted into the fallback message, for example "oprettes".</param>
-    /// <returns>The message to display to the user.</returns>
-    private static async Task<string> ReadProblemMessageAsync(
+    /// <param name="lotId">The identifier of the lot the image belongs to.</param>
+    /// <param name="content">The image bytes to upload. The stream is disposed together with the request.</param>
+    /// <param name="fileName">The file name reported to the server, used only for diagnostics.</param>
+    /// <param name="contentType">The content type reported to the server.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
+    /// <returns>The stored image reference.</returns>
+    /// <exception cref="LotApiException">Thrown when the image is rejected or the lot does not exist.</exception>
+    public async Task<LotImageResponse> UploadImageAsync(
+        Guid lotId,
+        Stream content,
+        string fileName,
+        string contentType,
+        CancellationToken cancellationToken = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var fileContent = new StreamContent(content);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
+        form.Add(fileContent, "file", string.IsNullOrWhiteSpace(fileName) ? "billede" : fileName);
+
+        using var response = await httpClient.PostAsync($"api/lots/{lotId}/image", form, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await ReadAsync<LotImageResponse>(
+                response,
+                "Serveren returnerede ikke en gyldig billedreference.",
+                cancellationToken);
+        }
+
+        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "gemmes");
+        throw new LotApiException(message, response.StatusCode);
+    }
+
+    /// <summary>
+    /// Removes the image of a lot.
+    /// </summary>
+    /// <param name="lotId">The identifier of the lot whose image is removed.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
+    /// <returns>A task that completes when the API has removed the image.</returns>
+    /// <exception cref="LotApiException">Thrown when the lot does not exist or the call fails.</exception>
+    public async Task RemoveImageAsync(Guid lotId, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.DeleteAsync($"api/lots/{lotId}/image", cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "fjernes");
+        throw new LotApiException(message, response.StatusCode);
+    }
+
+    /// <summary>
+    /// Turns the relative image URL returned by the API into a URL the browser can load.
+    /// </summary>
+    /// <param name="relativeUrl">The relative URL from the API, or <see langword="null"/>.</param>
+    /// <returns>The absolute URL, or <see langword="null"/> when no image is attached.</returns>
+    public string? ResolveImageUrl(string? relativeUrl)
+    {
+        if (string.IsNullOrWhiteSpace(relativeUrl))
+        {
+            return null;
+        }
+
+        return httpClient.BaseAddress is null
+            ? relativeUrl
+            : new Uri(httpClient.BaseAddress, relativeUrl).ToString();
+    }
+
+    private static async Task<T> ReadAsync<T>(
         HttpResponseMessage response,
-        CancellationToken cancellationToken,
-        string action = "oprettes")
+        string errorMessage,
+        CancellationToken cancellationToken)
     {
         try
         {
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            var root = document.RootElement;
-
-            if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
-            {
-                var validationMessages = errors.EnumerateObject()
-                    .SelectMany(error => error.Value.ValueKind == JsonValueKind.Array
-                        ? error.Value.EnumerateArray()
-                            .Select(value => value.GetString())
-                            .Where(value => !string.IsNullOrWhiteSpace(value))
-                        : [])
-                    .Distinct()
-                    .ToArray();
-
-                if (validationMessages.Length > 0)
-                {
-                    return $"Oplysningerne blev afvist: {string.Join(" ", validationMessages)}";
-                }
-            }
-
-            if (root.TryGetProperty("detail", out var detail)
-                && !string.IsNullOrWhiteSpace(detail.GetString()))
-            {
-                return detail.GetString()!;
-            }
-
-            if (root.TryGetProperty("title", out var title)
-                && !string.IsNullOrWhiteSpace(title.GetString()))
-            {
-                return title.GetString()!;
-            }
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken)
+                ?? throw new LotApiException(errorMessage, response.StatusCode);
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
-            // Fall through to a useful status-based message for non-JSON responses.
+            throw new LotApiException(errorMessage, response.StatusCode, exception);
         }
-
-        return response.StatusCode == HttpStatusCode.BadRequest
-            ? "Oplysningerne blev afvist. Kontrollér felterne og prøv igen."
-            : $"Lot kunne ikke {action} (serverfejl {(int)response.StatusCode}).";
     }
 }
-
-/// <summary>
-/// Represents an error returned by the lot API, exposing the HTTP status code that caused it.
-/// </summary>
-public sealed class LotApiException(
-    string message,
-    HttpStatusCode statusCode,
-    Exception? innerException = null) : Exception(message, innerException)
-{
-    public HttpStatusCode StatusCode { get; } = statusCode;
-}
-

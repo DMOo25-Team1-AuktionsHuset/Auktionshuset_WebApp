@@ -14,5 +14,6 @@ namespace Auktionshuset.Domain.Entities
         public required string Address { get; set; }
 
         public AuctionHouse? AuctionHouse { get; set; }
+
     }
 }

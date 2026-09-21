@@ -13,6 +13,7 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot
             string Category,
             int Quantity,
             decimal EstimatedValue,
-            DateTime OccurredAt) : IIntegrationEvent;
+            DateTime OccurredAt,
+            string? ImageFileName = null) : IIntegrationEvent;
 }
 

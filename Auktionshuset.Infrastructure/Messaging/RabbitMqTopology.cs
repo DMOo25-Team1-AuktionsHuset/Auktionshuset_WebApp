@@ -28,6 +28,12 @@ namespace Auktionshuset.Infrastructure.Messaging
             public const string AuctionCreated = 
                 "auction.created.v1";
 
+            public const string AuctionUpdated =
+                "auction.updated.v1";
+
+            public const string AuctionDeleted =
+                "auction.deleted.v1";
+
             public const string EmployeeDeleted =
                 "employee.deleted.v1";
 

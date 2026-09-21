@@ -1,0 +1,477 @@
+@page "/admin/auctions"
+@page "/admin/auctions/create"
+@rendermode InteractiveServer
+@using System.Globalization
+@using Auktionshuset.Contracts.Dto.Admin.Auction
+@using Auktionshuset.Contracts.Dto.Admin.Employee
+@using Auktionshuset.Contracts.Dto.Admin.Lot
+@using Auktionshuset.Models
+
+<PageTitle>Auktioner | Auktionshuset</PageTitle>
+
+<section class="auction-page" aria-labelledby="auction-heading">
+    <div class="page-heading">
+        <p class="eyebrow">Administration</p>
+        <h1 id="auction-heading">Auktioner</h1>
+        <p>Opret og vedligehold auktioner, vælg genstande og følg alle auktioner i oversigten.</p>
+    </div>
+
+    <div class="admin-top">
+        <section class="card form-card" aria-labelledby="auction-form-heading">
+            <div class="card-heading">
+                <div>
+                    <h2 id="auction-form-heading">@(editingAuctionId.HasValue ? "Rediger auktion" : "Opret auktion")</h2>
+                    <p>
+                        @if (editingAuctionId.HasValue)
+                        {
+                            <text>Auktionen er indlæst fra oversigten. Gem ændringerne, eller annullér.</text>
+                        }
+                        else
+                        {
+                            <text>Udfyld auktionens oplysninger og vælg eventuelt genstande.</text>
+                        }
+                    </p>
+                </div>
+                @if (editingAuctionId.HasValue)
+                {
+                    <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
+                }
+            </div>
+
+            <EditForm @key="editContext" EditContext="editContext" OnValidSubmit="SubmitAsync" novalidate>
+                <DataAnnotationsValidator />
+
+                <div class="form-grid">
+                    <div class="field field-wide">
+                        <label for="auction-name">Auktionsnavn</label>
+                        <InputText id="auction-name" @bind-Value="model.Name" autocomplete="off" />
+                        <ValidationMessage For="@(() => model.Name)" />
+                    </div>
+
+                    <div class="field">
+                        <label for="auction-start-date">Startdato</label>
+                        <InputDate id="auction-start-date" @bind-Value="model.StartDate" />
+                        <ValidationMessage For="@(() => model.StartDate)" />
+                    </div>
+
+                    <div class="field">
+                        <label for="auction-start-time">Starttid</label>
+                        <InputText id="auction-start-time" type="time" @bind-Value="model.StartTime" />
+                        <ValidationMessage For="@(() => model.StartTime)" />
+                    </div>
+
+                    <div class="field">
+                        <label for="auction-end-date">Slutdato</label>
+                        <InputDate id="auction-end-date" @bind-Value="model.EndDate" />
+                        <ValidationMessage For="@(() => model.EndDate)" />
+                    </div>
+
+                    <div class="field">
+                        <label for="auction-end-time">Sluttid</label>
+                        <InputText id="auction-end-time" type="time" @bind-Value="model.EndTime" />
+                        <ValidationMessage For="@(() => model.EndTime)" />
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="auction-employee">Auktionarius</label>
+                        @if (isLoadingEmployees)
+                        {
+                            <p class="inline-state" role="status">Henter medarbejdere...</p>
+                        }
+                        else if (employees.Count == 0)
+                        {
+                            <p class="inline-state list-error" role="alert">
+                                Der er ingen medarbejdere at vælge. Opret en medarbejder, før der kan oprettes auktioner.
+                            </p>
+                        }
+                        else
+                        {
+                            <InputSelect id="auction-employee" @bind-Value="model.EmployeeId">
+                                <option value="">Vælg auktionarius</option>
+                                @foreach (var employee in employees)
+                                {
+                                    <option value="@employee.EmployeeId">@employee.FirstName @employee.LastName</option>
+                                }
+                            </InputSelect>
+                        }
+                        <ValidationMessage For="@(() => model.EmployeeId)" />
+                        @if (!string.IsNullOrWhiteSpace(employeeError))
+                        {
+                            <p class="validation-message" role="alert">@employeeError</p>
+                        }
+                    </div>
+
+                    <div class="field">
+                        <span class="field-label">Status</span>
+                        <p class="status-preview" role="status" aria-live="polite">
+                            <span class="badge @StatusCssClass(DerivedStatus)">@DerivedStatus</span>
+                        </p>
+                        <span class="help-text">Status udledes automatisk af start- og sluttidspunktet.</span>
+                    </div>
+                </div>
+
+                <div class="selection-summary">
+                    @if (selectedLots.Count == 0)
+                    {
+                        <p role="status" aria-live="polite">Ingen genstande valgt. Auktionen oprettes uden genstande.</p>
+                    }
+                    else
+                    {
+                        <div class="selection-summary-head">
+                            <p role="status" aria-live="polite">
+                                <strong>@selectedLots.Count</strong> genstand@(selectedLots.Count == 1 ? string.Empty : "e") valgt
+                                &middot; <strong>@SelectedItemCount</strong> enheder i alt
+                            </p>
+                            <button type="button" class="btn btn-secondary btn-sm" @onclick="ClearSelection">Ryd valg</button>
+                        </div>
+                        <ul class="selection-list">
+                            @foreach (var line in SelectedLotLines)
+                            {
+                                <li>@line.Name &mdash; @line.Quantity stk.</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(statusMessage))
+                {
+                    <div class="status-message @(submissionSucceeded ? "success" : "error")"
+                         role="@(submissionSucceeded ? "status" : "alert")"
+                         aria-live="polite">
+                        @statusMessage
+                    </div>
+                }
+
+                <div class="form-actions">
+                    <button type="submit" class="btn" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>@(editingAuctionId.HasValue ? "Gemmer..." : "Opretter...")</span>
+                        }
+                        else
+                        {
+                            <span>@(editingAuctionId.HasValue ? "Gem ændringer" : "Opret auktion")</span>
+                        }
+                    </button>
+
+                    @if (editingAuctionId.HasValue)
+                    {
+                        <button type="button" class="btn btn-secondary" disabled="@isSubmitting" @onclick="CancelEdit">
+                            Annullér
+                        </button>
+                    }
+                </div>
+            </EditForm>
+        </section>
+
+        <section class="card picker-card" aria-labelledby="lot-picker-heading" aria-busy="@(isLoadingLots ? "true" : "false")">
+            <div class="card-heading">
+                <div>
+                    <h2 id="lot-picker-heading">Vælg genstande</h2>
+                    <p>@FilteredPickerLots.Count genstand@(FilteredPickerLots.Count == 1 ? string.Empty : "e") i lageret</p>
+                </div>
+            </div>
+
+            <div class="field picker-search">
+                <label for="picker-search">Søg i genstande</label>
+                <input id="picker-search"
+                       type="search"
+                       placeholder="Navn eller kategori"
+                       @bind="pickerSearchTerm"
+                       @bind:event="oninput" />
+            </div>
+
+            @if (isLoadingLots)
+            {
+                <p class="list-state" role="status" aria-live="polite">Henter genstande...</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(lotListError))
+            {
+                <p class="list-state list-error" role="alert">@lotListError</p>
+            }
+            else if (lots.Count == 0)
+            {
+                <p class="list-state">Der er endnu ingen genstande i lageret.</p>
+            }
+            else if (FilteredPickerLots.Count == 0)
+            {
+                <p class="list-state">Ingen genstande matcher søgningen &quot;@pickerSearchTerm&quot;.</p>
+            }
+            else
+            {
+                <ul class="lot-options">
+                    @foreach (var lot in FilteredPickerLots)
+                    {
+                        var isPicked = selectedLots.TryGetValue(lot.LotId, out var picked);
+                        var thumbnailUrl = LotService.ResolveImageUrl(lot.ImageUrl);
+
+                        <li class="lot-option @(isPicked ? "is-selected" : null)">
+                            <input id="@($"pick-{lot.LotId}")"
+                                   type="checkbox"
+                                   checked="@isPicked"
+                                   @onchange="args => ToggleLot(lot, args)" />
+
+                            <div class="picker-thumb">
+                                @if (thumbnailUrl is not null)
+                                {
+                                    <img src="@thumbnailUrl" alt="" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span class="picker-thumb-empty" aria-hidden="true">Intet billede</span>
+                                }
+                            </div>
+
+                            <div class="lot-option-body">
+                                <label class="lot-option-name" for="@($"pick-{lot.LotId}")">@lot.Name</label>
+                                <span class="lot-option-meta">
+                                    @lot.Category &middot; @lot.Quantity stk. tilgængelig &middot;
+                                    @lot.EstimatedValue.ToString("N2", DanishCulture) DKK
+                                </span>
+                            </div>
+
+                            @if (isPicked)
+                            {
+                                <div class="field lot-option-quantity">
+                                    <label for="@($"qty-{lot.LotId}")">Antal med</label>
+                                    <input id="@($"qty-{lot.LotId}")"
+                                           type="number"
+                                           min="1"
+                                           max="@lot.Quantity"
+                                           step="1"
+                                           value="@picked!.Quantity"
+                                           @onchange="args => SetQuantity(lot, args)" />
+                                    <span class="help-text">Højst @lot.Quantity</span>
+                                </div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <section class="card dashboard-card" aria-labelledby="dashboard-heading" aria-busy="@(isLoadingAuctions ? "true" : "false")">
+        <div class="card-heading dashboard-heading">
+            <div>
+                <h2 id="dashboard-heading">Alle auktioner</h2>
+                <p>
+                    @if (isLoadingAuctions)
+                    {
+                        <text>Henter auktioner...</text>
+                    }
+                    else
+                    {
+                        <text>@FilteredAuctions.Count auktion@(FilteredAuctions.Count == 1 ? string.Empty : "er") fundet</text>
+                    }
+                </p>
+            </div>
+
+            <div class="dashboard-tools">
+                <div class="field">
+                    <label for="auction-search">Søg</label>
+                    <input id="auction-search"
+                           type="search"
+                           placeholder="Navn eller id"
+                           @bind="auctionSearchTerm"
+                           @bind:event="oninput"
+                           @bind:after="OnAuctionSearchChanged" />
+                </div>
+
+                <div class="field">
+                    <label for="auction-status-filter">Status</label>
+                    <select id="auction-status-filter" @bind="statusFilter" @bind:after="OnAuctionSearchChanged">
+                        <option value="@AllStatusesFilter">Alle</option>
+                        <option value="@StatusUpcoming">Kommende</option>
+                        <option value="@StatusLive">Live</option>
+                        <option value="@StatusEnded">Afsluttede</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="auction-page-size">Pr. side</label>
+                    <select id="auction-page-size" @bind="auctionPageSize" @bind:after="OnAuctionPageSizeChanged">
+                        @foreach (var size in PageSizeOptions)
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        @if (isLoadingAuctions)
+        {
+            <p class="list-state" role="status" aria-live="polite">Henter auktioner...</p>
+        }
+        else if (!string.IsNullOrWhiteSpace(auctionListError))
+        {
+            <p class="list-state list-error" role="alert">@auctionListError</p>
+        }
+        else if (auctions.Count == 0)
+        {
+            <p class="list-state">Der er endnu ingen auktioner. Opret den første med formularen ovenfor.</p>
+        }
+        else if (FilteredAuctions.Count == 0)
+        {
+            <p class="list-state">Ingen auktioner matcher søgningen eller filteret.</p>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="auction-table">
+                    <caption class="visually-hidden">Alle auktioner</caption>
+                    <colgroup>
+                        <col class="col-images" />
+                        <col class="col-id" />
+                        <col class="col-name" />
+                        <col class="col-status" />
+                        <col class="col-employee" />
+                        <col class="col-lots" />
+                        <col class="col-start" />
+                        <col class="col-end" />
+                        <col class="col-actions" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="visually-hidden">Billeder</span></th>
+                            <th scope="col">Id</th>
+                            <th scope="col">Navn</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Auktionarius</th>
+                            <th scope="col">
+                                Genstande
+                                <span class="column-help" title="Antal linjer og det samlede antal enheder">linjer / enheder</span>
+                            </th>
+                            <th scope="col">Start</th>
+                            <th scope="col">Slut</th>
+                            <th scope="col">Handlinger</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var auction in PagedAuctions)
+                        {
+                            var isSelected = editingAuctionId == auction.AuctionId;
+                            var imageUrls = auction.ImageUrls
+                                .Select(LotService.ResolveImageUrl)
+                                .OfType<string>()
+                                .ToArray();
+
+                            <tr class="@(isSelected ? "is-selected" : null)" @onclick="() => BeginEditAsync(auction)">
+                                <td class="cell-images" data-label="Billeder">
+                                    @if (imageUrls.Length == 0)
+                                    {
+                                        <span class="muted">Ingen</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="thumb-strip">
+                                            @foreach (var url in imageUrls.Take(3))
+                                            {
+                                                <img class="dash-thumb" src="@url" alt="" loading="lazy" />
+                                            }
+                                            @if (imageUrls.Length > 3)
+                                            {
+                                                <span class="thumb-more">+@(imageUrls.Length - 3)</span>
+                                            }
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="cell-id" data-label="Id">
+                                    <code title="@auction.AuctionId">@ShortId(auction.AuctionId)</code>
+                                </td>
+
+                                <td class="cell-name" data-label="Navn">
+                                    <button type="button"
+                                            class="row-activator"
+                                            aria-pressed="@isSelected"
+                                            @onclick:stopPropagation="true"
+                                            @onclick="() => BeginEditAsync(auction)">
+                                        @auction.Name
+                                    </button>
+                                    @if (isSelected)
+                                    {
+                                        <span class="badge badge-live selected-badge">Redigeres</span>
+                                    }
+                                </td>
+
+                                <td class="cell-status" data-label="Status">
+                                    <span class="badge @StatusCssClass(auction.Status)">@auction.Status</span>
+                                </td>
+
+                                <td class="cell-employee" data-label="Auktionarius">@auction.EmployeeName</td>
+
+                                <td class="cell-lots" data-label="Genstande">
+                                    @auction.LotCount linje@(auction.LotCount == 1 ? string.Empty : "r")
+                                    &middot; @auction.ItemCount enhed@(auction.ItemCount == 1 ? string.Empty : "er")
+                                </td>
+
+                                <td class="cell-date" data-label="Start">@auction.StartsAt.ToString("g", DanishCulture)</td>
+
+                                <td class="cell-date" data-label="Slut">@auction.EndsAt.ToString("g", DanishCulture)</td>
+
+                                <td class="cell-actions" data-label="Handlinger">
+                                    @if (pendingDeleteId == auction.AuctionId)
+                                    {
+                                        <div class="row-confirm" role="group" aria-label="@($"Bekræft sletning af {auction.Name}")">
+                                            <span class="row-confirm-text">Slet auktionen?</span>
+                                            <button type="button"
+                                                    class="btn btn-danger btn-sm"
+                                                    disabled="@isDeleting"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="ConfirmDeleteAsync">
+                                                Ja, slet
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-secondary btn-sm"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="CancelDelete">
+                                                Fortryd
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="row-actions">
+                                            <button type="button"
+                                                    class="btn btn-secondary btn-sm"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="() => BeginEditAsync(auction)">
+                                                Rediger
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-danger btn-sm"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="() => RequestDelete(auction.AuctionId)">
+                                                Slet
+                                            </button>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <nav class="pagination" aria-label="Sidenavigation for auktioner">
+                <button type="button" class="btn btn-secondary btn-sm" disabled="@(auctionPage <= 1)" @onclick="GoToPreviousAuctionPage">
+                    Forrige
+                </button>
+                <p class="pagination-status" role="status" aria-live="polite">
+                    Side @auctionPage af @TotalAuctionPages
+                </p>
+                <button type="button" class="btn btn-secondary btn-sm" disabled="@(auctionPage >= TotalAuctionPages)" @onclick="GoToNextAuctionPage">
+                    Næste
+                </button>
+            </nav>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(realtimeError))
+        {
+            <p class="list-state list-error" role="alert">@realtimeError</p>
+        }
+    </section>
+</section>

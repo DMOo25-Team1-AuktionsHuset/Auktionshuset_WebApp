@@ -5,8 +5,9 @@ namespace Auktionshuset.Services;
 
 /// <summary>
 /// Keeps a SignalR connection to the auction hub so connected clients are
-/// notified as soon as an auction is created — including auctions created on
-/// another server instance, since the event is fanned out via the message bus.
+/// notified as soon as an auction is created, updated or deleted — including
+/// auctions changed on another server instance, since the events are fanned out
+/// via the message bus.
 /// </summary>
 public sealed class AuctionRealtimeService : IAsyncDisposable
 {
@@ -23,6 +24,10 @@ public sealed class AuctionRealtimeService : IAsyncDisposable
     }
 
     public event Func<CreateAuctionNotification, Task>? AuctionCreated;
+
+    public event Func<UpdateAuctionNotification, Task>? AuctionUpdated;
+
+    public event Func<DeleteAuctionNotification, Task>? AuctionDeleted;
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -43,6 +48,14 @@ public sealed class AuctionRealtimeService : IAsyncDisposable
             hubConnection.On<CreateAuctionNotification>(
                 nameof(IAuctionClient.AuctionCreatedAsync),
                 notification => AuctionCreated?.Invoke(notification) ?? Task.CompletedTask);
+
+            hubConnection.On<UpdateAuctionNotification>(
+                nameof(IAuctionClient.AuctionUpdatedAsync),
+                notification => AuctionUpdated?.Invoke(notification) ?? Task.CompletedTask);
+
+            hubConnection.On<DeleteAuctionNotification>(
+                nameof(IAuctionClient.AuctionDeletedAsync),
+                notification => AuctionDeleted?.Invoke(notification) ?? Task.CompletedTask);
 
             try
             {

@@ -17,7 +17,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee {
 
             group.MapCreateEmployee();
             group.MapUpdateEmployee();
-            //group.MapGetEmployee();
+            group.MapGetEmployees();
             group.MapDeleteEmployee();
 
             return endpoints;

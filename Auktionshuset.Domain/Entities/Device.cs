@@ -8,6 +8,6 @@ namespace Auktionshuset.Domain.Entities {
         public required int DeviceNumber { get; set; }
         public required string Status { get; set; }
 
-        public AuctionHouse AuctionHouseId { get; set; }
+        public AuctionHouse? AuctionHouseId { get; set; }
     }
 }

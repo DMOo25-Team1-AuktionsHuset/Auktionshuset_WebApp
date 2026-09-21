@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Application.EventHandling;
-using Auktionshuset.Application.Admin.Lots;
-using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
+using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
+using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
+using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
@@ -36,6 +37,12 @@ namespace Auktionshuset.Infrastructure.Messaging
 
                 var type when type == typeof(AuctionCreatedIntegrationEvent)
                     => RabbitMqTopology.RoutingKeys.AuctionCreated,
+
+                var type when type == typeof(AuctionUpdatedIntegrationEvent)
+                    => RabbitMqTopology.RoutingKeys.AuctionUpdated,
+
+                var type when type == typeof(AuctionDeletedIntegrationEvent)
+                    => RabbitMqTopology.RoutingKeys.AuctionDeleted,
 
                 var type when type == typeof(LotUpdatedIntegrationEvent)
                     => RabbitMqTopology.RoutingKeys.LotUpdated,

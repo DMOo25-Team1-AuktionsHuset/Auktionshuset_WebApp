@@ -1,4 +1,5 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
@@ -9,25 +10,45 @@ namespace Auktionshuset.Application.Admin.Auctions.CreateAuction;
 public sealed class CreateAuctionHandler(
     IAuctionRepository auctionRepository,
     ILotRepository lotRepository,
+    IEmployeeRepository employeeRepository,
     IIntegrationEventPublisher eventPublisher)
 {
-    private const string PlannedStatus = "Planlagt";
-
     public async Task<CreateAuctionResult> HandleAsync(
         CreateAuctionCommand command,
         CancellationToken cancellationToken)
     {
         var errors = new List<string>();
 
-        if (command.StartsAt <= DateTime.Now)
-        {
-            errors.Add("Starttidspunktet skal ligge i fremtiden.");
-        }
+        var employee = await employeeRepository.GetByIdAsync(command.EmployeeId, cancellationToken);
+        AuctionValidation.CollectErrors(
+            command.Name,
+            command.StartsAt,
+            command.EndsAt,
+            employee,
+            requireFutureStart: true,
+            errors);
 
-        var lotIds = command.LotIds.ToArray();
-        if (lotIds.Distinct().Count() != lotIds.Length)
+        var auction = new AuctionEntity
         {
-            errors.Add("Den samme lot kan ikke tilføjes mere end én gang.");
+            AuctionId = Guid.NewGuid(),
+            Name = command.Name.Trim(),
+            StartsAt = command.StartsAt,
+            EndsAt = command.EndsAt,
+            EmployeeId = employee?.EmployeeId ?? Guid.Empty,
+            Employee = employee,
+            AuctionHouseId = command.AuctionHouseId,
+            AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now)
+        };
+
+        IReadOnlyCollection<AuctionLot> auctionLots = [];
+        if (command.Lots.Count > 0)
+        {
+            var lots = await lotRepository.GetAllAsync(cancellationToken);
+            auctionLots = AuctionValidation.BuildAuctionLots(
+                command.Lots,
+                lots.ToDictionary(lot => lot.LotId),
+                auction,
+                errors);
         }
 
         if (errors.Count > 0)
@@ -35,45 +56,23 @@ public sealed class CreateAuctionHandler(
             return CreateAuctionResult.Invalid(errors);
         }
 
-        var auction = new AuctionEntity
-        {
-            AuctionId = Guid.NewGuid(),
-            StartsAt = command.StartsAt,
-            AuctionStatus = PlannedStatus
-        };
-
-        IReadOnlyCollection<AuctionLot> auctionLots = [];
-        if (lotIds.Length > 0)
-        {
-            var lots = await lotRepository.GetAllAsync(cancellationToken);
-            var lotsById = lots.ToDictionary(lot => lot.LotId);
-
-            if (lotIds.Any(lotId => !lotsById.ContainsKey(lotId)))
-            {
-                return CreateAuctionResult.Invalid(["En eller flere af de valgte lots findes ikke i lageret."]);
-            }
-
-            auctionLots = lotIds
-                .Select(lotId => new AuctionLot
-                {
-                    AuctionLotId = Guid.NewGuid(),
-                    AuctionId = auction,
-                    LotId = lotsById[lotId]
-                })
-                .ToArray();
-        }
+        var itemCount = AuctionValidation.CountItems(auctionLots);
 
         await auctionRepository.AddAsync(auction, auctionLots, cancellationToken);
 
         var integrationEvent = new AuctionCreatedIntegrationEvent(
             EventId: Guid.NewGuid(),
             AuctionId: auction.AuctionId,
+            Name: auction.Name,
+            Status: auction.AuctionStatus,
             StartsAt: auction.StartsAt,
+            EndsAt: auction.EndsAt,
             LotCount: auctionLots.Count,
+            ItemCount: itemCount,
             OccurredAt: DateTime.Now);
 
         await eventPublisher.PublishAsync(integrationEvent, cancellationToken);
 
-        return CreateAuctionResult.Created(auction.AuctionId, auctionLots.Count);
+        return CreateAuctionResult.Created(auction.AuctionId, auctionLots.Count, itemCount);
     }
 }

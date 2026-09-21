@@ -2,6 +2,7 @@
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
+using Auktionshuset.Application.Admin.Lots.Images;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
 
@@ -22,6 +23,8 @@ namespace Auktionshuset.Api.Services
             services.AddScoped<UpdateLotHandler>();
             services.AddScoped<GetLotsHandler>();
             services.AddScoped<DeleteLotHandler>();
+            services.AddScoped<UploadLotImageHandler>();
+            services.AddScoped<RemoveLotImageHandler>();
 
             services.AddScoped<
                 IIntegrationEventHandler<LotCreatedIntegrationEvent>,

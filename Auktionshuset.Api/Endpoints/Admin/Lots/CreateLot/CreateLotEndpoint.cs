@@ -5,7 +5,7 @@ using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Lot.CreateLot {
+namespace Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot {
     public static class CreateLotEndpoint {
         /// <summary>
         /// Maps the create-lot endpoint onto the supplied route group.

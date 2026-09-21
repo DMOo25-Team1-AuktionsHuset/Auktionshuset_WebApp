@@ -13,6 +13,7 @@ namespace Auktionshuset.Domain.Entities
         public required string PhoneNumber { get; set; }
         public required string Email { get; set; }
 
-        public ICollection<Lot> Lots { get; set; }
+        public ICollection<Lot> Lots { get; set; } = new List<Lot>();
+        public ICollection<Employee> Employees { get; set; } = new List<Employee>();
     }
 }

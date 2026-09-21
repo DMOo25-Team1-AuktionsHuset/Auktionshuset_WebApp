@@ -3,21 +3,17 @@
 <div class="app-shell">
     <header class="site-header">
         <div class="header-content">
-            <NavLink href="/" class="brand" Match="NavLinkMatch.All">Auktionshuset</NavLink>
-            <nav aria-label="Primær navigation">
-                <NavLink href="warehouse" Match="NavLinkMatch.Prefix">Lager</NavLink>
+            <NavLink href="/" class="brand" Match="NavLinkMatch.All">
+                <img class="brand-logo" src="images/logo.png" alt="" width="44" height="44" />
+                <span class="brand-text">
+                    <strong>Haderslev</strong>
+                    <span>Auktionshus</span>
+                </span>
+            </NavLink>
 
-                <details class="nav-group" open="@(IsAdministrationSection ? "open" : null)">
-                    <summary class="nav-group-toggle @(IsAdministrationSection ? "active" : null)">
-                        <span>Administration</span>
-                        <span class="nav-group-chevron" aria-hidden="true"></span>
-                    </summary>
-                    <ul class="nav-sublist">
-                        <li>
-                            <NavLink href="admin/auctions/create" Match="NavLinkMatch.Prefix">Opret Auktion</NavLink>
-                        </li>
-                    </ul>
-                </details>
+            <nav class="primary-nav" aria-label="Primær navigation">
+                <NavLink href="warehouse" Match="NavLinkMatch.Prefix">Lager</NavLink>
+                <NavLink href="admin/auctions" Match="NavLinkMatch.Prefix">Auktioner</NavLink>
             </nav>
         </div>
     </header>
@@ -28,7 +24,7 @@
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    Der er opstået en fejl.
+    <a href="." class="reload">Genindlæs</a>
     <span class="dismiss">🗙</span>
 </div>

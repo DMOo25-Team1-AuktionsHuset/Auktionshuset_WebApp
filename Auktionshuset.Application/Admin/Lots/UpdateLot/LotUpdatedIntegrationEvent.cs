@@ -14,5 +14,6 @@ namespace Auktionshuset.Application.Admin.Lots.UpdateLot {
         decimal EstimatedValue,
         string Description,
         IReadOnlyCollection<string> Tags,
-        DateTime OccurredAt) : IIntegrationEvent;
+        DateTime OccurredAt,
+        string? ImageFileName = null) : IIntegrationEvent;
 }

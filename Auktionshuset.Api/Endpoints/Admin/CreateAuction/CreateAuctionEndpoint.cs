@@ -1,3 +1,4 @@
+using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -7,6 +8,11 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
 {
     public static class CreateAuctionEndpoint
     {
+        /// <summary>
+        /// Maps the create-auction endpoint onto the supplied route group.
+        /// </summary>
+        /// <param name="group">The route group that the endpoint is mapped onto.</param>
+        /// <returns>The same route group so that further endpoints can be chained.</returns>
         public static RouteGroupBuilder MapCreateAuction(this RouteGroupBuilder group)
         {
             group.MapPost("/", HandleAsync)
@@ -24,21 +30,21 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
             CancellationToken cancellationToken)
         {
             var command = new CreateAuctionCommand(
+                Name: request.Name.Trim(),
                 StartsAt: request.StartsAt!.Value,
-                LotIds: request.LotIds ?? []);
+                EndsAt: request.EndsAt!.Value,
+                EmployeeId: request.EmployeeId!.Value,
+                AuctionHouseId: request.AuctionHouseId,
+                Lots: AuctionEndpointMapping.ToSelections(request.Lots));
 
             var result = await handler.HandleAsync(command, cancellationToken);
 
             if (!result.Succeeded)
             {
-                var errors = result.Errors
-                    .Select((message, index) => (Key: $"request[{index}]", Messages: new[] { message }))
-                    .ToDictionary(error => error.Key, error => error.Messages);
-
-                return TypedResults.ValidationProblem(errors);
+                return TypedResults.ValidationProblem(AuctionEndpointMapping.ToValidationErrors(result.Errors));
             }
 
-            var response = new CreateAuctionResponse(result.AuctionId, result.LotCount);
+            var response = new CreateAuctionResponse(result.AuctionId, result.LotCount, result.ItemCount);
 
             return TypedResults.Created($"/api/auctions/{result.AuctionId}", response);
         }

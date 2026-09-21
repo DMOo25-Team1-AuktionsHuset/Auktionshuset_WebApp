@@ -8,4 +8,5 @@ public sealed record LotListItemResponse(
     decimal EstimatedValue,
     string Description,
     IReadOnlyList<string> Tags,
-    Guid AuctionHouseId);
+    Guid AuctionHouseId,
+    string? ImageUrl);

@@ -19,7 +19,9 @@ namespace Auktionshuset.Api.Events.Admin.Lot
         public Task HandleAsync(LotDeletedIntegrationEvent message, CancellationToken cancellationToken)
         {
             var notification = new DeleteLotNotification(
-                LotId: message.LotId);
+                EventId: message.EventId,
+                LotId: message.LotId,
+                OccurredAt: message.OccurredAt);
 
             return hubContext.Clients.All.LotDeletedAsync(notification);
         }

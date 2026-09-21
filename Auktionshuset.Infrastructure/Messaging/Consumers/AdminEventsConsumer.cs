@@ -1,4 +1,6 @@
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
+using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
+using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
@@ -62,7 +64,10 @@ internal sealed class AdminEventsConsumer : BackgroundService
             RabbitMqTopology.RoutingKeys.AuctionCreated,
             RabbitMqTopology.RoutingKeys.EmployeeCreated,
             RabbitMqTopology.RoutingKeys.EmployeeUpdated,
-            RabbitMqTopology.RoutingKeys.EmployeeDeleted
+            RabbitMqTopology.RoutingKeys.EmployeeDeleted,
+            RabbitMqTopology.RoutingKeys.AuctionCreated,
+            RabbitMqTopology.RoutingKeys.AuctionUpdated,
+            RabbitMqTopology.RoutingKeys.AuctionDeleted
         })
         {
             await channel.QueueBindAsync(
@@ -120,6 +125,20 @@ internal sealed class AdminEventsConsumer : BackgroundService
                     when routingKey == RabbitMqTopology.RoutingKeys.EmployeeUpdated:
                     await HandleAsync<EmployeeUpdatedIntegrationEvent>(
                         json, stoppingToken);
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionUpdated:
+                    await HandleAsync<AuctionUpdatedIntegrationEvent>(
+                        json,
+                        stoppingToken);
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionDeleted:
+                    await HandleAsync<AuctionDeletedIntegrationEvent>(
+                        json,
+                        stoppingToken);
                     break;
 
                 default:
