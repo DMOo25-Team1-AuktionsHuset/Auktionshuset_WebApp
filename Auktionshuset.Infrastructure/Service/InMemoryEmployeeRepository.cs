@@ -51,7 +51,7 @@ namespace Auktionshuset.Infrastructure.Service
             });
 
             Add(new Employee
-            {
+        {
                 EmployeeId = Guid.Parse("c14b6f38-9e2a-4715-a8d0-5f3e2c7b9a02"),
                 AuctionHouseId = auctionHouse,
                 FirstName = "Louise",
@@ -90,6 +90,21 @@ namespace Auktionshuset.Infrastructure.Service
             return Task.FromResult(employee);
         }
 
+        public Task UpdateAsync(
+            Employee employee,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_employees.ContainsKey(employee.EmployeeId))
+            {
+                throw new KeyNotFoundException(
+                    $"Employee {employee.EmployeeId} was not found");
+            }
+
+            _employees[employee.EmployeeId] = employee;
+            return Task.CompletedTask;
+        }
         private void Add(Employee employee) => _employees[employee.EmployeeId] = employee;
     }
 }

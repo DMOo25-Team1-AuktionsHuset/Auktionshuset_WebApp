@@ -1,17 +1,17 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
 using Auktionshuset.Domain.Entities;
 
-namespace Auktionshuset.Application.Abstraction.Admin.Employees;
-
-public interface IEmployeeRepository
+namespace Auktionshuset.Application.Abstraction.Admin.Employees
 {
-    /// <summary>
-    /// Gets every employee, ordered by name.
-    /// </summary>
-    Task<IReadOnlyList<Employee>> GetAllAsync(CancellationToken cancellationToken);
+    public interface IEmployeeRepository
+    {
+        Task AddAsync(Employee employee, CancellationToken cancellationToken);
+        Task<bool> DeleteAsync(Guid employeeId, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Gets the employee with the specified identifier.
-    /// </summary>
-    /// <returns>The matching employee, or <see langword="null"/> when no employee has that identifier.</returns>
-    Task<Employee?> GetByIdAsync(Guid employeeId, CancellationToken cancellationToken);
+        Task<IReadOnlyList<Employee>> GetAllAsync(CancellationToken cancellationToken);
+        Task<Employee?> GetByIdAsync(Guid employeeId, CancellationToken cancellationToken);
+        Task UpdateAsync(Employee employee, CancellationToken cancellationToken);
+    }
 }

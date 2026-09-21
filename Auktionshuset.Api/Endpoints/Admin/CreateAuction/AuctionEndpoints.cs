@@ -1,3 +1,5 @@
+using Auktionshuset.Api.Security;
+
 using Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
 using Auktionshuset.Api.Endpoints.Admin.GetAuctions;
 using Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
@@ -15,7 +17,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
         {
             var group = endpoints
                 .MapGroup("/api/auctions")
-                .WithTags("Auctions");
+                .WithTags("Auctions")
+                .RequireAuthorization(SecurityPolicies.CanCreateAuction);
 
             group.MapGetAuctions();
             group.MapCreateAuction();

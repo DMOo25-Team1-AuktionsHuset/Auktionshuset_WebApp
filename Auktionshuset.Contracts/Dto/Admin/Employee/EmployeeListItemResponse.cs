@@ -1,6 +1,13 @@
-namespace Auktionshuset.Contracts.Dto.Admin.Employee;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-/// <summary>
-/// A selectable employee, used as auctionarius on an auction.
-/// </summary>
-public sealed record EmployeeListItemResponse(Guid EmployeeId, string FullName);
+namespace Auktionshuset.Contracts.Dto.Admin.Employee
+{
+    public sealed record EmployeeListItemResponse(
+        Guid EmployeeId, 
+        string FirstName, 
+        string LastName,
+        DateOnly BirthDate,
+        string Address);
+}

@@ -1,4 +1,4 @@
-using Auktionshuset.Api.Endpoints.Admin.DeleteLot;
+using Auktionshuset.Api.Endpoints.Admin.Lot.DeleteLot;
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
