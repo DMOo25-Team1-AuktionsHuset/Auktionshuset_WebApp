@@ -17,7 +17,7 @@ public static class GetLotsEndpoint
             .WithName("GetLots")
             .WithSummary("Gets all auction lots")
             .Produces<IReadOnlyList<LotListItemResponse>>()
-            .RequireAuthorization("CanViewLots");
+            .AllowAnonymous();
 
         return group;
     }
