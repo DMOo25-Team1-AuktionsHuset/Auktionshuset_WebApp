@@ -1,4 +1,5 @@
 using Auktionshuset.Application.Admin.Lots;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ public static class GetLotsEndpoint
             .WithName("GetLots")
             .WithSummary("Gets all auction lots")
             .Produces<IReadOnlyList<LotListItemResponse>>()
-            .AllowAnonymous();
+            .RequireAuthorization(SecurityPolicies.CanViewLots);
 
         return group;
     }

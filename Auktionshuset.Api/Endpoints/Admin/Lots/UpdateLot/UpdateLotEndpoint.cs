@@ -1,4 +1,5 @@
 ﻿using Auktionshuset.Application.Admin.Lots;
+using Auktionshuset.Api.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
@@ -18,7 +19,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot {
                 .Produces<UpdateLotResponse>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status404NotFound)
                 .ProducesValidationProblem()
-                .AllowAnonymous();
+                .RequireAuthorization(SecurityPolicies.CanUpdateLot);
 
             return group;
         }

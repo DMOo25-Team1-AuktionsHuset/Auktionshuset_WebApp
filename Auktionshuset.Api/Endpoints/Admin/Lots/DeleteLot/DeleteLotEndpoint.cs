@@ -1,4 +1,5 @@
 using Auktionshuset.Application.Admin.Lots.DeleteLot;
+using Auktionshuset.Api.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public static class DeleteLotEndpoint
             .WithSummary("Deletes an auction lot")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound)
-            .RequireAuthorization("CanDeleteLot");
+            .RequireAuthorization(SecurityPolicies.CanDeleteLot);
         return group;
     }
 
