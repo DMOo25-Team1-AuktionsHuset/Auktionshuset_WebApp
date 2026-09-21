@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Api.Endpoints.Admin.Lot.CreateLot;
+using Auktionshuset.Api.Endpoints.Admin.Lots;
 
 var builder = WebApplication.CreateBuilder(args);
 
