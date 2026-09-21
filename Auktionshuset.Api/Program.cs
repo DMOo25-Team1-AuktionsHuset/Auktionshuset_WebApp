@@ -122,7 +122,7 @@ app.UseAuthorization();
 
 app.MapLotEndpoints();
 app.MapHub<LotHub>("/hubs/lot")
-    .RequireAuthorization("Admin");
+    .AllowAnonymous();
 app.MapAuctionEndpoints();
 app.MapHub<AuctionHub>("/hubs/auction");
 
