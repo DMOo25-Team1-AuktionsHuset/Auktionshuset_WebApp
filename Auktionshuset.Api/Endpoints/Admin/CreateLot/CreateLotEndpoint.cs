@@ -1,4 +1,5 @@
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -16,7 +17,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
                 .WithSummary("Creates a new auction lot")
                 .Produces<CreateLotResponse>(StatusCodes.Status201Created)
                 .ProducesValidationProblem()
-                .RequireAuthorization("CanCreateLot");
+                .RequireAuthorization(SecurityPolicies.CanCreateLot);
             return group;
         }
 
