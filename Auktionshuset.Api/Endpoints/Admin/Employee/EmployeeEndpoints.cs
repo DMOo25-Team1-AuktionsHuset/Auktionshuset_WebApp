@@ -12,8 +12,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee {
         /// <returns>The same endpoint route builder so that further routes can be mapped.</returns>
         public static IEndpointRouteBuilder MapLotEndpoints(this IEndpointRouteBuilder endpoints) {
             var group = endpoints
-                .MapGroup("/api/lots")
-                .WithTags("Lots");
+                .MapGroup("/api/employees")
+                .WithTags("Employee");
 
             //group.MapCreateEmploye();
             //group.MapUpdateEmployes();
