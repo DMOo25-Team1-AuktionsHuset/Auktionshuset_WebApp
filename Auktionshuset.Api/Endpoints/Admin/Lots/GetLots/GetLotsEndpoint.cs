@@ -1,6 +1,7 @@
 using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Lot.GetLots;
 
@@ -28,7 +29,7 @@ public static class GetLotsEndpoint
     /// <param name="handler">The handler that supplies all lots.</param>
     /// <returns>A 200 response containing every lot projected into <see cref="LotListItemResponse"/>.</returns>
     private static async Task<Ok<IReadOnlyList<LotListItemResponse>>> HandleAsync(
-        GetLotsHandler handler,
+        [FromServices]GetLotsHandler handler,
         CancellationToken cancellationToken)
     {
         var lots = await handler.HandleAsync(cancellationToken);

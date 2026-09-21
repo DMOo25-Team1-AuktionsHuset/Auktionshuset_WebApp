@@ -88,6 +88,9 @@ builder.Services.AddAuthorization(options =>
 });
 
 
+// needs its own service class
+builder.Services.AddScoped<CreateAuctionHandler>();
+
 builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 

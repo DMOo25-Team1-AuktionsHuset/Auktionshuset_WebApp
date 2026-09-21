@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee {
     public static class CreateEmployeeEndpoint {
@@ -14,8 +15,9 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee {
             return group;
         }
 
-        public static async Task<Created<CreateEmployeeResponse>> HandleAsync(CreateEmployeeRequest request, 
-            CreateEmployeeHandler handler, 
+        public static async Task<Created<CreateEmployeeResponse>> HandleAsync(
+            [FromBody]CreateEmployeeRequest request, 
+            [FromServices]CreateEmployeeHandler handler, 
             CancellationToken cancellationToken) 
         {
             var command = new CreateEmployeeCommand(

@@ -1,6 +1,7 @@
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
 {
@@ -18,8 +19,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
         }
 
         private static async Task<Results<Created<CreateAuctionResponse>, ValidationProblem>> HandleAsync(
-            CreateAuctionRequest request,
-            CreateAuctionHandler handler,
+            [FromBody]CreateAuctionRequest request,
+            [FromServices]CreateAuctionHandler handler,
             CancellationToken cancellationToken)
         {
             var command = new CreateAuctionCommand(
