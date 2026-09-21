@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee {
-    public class DeleteEmployeeEndpoint 
+    public static class DeleteEmployeeEndpoint 
     {
         public static RouteGroupBuilder MapDeleteEmployee(this RouteGroupBuilder group)
         {
