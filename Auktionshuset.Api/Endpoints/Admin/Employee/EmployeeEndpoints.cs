@@ -12,7 +12,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee {
         /// <returns>The same endpoint route builder so that further routes can be mapped.</returns>
         public static IEndpointRouteBuilder MapEmployeeEndpoints(this IEndpointRouteBuilder endpoints) {
             var group = endpoints
-                .MapGroup("/api/employees")
+                .MapGroup("/api/employee")
                 .WithTags("Employee");
 
             //group.MapCreateEmployee();

@@ -12,6 +12,7 @@
         {
             // Add API services here
             services.AddLotHandler();
+            services.AddEmployeeHandler();
 
             return services;
         }

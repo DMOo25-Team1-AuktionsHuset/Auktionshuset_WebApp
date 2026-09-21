@@ -16,6 +16,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Events.Admin.Employee;
+using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,16 +91,6 @@ builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 //API Services
 builder.Services.AddApiServices();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
-builder.Services.AddScoped<CreateAuctionHandler>();
-
-
-//builder.Services.AddScoped<
-//    IIntegrationEventPublisher, 
-//    InProcessIntegrationEventPublisher>();
-
-builder.Services.AddScoped<
-    IIntegrationEventHandler<LotCreatedIntegrationEvent>,
-    CreateLotRealTimeHandler>();
 
 builder.Services.AddScoped<
     IIntegrationEventHandler<AuctionCreatedIntegrationEvent>,
