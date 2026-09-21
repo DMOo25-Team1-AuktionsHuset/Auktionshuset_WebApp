@@ -1,4 +1,5 @@
 @Auktionshuset.Api_HostAddress = https://localhost:7061
+@EmployeeId = 5d68aca9-78c5-4802-b1e6-bf820d10be80
 
 GET {{Auktionshuset.Api_HostAddress}}/weatherforecast/
 Accept: application/json
@@ -60,30 +61,22 @@ Content-Type: application/json
 
 ###
 
-POST {{Auktionshuset.Api_HostAddress}}/api/lots
+POST {{Auktionshuset.Api_HostAddress}}/api/employee
 Content-Type: application/json
 
 {
-  //CreateLotRequest
+  "firstName": "Anna",
+  "lastName": "Jensen",
+  "birthDate": "1990-01-15",
+  "address": "Auktionsvej 1, 8000 Aarhus C",
+  "auctionHouseId": "8cc2c7dc-6244-41e7-805f-a90f9279c540"
 }
 
 ###
 
-POST {{Auktionshuset.Api_HostAddress}}/api/lots
-Content-Type: application/json
-
-{
-  //CreateLotRequest
-}
-
-###
-
-POST {{Auktionshuset.Api_HostAddress}}/api/lots
-Content-Type: application/json
-
-{
-  //CreateLotRequest
-}
+@EmployeeId = 5d68aca9-78c5-4802-b1e6-bf820d10be80
+DELETE {{Auktionshuset.Api_HostAddress}}/api/employee/{{EmployeeId}}
+Accept: application/json
 
 ###
 
