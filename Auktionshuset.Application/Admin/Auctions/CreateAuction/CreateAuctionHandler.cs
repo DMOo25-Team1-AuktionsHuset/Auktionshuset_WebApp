@@ -19,11 +19,15 @@ public sealed class CreateAuctionHandler(
     {
         var errors = new List<string>();
 
-        var employee = await employeeRepository.GetByIdAsync(command.EmployeeId, cancellationToken);
+        var employee = command.EmployeeId is { } employeeId
+            ? await employeeRepository.GetByIdAsync(employeeId, cancellationToken)
+            : null;
+
         AuctionValidation.CollectErrors(
             command.Name,
             command.StartsAt,
             command.EndsAt,
+            command.EmployeeId,
             employee,
             requireFutureStart: true,
             errors);
@@ -34,7 +38,7 @@ public sealed class CreateAuctionHandler(
             Name = command.Name.Trim(),
             StartsAt = command.StartsAt,
             EndsAt = command.EndsAt,
-            EmployeeId = employee?.EmployeeId ?? Guid.Empty,
+            EmployeeId = employee?.EmployeeId,
             Employee = employee,
             AuctionHouseId = command.AuctionHouseId,
             AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now)

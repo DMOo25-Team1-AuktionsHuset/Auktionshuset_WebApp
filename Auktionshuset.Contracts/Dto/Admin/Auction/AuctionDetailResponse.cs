@@ -14,7 +14,7 @@ public sealed record AuctionDetailResponse(
     string Status,
     DateTime StartsAt,
     DateTime EndsAt,
-    Guid EmployeeId,
+    Guid? EmployeeId,
     string EmployeeName,
     int LotCount,
     int ItemCount,

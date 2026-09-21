@@ -112,7 +112,7 @@ internal static class TestData
     }
 
     public static CreateAuctionCommand CreateCommand(
-        Guid employeeId,
+        Guid? employeeId,
         DateTime startsAt,
         DateTime endsAt,
         params AuctionLotSelection[] lots) => new(

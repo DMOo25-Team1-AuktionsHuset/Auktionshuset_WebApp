@@ -4,8 +4,8 @@ using System.Globalization;
 namespace Auktionshuset.Models;
 
 /// <summary>
-/// The values captured by the auction form. Dates and times are kept apart because the browser
-/// inputs for them are separate fields.
+/// The values captured by the auction form. An auction runs on a single calendar date, so the date is
+/// kept apart from the start and end times and both moments are combined from the same date.
 /// </summary>
 public sealed class CreateAuctionFormModel : IValidatableObject
 {
@@ -25,14 +25,14 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     [RegularExpression(TimePattern, ErrorMessage = "Starttidspunktet skal angives som tt:mm.")]
     public string StartTime { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Vælg en slutdato.")]
-    public DateTime? EndDate { get; set; }
-
     [Required(ErrorMessage = "Angiv et sluttidspunkt.")]
     [RegularExpression(TimePattern, ErrorMessage = "Sluttidspunktet skal angives som tt:mm.")]
     public string EndTime { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Vælg en auktionarius.")]
+    /// <summary>
+    /// Gets or sets the identifier of the auctionarius. The value is optional: an auction can be
+    /// created and updated without an employee.
+    /// </summary>
     public Guid? EmployeeId { get; set; }
 
     /// <summary>
@@ -52,13 +52,14 @@ public sealed class CreateAuctionFormModel : IValidatableObject
                 [nameof(StartDate)]);
         }
 
+        // An auction runs on one date, so the end moment is the start date plus the end time.
         if (TryCombine(StartDate, StartTime, out var start)
-            && TryCombine(EndDate, EndTime, out var end)
+            && TryCombine(StartDate, EndTime, out var end)
             && end <= start)
         {
             yield return new ValidationResult(
-                "Sluttidspunktet skal ligge efter starttidspunktet.",
-                [nameof(EndDate)]);
+                "Sluttidspunktet skal ligge efter starttidspunktet på den valgte dato. Auktioner hen over midnat understøttes ikke.",
+                [nameof(EndTime)]);
         }
     }
 
@@ -69,10 +70,10 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     public DateTime? GetStartsAt() => TryCombine(StartDate, StartTime, out var value) ? value : null;
 
     /// <summary>
-    /// Combines the end date and end time into a single moment.
+    /// Combines the start date and end time into a single moment, since an auction lasts one date.
     /// </summary>
     /// <returns>The end moment, or <see langword="null"/> when the fields are not filled in yet.</returns>
-    public DateTime? GetEndsAt() => TryCombine(EndDate, EndTime, out var value) ? value : null;
+    public DateTime? GetEndsAt() => TryCombine(StartDate, EndTime, out var value) ? value : null;
 
     private static bool TryCombine(DateTime? date, string time, out DateTime value)
     {

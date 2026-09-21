@@ -247,9 +247,9 @@ public partial class AuctionAdmin : IDisposable
         var startsAt = model.GetStartsAt();
         var endsAt = model.GetEndsAt();
 
-        if (startsAt is null || endsAt is null || model.EmployeeId is null)
+        if (startsAt is null || endsAt is null)
         {
-            statusMessage = "Udfyld dato, tid og auktionarius, før auktionen gemmes.";
+            statusMessage = "Udfyld startdato, starttid og sluttid, før auktionen gemmes.";
             submissionSucceeded = false;
             return;
         }
@@ -344,9 +344,8 @@ public partial class AuctionAdmin : IDisposable
                 Name = detail.Name,
                 StartDate = detail.StartsAt.Date,
                 StartTime = detail.StartsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EndDate = detail.EndsAt.Date,
                 EndTime = detail.EndsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EmployeeId = detail.EmployeeId == Guid.Empty ? null : detail.EmployeeId,
+                EmployeeId = detail.EmployeeId,
                 RequireFutureStart = detail.StartsAt > DateTime.Now
             };
 

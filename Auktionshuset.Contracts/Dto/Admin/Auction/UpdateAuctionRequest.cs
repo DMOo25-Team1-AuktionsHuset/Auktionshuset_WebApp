@@ -14,7 +14,10 @@ public sealed class UpdateAuctionRequest : IValidatableObject
     [Required(ErrorMessage = "Slutdato og sluttidspunkt er påkrævet.")]
     public DateTime? EndsAt { get; init; }
 
-    [Required(ErrorMessage = "Vælg en auktionarius.")]
+    /// <summary>
+    /// Gets the identifier of the auctionarius, or <see langword="null"/> when the auction is saved
+    /// without an employee.
+    /// </summary>
     public Guid? EmployeeId { get; init; }
 
     public Guid? AuctionHouseId { get; init; }

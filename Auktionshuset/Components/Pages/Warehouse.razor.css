@@ -2,7 +2,8 @@
     display: grid;
     gap: 1.5rem;
     margin: 0 auto;
-    max-width: 1500px;
+    max-width: 1650px;
+    width: 100%;
 }
 
 /* --- Kort og overskrifter ------------------------------------------------ */
@@ -40,17 +41,26 @@
 
 .list-heading {
     align-items: flex-end;
+    border-bottom: 0;
+    margin-bottom: 1rem;
+    padding-bottom: 0;
 }
 
+/* Værktøjsrækken ligger under overskrift og antal, så søgning og "Pr. side"
+   kan følge hele indholdsbredden. */
 .list-tools {
+    align-items: flex-end;
+    border-bottom: 1px solid var(--border);
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.75rem 1.25rem;
+    margin-bottom: 1.35rem;
+    padding-bottom: 1.1rem;
 }
 
 .search-field {
-    flex: 1 1 16rem;
-    max-width: 26rem;
+    flex: 1 1 22rem;
+    min-width: 0;
 }
 
 .page-size-field {
@@ -71,7 +81,9 @@
 .form-grid {
     display: grid;
     gap: 1.15rem 1.25rem;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* Kategori og Estimeret værdi er normale, Antal er smallere og Tags er
+       bredere, så feltet kan rumme flere værdier. */
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.85fr) minmax(0, 1.1fr) minmax(0, 1.45fr);
 }
 
 .field-wide {
@@ -394,7 +406,6 @@
 
     .search-field {
         flex: 1 1 100%;
-        max-width: none;
     }
 
     /* Gør tabellen om til kort, så intet løber ud over skærmen. */

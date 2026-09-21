@@ -76,12 +76,28 @@ public sealed class GetAuctionsHandler(
             Lots: lines);
     }
 
+    /// <summary>
+    /// Resolves the name the dashboard shows for the auctionarius. An auction without an employee is
+    /// reported as not assigned, so the dashboard never shows an empty cell.
+    /// </summary>
+    /// <param name="auction">The auction whose auctionarius is resolved.</param>
+    /// <param name="employeesById">Every stored employee, indexed by identifier.</param>
+    /// <returns>The employee's full name, or a Danish fallback when none is assigned.</returns>
     private static string ResolveEmployeeName(
         Domain.Entities.Auction auction,
-        IReadOnlyDictionary<Guid, Domain.Entities.Employee> employeesById) =>
-        auction.Employee?.FirstName is { Length: > 0 } firstName
-            ? $"{firstName} {auction.Employee.LastName}".Trim()
-            : employeesById.TryGetValue(auction.EmployeeId, out var employee)
-                ? $"{employee.FirstName} {employee.LastName}".Trim()
-                : "Ikke angivet";
+        IReadOnlyDictionary<Guid, Domain.Entities.Employee> employeesById)
+    {
+        if (auction.Employee?.FirstName is { Length: > 0 } firstName)
+        {
+            return $"{firstName} {auction.Employee.LastName}".Trim();
+        }
+
+        if (auction.EmployeeId is { } employeeId
+            && employeesById.TryGetValue(employeeId, out var employee))
+        {
+            return $"{employee.FirstName} {employee.LastName}".Trim();
+        }
+
+        return "Ikke tildelt";
+    }
 }

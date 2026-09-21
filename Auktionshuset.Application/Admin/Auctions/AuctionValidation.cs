@@ -17,6 +17,7 @@ internal static class AuctionValidation
     /// <param name="name">The auction name supplied by the caller.</param>
     /// <param name="startsAt">The supplied start time.</param>
     /// <param name="endsAt">The supplied end time.</param>
+    /// <param name="employeeId">The auctionarius identifier supplied by the caller, if any.</param>
     /// <param name="employee">The employee looked up for the supplied employee identifier, if any.</param>
     /// <param name="requireFutureStart">
     /// When <see langword="true"/>, the start time has to lie in the future. Updating an auction that
@@ -27,6 +28,7 @@ internal static class AuctionValidation
         string? name,
         DateTime startsAt,
         DateTime endsAt,
+        Guid? employeeId,
         Employee? employee,
         bool requireFutureStart,
         List<string> errors)
@@ -48,7 +50,8 @@ internal static class AuctionValidation
             errors.Add("Sluttidspunktet skal ligge efter starttidspunktet.");
         }
 
-        if (employee is null)
+        // An auctionarius is optional, but a supplied one has to exist.
+        if (employeeId is not null && employee is null)
         {
             errors.Add("Den valgte auktionarius findes ikke.");
         }

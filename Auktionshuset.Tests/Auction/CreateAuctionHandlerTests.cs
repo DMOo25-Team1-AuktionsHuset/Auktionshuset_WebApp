@@ -156,19 +156,23 @@ public class CreateAuctionHandlerTests
     }
 
     /// <summary>
-    /// Verifies that a command with no auctionarius at all is rejected.
+    /// Verifies that an auction can be created without an auctionarius.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithoutEmployee_ReturnsInvalid()
+    public async Task HandleAsync_WithoutEmployee_CreatesAuctionWithoutAuctionarius()
     {
-        var (handler, _, _, _) = await CreateHandlerAsync();
+        var (handler, auctions, _, _) = await CreateHandlerAsync();
 
         var result = await handler.HandleAsync(
-            TestData.CreateCommand(Guid.Empty, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)),
+            TestData.CreateCommand(null, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)),
             CancellationToken.None);
 
-        Assert.False(result.Succeeded);
-        Assert.Contains(result.Errors, error => error.Contains("auktionarius"));
+        Assert.True(result.Succeeded);
+
+        var auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
+        Assert.NotNull(auction);
+        Assert.Null(auction.EmployeeId);
+        Assert.Null(auction.Employee);
     }
 
     /// <summary>

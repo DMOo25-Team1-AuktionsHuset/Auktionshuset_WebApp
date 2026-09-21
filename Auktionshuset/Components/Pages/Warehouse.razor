@@ -64,17 +64,17 @@
                     <ValidationMessage For="@(() => model.EstimatedValue)" />
                 </div>
 
-                <div class="field field-wide">
-                    <label for="lot-description">Beskrivelse</label>
-                    <InputTextArea id="lot-description" @bind-Value="model.Description" rows="4" />
-                    <ValidationMessage For="@(() => model.Description)" />
-                </div>
-
-                <div class="field field-wide">
+                <div class="field field-tags">
                     <label for="lot-tags">Tags <span class="optional">(valgfrit)</span></label>
                     <InputText id="lot-tags" @bind-Value="model.Tags" aria-describedby="tags-help" autocomplete="off" />
                     <span id="tags-help" class="help-text">Adskil tags med komma. Dubletter fjernes automatisk. Maks. 20 tags.</span>
                     <ValidationMessage For="@(() => model.Tags)" />
+                </div>
+
+                <div class="field field-wide">
+                    <label for="lot-description">Beskrivelse</label>
+                    <InputTextArea id="lot-description" @bind-Value="model.Description" rows="4" />
+                    <ValidationMessage For="@(() => model.Description)" />
                 </div>
 
                 <div class="field field-wide image-field">
@@ -161,27 +161,27 @@
                     }
                 </p>
             </div>
+        </div>
 
-            <div class="list-tools">
-                <div class="field search-field">
-                    <label for="lot-search">Søg i genstande</label>
-                    <input id="lot-search"
-                           type="search"
-                           placeholder="Navn, kategori, beskrivelse eller tags"
-                           @bind="searchTerm"
-                           @bind:event="oninput"
-                           @bind:after="OnSearchChanged" />
-                </div>
+        <div class="list-tools">
+            <div class="field search-field">
+                <label for="lot-search">Søg i genstande</label>
+                <input id="lot-search"
+                       type="search"
+                       placeholder="Navn, kategori, beskrivelse eller tags"
+                       @bind="searchTerm"
+                       @bind:event="oninput"
+                       @bind:after="OnSearchChanged" />
+            </div>
 
-                <div class="field page-size-field">
-                    <label for="lot-page-size">Pr. side</label>
-                    <select id="lot-page-size" @bind="pageSize" @bind:after="OnPageSizeChanged">
-                        @foreach (var size in PageSizeOptions)
-                        {
-                            <option value="@size">@size</option>
-                        }
-                    </select>
-                </div>
+            <div class="field page-size-field">
+                <label for="lot-page-size">Pr. side</label>
+                <select id="lot-page-size" @bind="pageSize" @bind:after="OnPageSizeChanged">
+                    @foreach (var size in PageSizeOptions)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
         </div>
 

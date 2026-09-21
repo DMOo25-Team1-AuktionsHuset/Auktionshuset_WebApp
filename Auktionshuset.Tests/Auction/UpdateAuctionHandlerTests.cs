@@ -142,6 +142,34 @@ public class UpdateAuctionHandlerTests
     }
 
     /// <summary>
+    /// Verifies that an existing auctionarius can be removed again by updating without one.
+    /// </summary>
+    [Fact]
+    public async Task HandleAsync_WithoutEmployee_RemovesAuctionarius()
+    {
+        var employee = TestData.CreateEmployee();
+        var (handler, auctions, _, _, auctionId) = await CreateExistingAuctionAsync(employee);
+
+        var result = await handler.HandleAsync(
+            new UpdateAuctionCommand(
+                AuctionId: auctionId,
+                Name: "Forårsauktion",
+                StartsAt: DateTime.Now.AddDays(3),
+                EndsAt: DateTime.Now.AddDays(4),
+                EmployeeId: null,
+                AuctionHouseId: null,
+                Lots: []),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+
+        var auction = await auctions.GetByIdAsync(auctionId, CancellationToken.None);
+        Assert.NotNull(auction);
+        Assert.Null(auction.EmployeeId);
+        Assert.Null(auction.Employee);
+    }
+
+    /// <summary>
     /// Verifies that an unknown genstand is rejected.
     /// </summary>
     [Fact]

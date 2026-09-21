@@ -13,7 +13,11 @@ namespace Auktionshuset.Domain.Entities
         public Guid? AuctionHouseId { get; set; }
         public AuctionHouse? AuctionHouse { get; set; }
 
-        public Guid EmployeeId { get; set; }
+        /// <summary>
+        /// Gets or sets the identifier of the auctionarius. It is <see langword="null"/> when the
+        /// auction has no employee assigned yet.
+        /// </summary>
+        public Guid? EmployeeId { get; set; }
         public Employee? Employee { get; set; }
 
         public required DateTime StartsAt { get; set; }
