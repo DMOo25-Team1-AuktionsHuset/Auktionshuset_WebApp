@@ -16,7 +16,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateLot {
                 .WithSummary("Creates a new auction lot")
                 .Produces<CreateLotResponse>(StatusCodes.Status201Created)
                 .ProducesValidationProblem()
-                .RequireAuthorization("CanCreateLot");
+                .AllowAnonymous();
             return group;
         }
 
