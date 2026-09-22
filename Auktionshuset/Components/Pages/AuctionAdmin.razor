@@ -19,7 +19,7 @@
     <div class="admin-top">
         <section class="card form-card" aria-labelledby="auction-form-heading">
             <div class="card-heading">
-                <div>
+                <div class="heading-text">
                     <h2 id="auction-form-heading">@(editingAuctionId.HasValue ? "Rediger auktion" : "Opret auktion")</h2>
                     <p>
                         @if (editingAuctionId.HasValue)
@@ -31,11 +31,20 @@
                             <text>Udfyld auktionens oplysninger og vælg eventuelt genstande.</text>
                         }
                     </p>
+                    @if (editingAuctionId.HasValue)
+                    {
+                        <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
+                    }
                 </div>
-                @if (editingAuctionId.HasValue)
-                {
-                    <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
-                }
+
+                @* Statussen står kompakt i headerens højre side og udledes af tiderne. *@
+                <div class="heading-status">
+                    <span class="field-label">Status</span>
+                    <p class="status-preview" role="status" aria-live="polite">
+                        <span class="badge @StatusCssClass(DerivedStatus)">@DerivedStatus</span>
+                    </p>
+                    <span class="help-text">Udledes automatisk af start- og sluttidspunktet.</span>
+                </div>
             </div>
 
             <EditForm @key="editContext" EditContext="editContext" OnValidSubmit="SubmitAsync" novalidate>
@@ -98,14 +107,6 @@
                             <p class="validation-message" role="alert">@employeeError</p>
                         }
                     </div>
-
-                    <div class="field">
-                        <span class="field-label">Status</span>
-                        <p class="status-preview" role="status" aria-live="polite">
-                            <span class="badge @StatusCssClass(DerivedStatus)">@DerivedStatus</span>
-                        </p>
-                        <span class="help-text">Status udledes automatisk af start- og sluttidspunktet.</span>
-                    </div>
                 </div>
 
                 <div class="selection-summary">
@@ -156,7 +157,7 @@
                     @if (editingAuctionId.HasValue)
                     {
                         <button type="button" class="btn btn-secondary" disabled="@isSubmitting" @onclick="CancelEdit">
-                            Annullér
+                            Annuller redigering
                         </button>
                     }
                 </div>
@@ -164,20 +165,33 @@
         </section>
 
         <section class="card picker-card" aria-labelledby="lot-picker-heading" aria-busy="@(isLoadingLots ? "true" : "false")">
-            <div class="card-heading">
-                <div>
+            <div class="card-heading picker-heading">
+                <div class="heading-text">
                     <h2 id="lot-picker-heading">Vælg genstande</h2>
-                    <p>@FilteredPickerLots.Count genstand@(FilteredPickerLots.Count == 1 ? string.Empty : "e") i lageret</p>
+                    <p>
+                        @if (HasPickerSearch)
+                        {
+                            <text>@FilteredPickerLots.Count af @lots.Count genstande</text>
+                        }
+                        else
+                        {
+                            <text>@lots.Count genstand@(lots.Count == 1 ? string.Empty : "e") i lageret</text>
+                        }
+                        @if (selectedLots.Count > 0)
+                        {
+                            <text> &middot; @selectedLots.Count valgt</text>
+                        }
+                    </p>
                 </div>
-            </div>
 
-            <div class="field picker-search">
-                <label for="picker-search">Søg i genstande</label>
-                <input id="picker-search"
-                       type="search"
-                       placeholder="Navn eller kategori"
-                       @bind="pickerSearchTerm"
-                       @bind:event="oninput" />
+                <div class="field picker-search">
+                    <label for="picker-search">Søg i genstande</label>
+                    <input id="picker-search"
+                           type="search"
+                           placeholder="Navn eller kategori"
+                           @bind="pickerSearchTerm"
+                           @bind:event="oninput" />
+                </div>
             </div>
 
             @if (isLoadingLots)
@@ -198,51 +212,43 @@
             }
             else
             {
-                <ul class="lot-options">
+                @* En afkrydset genstand tilføjes med hele sit lagerantal. *@
+                <ul class="lot-options" aria-label="Genstande i lageret">
                     @foreach (var lot in FilteredPickerLots)
                     {
-                        var isPicked = selectedLots.TryGetValue(lot.LotId, out var picked);
+                        var isPicked = selectedLots.ContainsKey(lot.LotId);
                         var thumbnailUrl = LotService.ResolveImageUrl(lot.ImageUrl);
 
-                        <li class="lot-option @(isPicked ? "is-selected" : null)">
+                        <li class="lot-option @(isPicked ? "is-selected" : null)" @key="lot.LotId">
                             <input id="@($"pick-{lot.LotId}")"
                                    type="checkbox"
                                    checked="@isPicked"
                                    @onchange="args => ToggleLot(lot, args)" />
 
-                            <div class="picker-thumb">
-                                @if (thumbnailUrl is not null)
-                                {
-                                    <img src="@thumbnailUrl" alt="" loading="lazy" />
-                                }
-                                else
-                                {
-                                    <span class="picker-thumb-empty" aria-hidden="true">Intet billede</span>
-                                }
-                            </div>
-
-                            <div class="lot-option-body">
-                                <label class="lot-option-name" for="@($"pick-{lot.LotId}")">@lot.Name</label>
-                                <span class="lot-option-meta">
-                                    @lot.Category &middot; @lot.Quantity stk. tilgængelig &middot;
-                                    @lot.EstimatedValue.ToString("N2", DanishCulture) DKK
+                            <label class="lot-option-label" for="@($"pick-{lot.LotId}")">
+                                <span class="picker-thumb">
+                                    @if (thumbnailUrl is not null)
+                                    {
+                                        <img src="@thumbnailUrl" alt="" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span class="picker-thumb-empty" aria-hidden="true">Intet billede</span>
+                                    }
                                 </span>
-                            </div>
 
-                            @if (isPicked)
-                            {
-                                <div class="field lot-option-quantity">
-                                    <label for="@($"qty-{lot.LotId}")">Antal med</label>
-                                    <input id="@($"qty-{lot.LotId}")"
-                                           type="number"
-                                           min="1"
-                                           max="@lot.Quantity"
-                                           step="1"
-                                           value="@picked!.Quantity"
-                                           @onchange="args => SetQuantity(lot, args)" />
-                                    <span class="help-text">Højst @lot.Quantity</span>
-                                </div>
-                            }
+                                <span class="lot-option-body">
+                                    <span class="lot-option-name">@lot.Name</span>
+                                    <span class="lot-option-meta">
+                                        @lot.Category &middot; @lot.Quantity stk. på lager
+                                    </span>
+                                </span>
+
+                                @if (isPicked)
+                                {
+                                    <span class="lot-option-flag">Valgt</span>
+                                }
+                            </label>
                         </li>
                     }
                 </ul>

@@ -13,49 +13,70 @@
     </div>
 
     <section class="card form-card" aria-labelledby="lot-form-heading">
-        <div class="card-heading">
-            <div>
-                <h2 id="lot-form-heading">@(editingLotId.HasValue ? "Rediger genstand" : "Opret genstand")</h2>
-                <p>
-                    @if (editingLotId.HasValue)
-                    {
-                        <text>Du redigerer en genstand fra listen. Gem ændringerne, eller annullér for at rydde formularen.</text>
-                    }
-                    else
-                    {
-                        <text>Udfyld oplysningerne nedenfor og gem genstanden i lageret.</text>
-                    }
-                </p>
-            </div>
-            @if (editingLotId.HasValue)
-            {
-                <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
-            }
-        </div>
-
         <EditForm @key="editContext" EditContext="editContext" OnValidSubmit="SubmitAsync" class="lot-form" novalidate>
             <DataAnnotationsValidator />
 
+            <div class="card-heading form-heading">
+                <div class="heading-text">
+                    <h2 id="lot-form-heading">@(editingLotId.HasValue ? "Rediger genstand" : "Opret genstand")</h2>
+                    <p>
+                        @if (editingLotId.HasValue)
+                        {
+                            <text>Du redigerer en genstand fra listen. Gem ændringerne, eller annullér for at rydde formularen.</text>
+                        }
+                        else
+                        {
+                            <text>Udfyld oplysningerne nedenfor og gem genstanden i lageret.</text>
+                        }
+                    </p>
+                    @if (editingLotId.HasValue)
+                    {
+                        <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
+                    }
+                </div>
+
+                <div class="form-heading-actions">
+                    <button type="submit" class="btn" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>@(editingLotId.HasValue ? "Gemmer..." : "Opretter...")</span>
+                        }
+                        else
+                        {
+                            <span>@(editingLotId.HasValue ? "Gem ændringer" : "Opret genstand")</span>
+                        }
+                    </button>
+
+                    @if (editingLotId.HasValue)
+                    {
+                        <button type="button" class="btn btn-secondary" disabled="@isSubmitting" @onclick="CancelEdit">
+                            Annuller redigering
+                        </button>
+                    }
+                </div>
+            </div>
+
             <div class="form-grid">
-                <div class="field field-wide">
+                <div class="field field-name">
                     <label for="lot-name">Navn</label>
                     <InputText id="lot-name" @bind-Value="model.Name" autocomplete="off" />
                     <ValidationMessage For="@(() => model.Name)" />
                 </div>
 
-                <div class="field">
+                <div class="field field-category">
                     <label for="lot-category">Kategori</label>
                     <InputText id="lot-category" @bind-Value="model.Category" autocomplete="off" />
                     <ValidationMessage For="@(() => model.Category)" />
                 </div>
 
-                <div class="field">
+                <div class="field field-quantity">
                     <label for="lot-quantity">Antal</label>
                     <InputNumber id="lot-quantity" @bind-Value="model.Quantity" min="1" />
                     <ValidationMessage For="@(() => model.Quantity)" />
                 </div>
 
-                <div class="field">
+                <div class="field field-value">
                     <label for="lot-value">Estimeret værdi</label>
                     <div class="input-suffix">
                         <InputNumber id="lot-value" @bind-Value="model.EstimatedValue" min="0.01" max="50000000" step="0.01" />
@@ -64,53 +85,52 @@
                     <ValidationMessage For="@(() => model.EstimatedValue)" />
                 </div>
 
-                <div class="field field-tags">
-                    <label for="lot-tags">Tags <span class="optional">(valgfrit)</span></label>
-                    <InputText id="lot-tags" @bind-Value="model.Tags" aria-describedby="tags-help" autocomplete="off" />
-                    <span id="tags-help" class="help-text">Adskil tags med komma. Dubletter fjernes automatisk. Maks. 20 tags.</span>
-                    <ValidationMessage For="@(() => model.Tags)" />
-                </div>
-
-                <div class="field field-wide">
+                <div class="field field-description">
                     <label for="lot-description">Beskrivelse</label>
                     <InputTextArea id="lot-description" @bind-Value="model.Description" rows="4" />
                     <ValidationMessage For="@(() => model.Description)" />
                 </div>
 
-                <div class="field field-wide image-field">
-                    <label for="lot-image">Billede <span class="optional">(valgfrit)</span></label>
-                    <div class="image-picker">
-                        <div class="image-preview">
-                            @if (PreviewImageUrl is not null)
-                            {
-                                <img src="@PreviewImageUrl" alt="@($"Forhåndsvisning af billedet til {model.Name}")" />
-                            }
-                            else
-                            {
-                                <span class="image-preview-empty" aria-hidden="true">Intet billede valgt</span>
-                            }
-                        </div>
+                <div class="field field-tags">
+                    <label for="lot-tags">Tags <span class="optional">(valgfrit)</span></label>
+                    <InputTextArea id="lot-tags" @bind-Value="model.Tags" rows="4" aria-describedby="tags-help" />
+                    <span id="tags-help" class="help-text">Adskil tags med komma. Dubletter fjernes automatisk. Maks. 20 tags.</span>
+                    <ValidationMessage For="@(() => model.Tags)" />
+                </div>
 
-                        <div class="image-controls">
-                            <InputFile id="lot-image"
-                                       OnChange="OnImageSelectedAsync"
-                                       accept="image/jpeg,image/jpg,image/png,image/webp"
-                                       aria-describedby="image-help" />
-                            <span id="image-help" class="help-text">JPEG, PNG eller WebP. Højst 5 MB.</span>
-
-                            @if (PreviewImageUrl is not null)
-                            {
-                                <button type="button" class="btn btn-secondary btn-sm" @onclick="RemoveImage">
-                                    Fjern billede
-                                </button>
-                            }
-
-                            @if (!string.IsNullOrWhiteSpace(imageError))
-                            {
-                                <p class="validation-message" role="alert">@imageError</p>
-                            }
-                        </div>
+                <div class="field field-image-preview">
+                    <span class="field-label">Billede <span class="optional">(valgfrit)</span></span>
+                    <div class="image-preview">
+                        @if (PreviewImageUrl is not null)
+                        {
+                            <img src="@PreviewImageUrl" alt="@($"Forhåndsvisning af billedet til {model.Name}")" />
+                        }
+                        else
+                        {
+                            <span class="image-preview-empty" aria-hidden="true">Intet billede valgt</span>
+                        }
                     </div>
+                </div>
+
+                <div class="field field-image-controls">
+                    <label for="lot-image">Vælg billede</label>
+                    <InputFile id="lot-image"
+                               OnChange="OnImageSelectedAsync"
+                               accept="image/jpeg,image/jpg,image/png,image/webp"
+                               aria-describedby="image-help" />
+                    <span id="image-help" class="help-text">JPEG, PNG eller WebP. Højst 5 MB.</span>
+
+                    @if (PreviewImageUrl is not null)
+                    {
+                        <button type="button" class="btn btn-secondary btn-sm" @onclick="RemoveImage">
+                            Fjern billede
+                        </button>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        <p class="validation-message" role="alert">@imageError</p>
+                    }
                 </div>
             </div>
 
@@ -122,27 +142,6 @@
                     @statusMessage
                 </div>
             }
-
-            <div class="form-actions">
-                <button type="submit" class="btn" disabled="@isSubmitting">
-                    @if (isSubmitting)
-                    {
-                        <span class="spinner" aria-hidden="true"></span>
-                        <span>@(editingLotId.HasValue ? "Gemmer..." : "Opretter...")</span>
-                    }
-                    else
-                    {
-                        <span>@(editingLotId.HasValue ? "Gem ændringer" : "Opret genstand")</span>
-                    }
-                </button>
-
-                @if (editingLotId.HasValue)
-                {
-                    <button type="button" class="btn btn-secondary" disabled="@isSubmitting" @onclick="CancelEdit">
-                        Annuller redigering
-                    </button>
-                }
-            </div>
         </EditForm>
     </section>
 

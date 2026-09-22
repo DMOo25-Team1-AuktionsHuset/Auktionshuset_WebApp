@@ -7,11 +7,11 @@
 }
 
 .admin-top {
-    align-items: start;
+    align-items: stretch;
     display: grid;
     gap: 1.5rem;
-    /* Formularen er en smule bredere end genstandsvælgeren. */
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    /* De to øverste kasser er lige brede og begynder på samme vandrette linje. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .form-card,
@@ -19,6 +19,12 @@
 .dashboard-card {
     min-width: 0;
     padding: 1.5rem;
+}
+
+/* Vælgeren fylder højden ud, så den står i balance med formularen. */
+.picker-card {
+    display: flex;
+    flex-direction: column;
 }
 
 .card-heading {
@@ -30,6 +36,11 @@
     justify-content: space-between;
     margin-bottom: 1.25rem;
     padding-bottom: 1rem;
+}
+
+.card-heading .heading-text {
+    flex: 1 1 14rem;
+    min-width: 0;
 }
 
 .card-heading h2 {
@@ -44,7 +55,38 @@
 }
 
 .mode-badge {
+    display: inline-flex;
+    margin-top: 0.55rem;
+}
+
+/* Statussen står kompakt i headerens højre side. */
+.heading-status {
+    align-items: flex-end;
+    display: flex;
     flex: 0 0 auto;
+    flex-direction: column;
+    gap: 0.15rem;
+    text-align: right;
+}
+
+.heading-status .field-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.heading-status .status-preview {
+    margin: 0;
+    min-height: 0;
+    padding: 0;
+}
+
+.heading-status .help-text {
+    font-size: 0.76rem;
+    margin-top: 0.1rem;
+    max-width: 14rem;
 }
 
 /* --- Formular ----------------------------------------------------------- */
@@ -69,8 +111,6 @@
 
 .status-preview {
     margin: 0;
-    min-height: 2.4rem;
-    padding: 0.45rem 0;
 }
 
 .inline-state {
@@ -133,38 +173,52 @@
 
 /* --- Vælger ------------------------------------------------------------- */
 
+.picker-heading {
+    align-items: flex-end;
+}
+
+/* Søgefeltet står på headerlinjen ved siden af titlen. */
 .picker-search {
-    margin-bottom: 0.9rem;
+    flex: 1 1 16rem;
+    max-width: 22rem;
+    min-width: 0;
+}
+
+.picker-search input {
+    min-height: 2.4rem;
 }
 
 .lot-options {
     display: grid;
-    gap: 0.6rem;
+    flex: 1 1 auto;
+    gap: 0.4rem;
     list-style: none;
     margin: 0;
-    max-height: 32rem;
+    max-height: 34rem;
+    min-height: 0;
     overflow-y: auto;
     padding: 0;
 }
 
 .lot-option {
-    align-items: start;
+    align-items: center;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     display: grid;
-    gap: 0.7rem;
-    grid-template-columns: auto 2.6rem minmax(0, 1fr);
-    padding: 0.65rem;
+    gap: 0.6rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 0.5rem 0.65rem;
 }
 
 .lot-option.is-selected {
     background: var(--camel-soft);
     border-color: var(--camel-line);
+    box-shadow: inset 3px 0 0 var(--camel);
 }
 
 .lot-option > input[type="checkbox"] {
     height: 1.15rem;
-    margin: 0.35rem 0 0;
+    margin: 0;
     width: 1.15rem;
 }
 
@@ -173,16 +227,26 @@
     outline: none;
 }
 
+/* Hele rækken er klikbar, men checkboxen forbliver det rigtige input. */
+.lot-option-label {
+    align-items: center;
+    cursor: pointer;
+    display: grid;
+    gap: 0.35rem 0.65rem;
+    grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+    min-width: 0;
+}
+
 .picker-thumb {
     align-items: center;
     background: var(--surface-muted);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     display: flex;
-    height: 2.6rem;
+    height: 2.4rem;
     justify-content: center;
     overflow: hidden;
-    width: 2.6rem;
+    width: 2.4rem;
 }
 
 .picker-thumb img {
@@ -202,30 +266,34 @@
 .lot-option-body {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.1rem;
     min-width: 0;
 }
 
 .lot-option-name {
     color: var(--charcoal-blue);
-    cursor: pointer;
     font-weight: 700;
     overflow-wrap: anywhere;
 }
 
 .lot-option-meta {
     color: var(--text-muted);
-    font-size: 0.83rem;
+    font-size: 0.82rem;
     overflow-wrap: anywhere;
 }
 
-.lot-option-quantity {
-    grid-column: 3;
-    max-width: 10rem;
-}
-
-.lot-option-quantity input {
-    min-height: 2.2rem;
+/* Tekstmarkering, så farve ikke er den eneste indikator for et valg. */
+.lot-option-flag {
+    background: var(--surface);
+    border: 1px solid var(--camel-line);
+    border-radius: 999px;
+    color: var(--camel-dark);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 0.1rem 0.5rem;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 /* --- Dashboard ---------------------------------------------------------- */
@@ -439,6 +507,12 @@
         padding: 1.1rem;
     }
 
+    /* Søgefeltet flytter ned under titlen og fylder bredden. */
+    .picker-search {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+
     .dashboard-tools {
         width: 100%;
     }
@@ -532,12 +606,7 @@
         width: 100%;
     }
 
-    .lot-option {
-        grid-template-columns: auto 2.4rem minmax(0, 1fr);
-    }
-
-    .lot-option-quantity {
-        grid-column: 1 / -1;
-        max-width: none;
+    .lot-option-flag {
+        display: none;
     }
 }

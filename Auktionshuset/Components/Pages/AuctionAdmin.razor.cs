@@ -86,18 +86,21 @@ public partial class AuctionAdmin : IDisposable
         {
             var term = pickerSearchTerm.Trim();
 
-            if (term.Length == 0)
-            {
-                return lots;
-            }
-
-            return lots
-                .Where(lot =>
+            var matching = term.Length == 0
+                ? lots.AsEnumerable()
+                : lots.Where(lot =>
                     lot.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
-                    || lot.Category.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    || lot.Category.Contains(term, StringComparison.OrdinalIgnoreCase));
+
+            // Valgte genstande står øverst, og begge grupper sorteres alfabetisk på navn.
+            return matching
+                .OrderByDescending(lot => selectedLots.ContainsKey(lot.LotId))
+                .ThenBy(lot => lot.Name, StringComparer.Create(DanishCulture, ignoreCase: true))
                 .ToArray();
         }
     }
+
+    private bool HasPickerSearch => pickerSearchTerm.Trim().Length > 0;
 
     private IReadOnlyList<SelectedLot> SelectedLotLines =>
         selectedLots.Values
@@ -404,28 +407,13 @@ public partial class AuctionAdmin : IDisposable
     {
         if (args.Value is true)
         {
-            selectedLots[lot.LotId] = new SelectedLot(lot.Name, 1, lot.Quantity);
+            // Hele genstandslinjen tilføjes, så antallet følger genstandens lagerantal.
+            selectedLots[lot.LotId] = new SelectedLot(lot.Name, lot.Quantity, lot.Quantity);
         }
         else
         {
             selectedLots.Remove(lot.LotId);
         }
-    }
-
-    private void SetQuantity(LotListItemResponse lot, ChangeEventArgs args)
-    {
-        if (!selectedLots.TryGetValue(lot.LotId, out var current))
-        {
-            return;
-        }
-
-        var text = Convert.ToString(args.Value, CultureInfo.InvariantCulture);
-
-        var quantity = int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
-            ? parsed
-            : 1;
-
-        selectedLots[lot.LotId] = current with { Quantity = Math.Clamp(quantity, 1, Math.Max(1, lot.Quantity)) };
     }
 
     private void ClearSelection() => selectedLots.Clear();

@@ -24,6 +24,11 @@
     padding-bottom: 1.1rem;
 }
 
+.card-heading .heading-text {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
 .card-heading h2 {
     font-size: 1.2rem;
     margin: 0;
@@ -36,7 +41,8 @@
 }
 
 .mode-badge {
-    flex: 0 0 auto;
+    display: inline-flex;
+    margin-top: 0.55rem;
 }
 
 .list-heading {
@@ -78,16 +84,53 @@
 
 /* --- Formular ----------------------------------------------------------- */
 
+.form-heading {
+    align-items: center;
+}
+
+.form-heading-actions {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
 .form-grid {
     display: grid;
     gap: 1.15rem 1.25rem;
-    /* Kategori og Estimeret værdi er normale, Antal er smallere og Tags er
-       bredere, så feltet kan rumme flere værdier. */
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.85fr) minmax(0, 1.1fr) minmax(0, 1.45fr);
+    /* Første række: Navn, Kategori, Antal og Estimeret værdi. Navn og Kategori
+       er bredere end Antal, og Antal er den smalleste kolonne. */
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 0.6fr) minmax(0, 1.1fr);
 }
 
-.field-wide {
-    grid-column: 1 / -1;
+/* Beskrivelse, Tags, billedforhåndsvisning og filvælger deler anden række. */
+.field-description,
+.field-tags,
+.field-image-preview,
+.field-image-controls {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Begge tekstfelter fylder deres celle ud, så Beskrivelse og Tags får samme højde. */
+.field-description textarea,
+.field-tags textarea {
+    flex: 1 1 auto;
+    min-height: 6.5rem;
+}
+
+.field-image-preview .image-preview {
+    flex: 1 1 auto;
+}
+
+.field-image-controls {
+    gap: 0.3rem;
+}
+
+.field-image-controls .btn {
+    align-self: flex-start;
+    margin-top: 0.25rem;
 }
 
 .input-suffix {
@@ -109,23 +152,16 @@
     right: 0.8rem;
 }
 
-.image-picker {
-    align-items: flex-start;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-}
-
 .image-preview {
     align-items: center;
     background: var(--surface-muted);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     display: flex;
-    height: 8rem;
     justify-content: center;
+    min-height: 6.5rem;
     overflow: hidden;
-    width: 8rem;
+    width: 100%;
 }
 
 .image-preview img {
@@ -141,14 +177,7 @@
     text-align: center;
 }
 
-.image-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    min-width: 14rem;
-}
-
-.image-controls ::deep input[type="file"] {
+.field-image-controls ::deep input[type="file"] {
     background: var(--surface);
     border: 1px dashed var(--border-strong);
     border-radius: var(--radius-sm);
@@ -161,24 +190,10 @@
     width: 100%;
 }
 
-.image-controls ::deep input[type="file"]:focus-visible {
+.field-image-controls ::deep input[type="file"]:focus-visible {
     border-color: var(--camel);
     box-shadow: var(--focus-ring);
     outline: none;
-}
-
-.image-controls .btn {
-    align-self: flex-start;
-}
-
-.form-actions {
-    align-items: center;
-    border-top: 1px solid var(--border);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
 }
 
 .status-message {
@@ -395,6 +410,16 @@
         padding: 1.1rem;
     }
 
+    /* Knapperne flytter ned under titlen. */
+    .form-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .form-heading-actions {
+        width: 100%;
+    }
+
     .list-heading {
         align-items: flex-start;
         flex-direction: column;
@@ -483,27 +508,12 @@
     }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
     .form-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
-    .image-picker {
-        flex-direction: column;
-        gap: 0.85rem;
-    }
-
-    .image-preview {
-        height: 7rem;
-        width: 100%;
-    }
-
-    .image-controls {
-        min-width: 0;
-        width: 100%;
-    }
-
-    .form-actions .btn {
+    .form-heading-actions .btn {
         width: 100%;
     }
 }
