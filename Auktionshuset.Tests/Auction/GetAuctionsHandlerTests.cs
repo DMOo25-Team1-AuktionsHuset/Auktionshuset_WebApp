@@ -43,33 +43,29 @@ public class GetAuctionsHandlerTests
     }
 
     /// <summary>
-    /// Verifies that an auctionarius that is no longer stored is reported as not specified.
+    /// Verifies that an auctionarius that is no longer stored is reported as not assigned.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithoutStoredEmployee_ReportsFallbackName()
+    public async Task HandleAsync_WithoutStoredEmployee_ReportsNotAssigned()
     {
-        var employee = TestData.CreateEmployee();
-        var auctionRepository = new InMemoryAuctionRepository();
-
-        var auction = new Auction
-        {
-            AuctionId = Guid.NewGuid(),
-            Name = "Forårsauktion",
-            StartsAt = DateTime.Now.AddDays(2),
-            EndsAt = DateTime.Now.AddDays(3),
-            EmployeeId = Guid.NewGuid(),
-            AuctionHouseId = TestData.AuctionHouseId,
-            AuctionStatus = AuctionStatuses.Upcoming
-        };
-
-        await auctionRepository.AddAsync(auction, [], CancellationToken.None);
-
-        var handler = new GetAuctionsHandler(auctionRepository, new TestEmployeeRepository());
+        var handler = await CreateWithAuctionAsync(employeeId: Guid.NewGuid());
 
         var overviews = await handler.HandleAsync(CancellationToken.None);
 
-        Assert.Equal("Ikke angivet", Assert.Single(overviews).EmployeeName);
-        Assert.NotEqual(Guid.Empty, employee.EmployeeId);
+        Assert.Equal("Ikke tildelt", Assert.Single(overviews).EmployeeName);
+    }
+
+    /// <summary>
+    /// Verifies that an auction without an auctionarius is reported as not assigned without throwing.
+    /// </summary>
+    [Fact]
+    public async Task HandleAsync_WithoutEmployee_ReportsNotAssigned()
+    {
+        var handler = await CreateWithAuctionAsync(employeeId: null);
+
+        var overviews = await handler.HandleAsync(CancellationToken.None);
+
+        Assert.Equal("Ikke tildelt", Assert.Single(overviews).EmployeeName);
     }
 
     /// <summary>
@@ -152,6 +148,30 @@ public class GetAuctionsHandlerTests
         Assert.Equal(2, overviews.Count);
         Assert.Equal(latest.AuctionId, overviews[0].Auction.AuctionId);
         Assert.Equal(earliest.AuctionId, overviews[1].Auction.AuctionId);
+    }
+
+    /// <summary>
+    /// Stores one auction without a stored auctionarius and returns a dashboard handler.
+    /// </summary>
+    /// <param name="employeeId">The auctionarius identifier stored on the auction, if any.</param>
+    private static async Task<GetAuctionsHandler> CreateWithAuctionAsync(Guid? employeeId)
+    {
+        var auctionRepository = new InMemoryAuctionRepository();
+
+        var auction = new Auction
+        {
+            AuctionId = Guid.NewGuid(),
+            Name = "Forårsauktion",
+            StartsAt = DateTime.Now.AddDays(2),
+            EndsAt = DateTime.Now.AddDays(3),
+            EmployeeId = employeeId,
+            AuctionHouseId = TestData.AuctionHouseId,
+            AuctionStatus = AuctionStatuses.Upcoming
+        };
+
+        await auctionRepository.AddAsync(auction, [], CancellationToken.None);
+
+        return new GetAuctionsHandler(auctionRepository, new TestEmployeeRepository());
     }
 
     /// <summary>

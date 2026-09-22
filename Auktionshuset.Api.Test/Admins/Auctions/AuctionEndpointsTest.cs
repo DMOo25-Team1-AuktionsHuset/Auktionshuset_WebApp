@@ -82,6 +82,26 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
+    /// Verifies that an auction can be created without an auctionarius.
+    /// </summary>
+    [Fact]
+    public async Task Create_WithoutEmployee_ReturnsCreatedWithoutAuctionarius()
+    {
+        var (context, _, _) = await CreateContextAsync();
+
+        var result = await CreateAuctionEndpoint.HandleAsync(
+            CreateValidRequest(null, []),
+            CreateHandler(context),
+            CancellationToken.None);
+
+        var created = Assert.IsType<Created<CreateAuctionResponse>>(result.Result);
+
+        var stored = await context.Auctions.GetByIdAsync(created.Value!.AuctionId, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Null(stored.EmployeeId);
+    }
+
+    /// <summary>
     /// Verifies that a quantity larger than the stock is rejected with a validation problem.
     /// </summary>
     [Fact]
@@ -170,6 +190,28 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
+    /// Verifies that the dashboard reports an auction without an auctionarius as not assigned.
+    /// </summary>
+    [Fact]
+    public async Task GetAuctions_WithoutEmployee_ReportsNotAssigned()
+    {
+        var (context, _, _) = await CreateContextAsync();
+
+        await CreateAuctionEndpoint.HandleAsync(
+            CreateValidRequest(null, []),
+            CreateHandler(context),
+            CancellationToken.None);
+
+        var result = await GetAuctionsEndpoint.HandleGetAllAsync(
+            new GetAuctionsHandler(context.Auctions, context.Employees),
+            CancellationToken.None);
+
+        var row = Assert.Single(result.Value!);
+        Assert.Null(row.EmployeeId);
+        Assert.Equal("Ikke tildelt", row.EmployeeName);
+    }
+
+    /// <summary>
     /// Verifies that the dashboard reports the image URLs of the lots so thumbnails can be built.
     /// </summary>
     [Fact]
@@ -241,6 +283,28 @@ public class AuctionEndpointsTest
         var published = Assert.Single(context.Publisher.OfType<AuctionUpdatedIntegrationEvent>());
         Assert.Equal(auctionId, published.AuctionId);
         Assert.Equal(5, published.ItemCount);
+    }
+
+    /// <summary>
+    /// Verifies that an existing auctionarius is removed again when an auction is updated without one.
+    /// </summary>
+    [Fact]
+    public async Task Update_WithoutEmployee_ClearsAuctionarius()
+    {
+        var (context, employee, _) = await CreateContextAsync();
+        var auctionId = await CreateAuctionAsync(context, employee);
+
+        var result = await UpdateAuctionEndpoint.HandleAsync(
+            auctionId,
+            CreateValidUpdateRequest(null, []),
+            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
+            CancellationToken.None);
+
+        Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
+
+        var stored = await context.Auctions.GetByIdAsync(auctionId, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Null(stored.EmployeeId);
     }
 
     /// <summary>
@@ -371,7 +435,7 @@ public class AuctionEndpointsTest
     }
 
     private static CreateAuctionRequest CreateValidRequest(
-        Guid employeeId,
+        Guid? employeeId,
         (Guid LotId, int Quantity)[] lots,
         DateTime? startsAt = null,
         DateTime? endsAt = null) => new()
@@ -384,7 +448,7 @@ public class AuctionEndpointsTest
     };
 
     private static UpdateAuctionRequest CreateValidUpdateRequest(
-        Guid employeeId,
+        Guid? employeeId,
         (Guid LotId, int Quantity)[] lots,
         DateTime? startsAt = null,
         DateTime? endsAt = null) => new()

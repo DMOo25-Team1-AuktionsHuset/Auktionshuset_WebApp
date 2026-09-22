@@ -43,7 +43,7 @@ public static class UpdateAuctionEndpoint
             Name: request.Name.Trim(),
             StartsAt: request.StartsAt!.Value,
             EndsAt: request.EndsAt!.Value,
-            EmployeeId: request.EmployeeId!.Value,
+            EmployeeId: request.EmployeeId,
             AuctionHouseId: request.AuctionHouseId,
             Lots: AuctionEndpointMapping.ToSelections(request.Lots));
 
