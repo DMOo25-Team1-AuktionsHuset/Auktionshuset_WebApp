@@ -9,9 +9,7 @@
     <BuildDependency Project="Auktionshuset.Application/Auktionshuset.Application.csproj" />
     <BuildDependency Project="Auktionshuset.Domain/Auktionshuset.Domain.csproj" />
   </Project>
-  <Project Path="Auktionshuset.Tests/Auktionshuset.Tests.csproj">
-    <Build Solution="Debug|*" Project="false" />
-  </Project>
+  <Project Path="Auktionshuset.Tests/Auktionshuset.Tests.csproj" />
   <Project Path="Auktionshuset/Auktionshuset.csproj">
     <BuildDependency Project="Auktionshuset.Contracts/Auktionshuset.Contracts.csproj" />
   </Project>
