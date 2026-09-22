@@ -7,17 +7,17 @@ namespace Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee {
     public class UpdateEmployeeRequest : IValidatableObject {
         [Required]
         [StringLength(100, MinimumLength = 1)]
-        public string FirstName { get; init; }
+        public required string FirstName { get; init; }
 
         [Required]
         [StringLength(100, MinimumLength = 1)]
-        public string LastName { get; init; }
+        public required string LastName { get; init; }
 
         public DateOnly BirthDate { get; init; }
 
         [Required]
         [StringLength(100, MinimumLength = 1)]
-        public string Address { get; init; }
+        public required string Address { get; init; }
 
         public Guid AuctionHouseId { get; init; }
 

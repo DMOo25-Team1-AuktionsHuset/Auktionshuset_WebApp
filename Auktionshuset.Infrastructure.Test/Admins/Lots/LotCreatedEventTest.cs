@@ -20,6 +20,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
         /// routing key. Requires a local RabbitMQ broker.
         /// </summary>
         [Fact]
+        [Trait("Category", "Integration")]
         public async Task LotCreatedEvent_CanBePublishedToRabbitMq()
         {
             // Arrange 
@@ -101,6 +102,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
         /// the registered handler. Requires a local RabbitMQ broker.
         /// </summary>
         [Fact]
+        [Trait("Category", "Integration")]
         public async Task AdminConsumer_CallsLotCreatedHandler_WhenLotCreatedEventIsReceived()
         {
             var receivedEvent =
