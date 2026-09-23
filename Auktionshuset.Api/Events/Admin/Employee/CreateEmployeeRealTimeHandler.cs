@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace Auktionshuset.Api.Events.Admin.Employee {
     public class CreateEmployeeRealTimeHandler(IHubContext<EmployeeHub, IEmployeeClient> hubContext) : IIntegrationEventHandler<EmployeeCreatedIntegrationEvent> {
         public Task HandleAsync(EmployeeCreatedIntegrationEvent message, CancellationToken cancellationToken) {
-            var notication = new CreateEmployeeNotification(
+            var notification = new CreateEmployeeNotification(
                 EventId: message.EventId,
                 EmployeeId: message.EmployeeId,
                 AuctionHouseId: message.AuctionHouseId,
@@ -18,7 +18,7 @@ namespace Auktionshuset.Api.Events.Admin.Employee {
                 Address: message.Address,
                 OccurredAt: message.OccurredAt);
 
-            return hubContext.Clients.All.EmployeeCreatedAsync(notication);
+            return hubContext.Clients.All.EmployeeCreatedAsync(notification);
         }
     }
 }
