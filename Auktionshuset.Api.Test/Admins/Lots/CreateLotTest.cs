@@ -15,8 +15,8 @@ public class CreateLotTest {
     [Fact]
     public async Task Endpoint_WithValidRequest_ReturnsCreatedResponseWithLotLocation() {
         // Arrange
-        var repository = new RecordingLotRepository();
-        var handler = new CreateLotHandler(repository, new RecordingEventPublisher());
+        RecordingLotRepository repository = new RecordingLotRepository();
+        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingEventPublisher());
 
         // Act
         var result = await CreateLotEndpoint.HandleAsync(
@@ -39,8 +39,8 @@ public class CreateLotTest {
     [Fact]
     public async Task Endpoint_WithPaddedAndDuplicateValues_NormalizesRequestBeforeHandling() {
         // Arrange
-        var repository = new RecordingLotRepository();
-        var handler = new CreateLotHandler(repository, new RecordingEventPublisher());
+        RecordingLotRepository repository = new RecordingLotRepository();
+        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingEventPublisher());
         var request = CreateValidRequest(
             name: "  Antique vase  ",
             category: "  Ceramics  ",
@@ -64,9 +64,9 @@ public class CreateLotTest {
     [Fact]
     public async Task HandleAsync_WithValidCommand_PersistsLotAndReturnsItsId() {
         // Arrange
-        var repository = new RecordingLotRepository();
-        var publisher = new RecordingEventPublisher();
-        var handler = new CreateLotHandler(repository, publisher);
+        RecordingLotRepository repository = new RecordingLotRepository();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
         var command = CreateValidCommand();
 
         // Act
@@ -91,9 +91,9 @@ public class CreateLotTest {
     [Fact]
     public async Task HandleAsync_WithValidCommand_PublishesEventForSavedLot() {
         // Arrange
-        var repository = new RecordingLotRepository();
-        var publisher = new RecordingEventPublisher();
-        var handler = new CreateLotHandler(repository, publisher);
+        RecordingLotRepository repository = new RecordingLotRepository();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
         var command = CreateValidCommand();
 
         // Act
@@ -117,10 +117,10 @@ public class CreateLotTest {
     [Fact]
     public async Task HandleAsync_ForwardsCancellationTokenToRepositoryAndPublisher() {
         // Arrange
-        var repository = new RecordingLotRepository();
-        var publisher = new RecordingEventPublisher();
-        var handler = new CreateLotHandler(repository, publisher);
-        using var cancellationSource = new CancellationTokenSource();
+        RecordingLotRepository repository = new RecordingLotRepository();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
+        using CancellationTokenSource cancellationSource = new CancellationTokenSource();
 
         // Act
         await handler.HandleAsync(CreateValidCommand(), cancellationSource.Token);
@@ -136,10 +136,10 @@ public class CreateLotTest {
     [Fact]
     public async Task HandleAsync_WhenSavingFails_DoesNotPublishEvent() {
         // Arrange
-        var expectedException = new InvalidOperationException("The lot could not be saved.");
-        var repository = new RecordingLotRepository { ExceptionToThrow = expectedException };
-        var publisher = new RecordingEventPublisher();
-        var handler = new CreateLotHandler(repository, publisher);
+        InvalidOperationException expectedException = new InvalidOperationException("The lot could not be saved.");
+        RecordingLotRepository repository = new RecordingLotRepository { ExceptionToThrow = expectedException };
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
 
         // Act
         var actualException = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -224,7 +224,7 @@ public class CreateLotTest {
     /// </summary>
     /// <returns>Every validation result produced for the request.</returns>
     private static IReadOnlyList<ValidationResult> Validate(CreateLotRequest request) {
-        var results = new List<ValidationResult>();
+        List<ValidationResult> results = new List<ValidationResult>();
         Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
         return results;
     }

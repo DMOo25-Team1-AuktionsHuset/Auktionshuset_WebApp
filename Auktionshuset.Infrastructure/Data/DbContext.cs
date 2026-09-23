@@ -17,12 +17,14 @@ namespace Auktionshuset.Infrastructure.Data {
         public DbSet<Auction> Auction => Set<Auction>();
         public DbSet<AuctionLot> AuctionLot => Set<AuctionLot>();
         public DbSet<Employee> Employee => Set<Employee>();
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         /// <summary>
         /// Applies every <c>IEntityTypeConfiguration</c> declared in the infrastructure assembly.
         /// </summary>
         /// <param name="builder">The builder used to construct the model for this context.</param>
-        protected override void OnModelCreating(ModelBuilder builder) {
+        protected override void OnModelCreating(ModelBuilder builder) 
+        {
             base.OnModelCreating(builder);
 
             builder.ApplyConfigurationsFromAssembly(typeof(DbContext).Assembly);

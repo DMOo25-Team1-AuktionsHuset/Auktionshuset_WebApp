@@ -21,7 +21,7 @@ namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee {
 
             await employeeRepository.UpdateAsync(employee, cancellationToken);
 
-            var integrationEvent = new EmployeeUpdatedIntegrationEvent(
+            EmployeeUpdatedIntegrationEvent integrationEvent = new EmployeeUpdatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: employee.AuctionHouseId,

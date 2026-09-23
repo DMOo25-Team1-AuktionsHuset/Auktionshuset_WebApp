@@ -128,7 +128,7 @@ internal static class TestData
 
     public static async Task<InMemoryLotRepository> CreateLotRepositoryAsync(params Lot[] lots)
     {
-        var repository = new InMemoryLotRepository();
+        InMemoryLotRepository repository = new InMemoryLotRepository();
 
         foreach (var lot in lots)
         {

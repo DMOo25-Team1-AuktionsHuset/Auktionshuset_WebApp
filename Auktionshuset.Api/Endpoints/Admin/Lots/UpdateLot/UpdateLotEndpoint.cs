@@ -37,7 +37,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot {
             [FromServices]UpdateLotHandler handler, 
             CancellationToken cancellationToken) 
         {
-            var command = new UpdateLotCommand(
+            UpdateLotCommand command = new UpdateLotCommand(
                 LotId: lotId,
                 Name: request.Name.Trim(),
                 Category: request.Category.Trim(),

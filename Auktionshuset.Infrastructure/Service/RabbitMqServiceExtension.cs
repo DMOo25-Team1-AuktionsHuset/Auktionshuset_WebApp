@@ -1,4 +1,6 @@
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +24,8 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+            services.AddHostedService<OutboxProcessor>();
             services.AddSingleton<RabbitMqRoutingKeyResolver>();
 
             services.AddSingleton<IConnection>(_ =>
@@ -40,7 +44,7 @@ namespace Auktionshuset.Infrastructure.Service
 
                 var port = GetRequiredRabbitMqPort(configuration);
 
-                var factory = new ConnectionFactory
+                ConnectionFactory factory = new ConnectionFactory
                 {
                     HostName = hostName,
                     Port = port,

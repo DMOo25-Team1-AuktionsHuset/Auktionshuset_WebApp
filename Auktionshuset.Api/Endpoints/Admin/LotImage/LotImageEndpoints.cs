@@ -73,11 +73,11 @@ public static class LotImageEndpoints
 
         // Copy the upload into memory so the validator and the store always receive a seekable
         // stream, and so the request's temporary file can be released before the response is written.
-        using var buffer = new MemoryStream((int)file.Length);
+        using MemoryStream buffer = new MemoryStream((int)file.Length);
         await file.CopyToAsync(buffer, cancellationToken);
         buffer.Position = 0;
 
-        var command = new UploadLotImageCommand(
+        UploadLotImageCommand command = new UploadLotImageCommand(
             LotId: lotId,
             FileName: file.FileName,
             ContentType: file.ContentType,

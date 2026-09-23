@@ -24,6 +24,6 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
                 .WithMany(u => u.Bids)
                 .HasForeignKey(b => b.DeviceSessionId)
                 .OnDelete(DeleteBehavior.Restrict);
-        })
+        }
     }
 }

@@ -198,7 +198,7 @@ public partial class Warehouse : IAsyncDisposable
     {
         if (pendingImage is not null)
         {
-            using var stream = new MemoryStream(pendingImage, writable: false);
+            using MemoryStream stream = new MemoryStream(pendingImage, writable: false);
 
             await LotService.UploadImageAsync(
                 lotId,
@@ -376,7 +376,7 @@ public partial class Warehouse : IAsyncDisposable
         try
         {
             await using var stream = file.OpenReadStream(MaxImageBytes);
-            using var buffer = new MemoryStream();
+            using MemoryStream buffer = new MemoryStream();
             await stream.CopyToAsync(buffer);
 
             pendingImage = buffer.ToArray();

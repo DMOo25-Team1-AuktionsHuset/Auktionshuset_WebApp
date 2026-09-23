@@ -14,12 +14,12 @@ public class DeleteLotTest
     [Fact]
     public async Task Delete_RemovesOnlyRequestedLot_AndReturns404OnRepeat()
     {
-        var repository = new InMemoryLotRepository();
+        InMemoryLotRepository repository = new InMemoryLotRepository();
         var target = CreateLot();
         var other = CreateLot();
         await repository.AddAsync(target, CancellationToken.None);
         await repository.AddAsync(other, CancellationToken.None);
-        var handler = new DeleteLotHandler(repository, new RecordingEventPublisher());
+        DeleteLotHandler handler = new DeleteLotHandler(repository, new RecordingEventPublisher());
 
         var result = await DeleteLotEndpoint.HandleAsync(target.LotId, handler, CancellationToken.None);
 
@@ -36,10 +36,10 @@ public class DeleteLotTest
     [Fact]
     public async Task Delete_WhenCancelled_DoesNotRemoveLot()
     {
-        var repository = new InMemoryLotRepository();
+        InMemoryLotRepository repository = new InMemoryLotRepository();
         var lot = CreateLot();
         await repository.AddAsync(lot, CancellationToken.None);
-        using var cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>

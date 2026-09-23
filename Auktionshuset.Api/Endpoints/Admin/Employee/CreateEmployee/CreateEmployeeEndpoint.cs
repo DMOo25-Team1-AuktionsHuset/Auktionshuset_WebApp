@@ -20,7 +20,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee {
             [FromServices]CreateEmployeeHandler handler, 
             CancellationToken cancellationToken) 
         {
-            var command = new CreateEmployeeCommand(
+            CreateEmployeeCommand command = new CreateEmployeeCommand(
                 FirstName: request.FirstName.Trim(),
                 LastName: request.LastName.Trim(),
                 BirthDate: request.BirthDate,

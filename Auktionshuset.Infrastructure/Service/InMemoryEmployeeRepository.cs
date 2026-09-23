@@ -20,7 +20,7 @@ namespace Auktionshuset.Infrastructure.Service
         /// </summary>
         public InMemoryEmployeeRepository()
         {
-            var auctionHouse = new AuctionHouse
+            AuctionHouse auctionHouse = new AuctionHouse
             {
                 AuctionHouseId = AuctionHouseId,
                 AuctionHouseName = "Haderslev Auktionshus",

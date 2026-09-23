@@ -11,7 +11,7 @@ public class AuctionStatusesTests
     [Fact]
     public void Derive_WithFutureStart_ReturnsUpcoming()
     {
-        var now = new DateTime(2026, 5, 1, 12, 0, 0);
+        DateTime now = new DateTime(2026, 5, 1, 12, 0, 0);
 
         var status = AuctionStatuses.Derive(now.AddHours(1), now.AddHours(5), now);
 
@@ -24,7 +24,7 @@ public class AuctionStatusesTests
     [Fact]
     public void Derive_BetweenStartAndEnd_ReturnsLive()
     {
-        var now = new DateTime(2026, 5, 1, 12, 0, 0);
+        DateTime now = new DateTime(2026, 5, 1, 12, 0, 0);
 
         var status = AuctionStatuses.Derive(now.AddHours(-1), now.AddHours(1), now);
 
@@ -37,7 +37,7 @@ public class AuctionStatusesTests
     [Fact]
     public void Derive_AfterEnd_ReturnsEnded()
     {
-        var now = new DateTime(2026, 5, 1, 12, 0, 0);
+        DateTime now = new DateTime(2026, 5, 1, 12, 0, 0);
 
         var status = AuctionStatuses.Derive(now.AddHours(-5), now.AddHours(-1), now);
 

@@ -87,7 +87,7 @@ public class LotImageValidatorTests
     public void TryValidate_WithSupportedImage_RewindsStream()
     {
         var bytes = ImageBytes("png");
-        using var stream = new MemoryStream(bytes);
+        using MemoryStream stream = new MemoryStream(bytes);
 
         LotImageValidator.TryValidate(stream, bytes.Length, out _);
 

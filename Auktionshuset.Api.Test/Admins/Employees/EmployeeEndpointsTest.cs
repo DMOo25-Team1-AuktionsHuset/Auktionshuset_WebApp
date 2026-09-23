@@ -17,9 +17,9 @@ public class EmployeeEndpointsTest
     [Fact]
     public async Task Create_WithValidRequest_TrimsValuesAndReturnsCreatedLocation()
     {
-        var repository = new TestEmployeeRepository();
-        var publisher = new RecordingEventPublisher();
-        var handler = new CreateEmployeeHandler(repository, publisher);
+        TestEmployeeRepository repository = new TestEmployeeRepository();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        CreateEmployeeHandler handler = new CreateEmployeeHandler(repository, publisher);
         var request = CreateRequest(
             firstName: "  Anna  ",
             lastName: "  Jensen ",
@@ -45,10 +45,10 @@ public class EmployeeEndpointsTest
     public async Task Update_WithExistingEmployee_TrimsValuesAndReturnsOk()
     {
         var employee = CreateEmployee();
-        var repository = new TestEmployeeRepository(employee);
-        var publisher = new RecordingEventPublisher();
-        var handler = new UpdateEmployeeHandler(repository, publisher);
-        var request = new UpdateEmployeeRequest
+        TestEmployeeRepository repository = new TestEmployeeRepository(employee);
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        UpdateEmployeeHandler handler = new UpdateEmployeeHandler(repository, publisher);
+        UpdateEmployeeRequest request = new UpdateEmployeeRequest
         {
             FirstName = "  Updated  ",
             LastName = "  Employee ",
@@ -78,8 +78,8 @@ public class EmployeeEndpointsTest
     [Fact]
     public async Task Update_WithUnknownEmployee_ReturnsNotFound()
     {
-        var repository = new TestEmployeeRepository();
-        var handler = new UpdateEmployeeHandler(repository, new RecordingEventPublisher());
+        TestEmployeeRepository repository = new TestEmployeeRepository();
+        UpdateEmployeeHandler handler = new UpdateEmployeeHandler(repository, new RecordingEventPublisher());
 
         var result = await UpdateEmployeeEndpoint.HandleAsync(
             Guid.NewGuid(),
@@ -94,9 +94,9 @@ public class EmployeeEndpointsTest
     public async Task Delete_WithExistingEmployee_ReturnsNoContentAndPublishesEvent()
     {
         var employee = CreateEmployee();
-        var repository = new TestEmployeeRepository(employee);
-        var publisher = new RecordingEventPublisher();
-        var handler = new DeleteEmployeeHandler(repository, publisher);
+        TestEmployeeRepository repository = new TestEmployeeRepository(employee);
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        DeleteEmployeeHandler handler = new DeleteEmployeeHandler(repository, publisher);
 
         var result = await DeleteEmployeeEndpoint.HandleAsync(
             employee.EmployeeId,

@@ -1,4 +1,5 @@
 using Auktionshuset.Domain.Entities;
+using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions;
 
@@ -69,7 +70,7 @@ internal static class AuctionValidation
     internal static IReadOnlyCollection<AuctionLot> BuildAuctionLots(
         IReadOnlyCollection<AuctionLotSelection> selections,
         IReadOnlyDictionary<Guid, Lot> lotsById,
-        Auction auction,
+        AuctionEntity auction,
         List<string> errors)
     {
         if (selections.Select(selection => selection.LotId).Distinct().Count() != selections.Count)
@@ -77,7 +78,7 @@ internal static class AuctionValidation
             errors.Add("Den samme genstand kan ikke tilføjes mere end én gang.");
         }
 
-        var auctionLots = new List<AuctionLot>();
+        List<AuctionLot> auctionLots = new List<AuctionLot>();
 
         foreach (var selection in selections)
         {
@@ -107,7 +108,9 @@ internal static class AuctionValidation
                 Auction = auction,
                 LotId = lot.LotId,
                 Lot = lot,
-                Quantity = selection.Quantity
+                Quantity = selection.Quantity,
+                OpenForBids = false,
+                CurrentHighestBid = null
             });
         }
 

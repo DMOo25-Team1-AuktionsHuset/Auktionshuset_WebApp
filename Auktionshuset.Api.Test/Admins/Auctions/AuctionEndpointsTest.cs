@@ -240,7 +240,7 @@ public class AuctionEndpointsTest
     public async Task GetAuction_ReturnsDetailOrNotFound()
     {
         var (context, employee, lot) = await CreateContextAsync(lotQuantity: 4);
-        var handler = new GetAuctionsHandler(context.Auctions, context.Employees);
+        GetAuctionsHandler handler = new GetAuctionsHandler(context.Auctions, context.Employees);
 
         var created = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(employee.EmployeeId, [(lot.LotId, 4)]),
@@ -360,7 +360,7 @@ public class AuctionEndpointsTest
     {
         var (context, employee, _) = await CreateContextAsync();
         var auctionId = await CreateAuctionAsync(context, employee);
-        var handler = new DeleteAuctionHandler(context.Auctions, context.Publisher);
+        DeleteAuctionHandler handler = new DeleteAuctionHandler(context.Auctions, context.Publisher);
 
         var deleted = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
         var repeated = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
@@ -466,12 +466,12 @@ public class AuctionEndpointsTest
     private static async Task<(TestContext Context, EmployeeRow Employee, Lot Lot)> CreateContextAsync(
         int lotQuantity = 1)
     {
-        var employees = new InMemoryEmployeeRepository();
+        InMemoryEmployeeRepository employees = new InMemoryEmployeeRepository();
         var seeded = (await employees.GetAllAsync(CancellationToken.None))[0];
-        var employee = new EmployeeRow(seeded.EmployeeId, $"{seeded.FirstName} {seeded.LastName}".Trim());
+        EmployeeRow employee = new EmployeeRow(seeded.EmployeeId, $"{seeded.FirstName} {seeded.LastName}".Trim());
 
-        var lots = new InMemoryLotRepository();
-        var lot = new Lot
+        InMemoryLotRepository lots = new InMemoryLotRepository();
+        Lot lot = new Lot
         {
             LotId = Guid.NewGuid(),
             Name = "Stol",

@@ -79,7 +79,7 @@ public static class GetAuctionsEndpoint
             return TypedResults.NotFound();
         }
 
-        var response = new AuctionDetailResponse(
+        AuctionDetailResponse response = new AuctionDetailResponse(
             AuctionId: detail.Auction.AuctionId,
             Name: detail.Auction.Name,
             Status: AuctionStatuses.Derive(detail.Auction.StartsAt, detail.Auction.EndsAt, DateTime.Now),

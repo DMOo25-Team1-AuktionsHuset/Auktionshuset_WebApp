@@ -127,11 +127,11 @@ public class GetAuctionsHandlerTests
     {
         var employee = TestData.CreateEmployee();
         var lotRepository = await TestData.CreateLotRepositoryAsync();
-        var auctionRepository = new InMemoryAuctionRepository();
-        var employeeRepository = new TestEmployeeRepository();
+        InMemoryAuctionRepository auctionRepository = new InMemoryAuctionRepository();
+        TestEmployeeRepository employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
-        var publisher = new RecordingEventPublisher();
-        var createHandler = new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher);
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher);
 
         var earliest = await createHandler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)) with { Name = "Tidlig" },
@@ -141,7 +141,7 @@ public class GetAuctionsHandlerTests
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(20), DateTime.Now.AddDays(21)) with { Name = "Sen" },
             CancellationToken.None);
 
-        var handler = new GetAuctionsHandler(auctionRepository, employeeRepository);
+        GetAuctionsHandler handler = new GetAuctionsHandler(auctionRepository, employeeRepository);
 
         var overviews = await handler.HandleAsync(CancellationToken.None);
 
@@ -156,9 +156,9 @@ public class GetAuctionsHandlerTests
     /// <param name="employeeId">The auctionarius identifier stored on the auction, if any.</param>
     private static async Task<GetAuctionsHandler> CreateWithAuctionAsync(Guid? employeeId)
     {
-        var auctionRepository = new InMemoryAuctionRepository();
+        InMemoryAuctionRepository auctionRepository = new InMemoryAuctionRepository();
 
-        var auction = new Auction
+        Auction auction = new Auction
         {
             AuctionId = Guid.NewGuid(),
             Name = "Forårsauktion",
@@ -183,10 +183,10 @@ public class GetAuctionsHandlerTests
     {
         var lots = selections.Select(selection => selection.Lot).ToArray();
         var lotRepository = await TestData.CreateLotRepositoryAsync(lots);
-        var auctionRepository = new InMemoryAuctionRepository();
-        var employeeRepository = new TestEmployeeRepository();
+        InMemoryAuctionRepository auctionRepository = new InMemoryAuctionRepository();
+        TestEmployeeRepository employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
         var created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
             .HandleAsync(

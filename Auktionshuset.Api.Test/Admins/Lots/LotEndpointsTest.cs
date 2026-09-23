@@ -15,7 +15,7 @@ public class LotEndpointsTest
     [Fact]
     public async Task GetLots_ReturnsProjectedLotsAndImageUrls()
     {
-        var repository = new InMemoryLotRepository();
+        InMemoryLotRepository repository = new InMemoryLotRepository();
         var withImage = CreateLot("With image", "lot.png");
         var withoutImage = CreateLot("Without image");
         await repository.AddAsync(withImage, CancellationToken.None);
@@ -55,11 +55,11 @@ public class LotEndpointsTest
     public async Task Update_WithExistingLot_TrimsValuesAndRemovesDuplicateTags()
     {
         var lot = CreateLot("Original");
-        var repository = new InMemoryLotRepository();
+        InMemoryLotRepository repository = new InMemoryLotRepository();
         await repository.AddAsync(lot, CancellationToken.None);
-        var publisher = new RecordingEventPublisher();
-        var handler = new UpdateLotHandler(repository, publisher);
-        var request = new UpdateLotRequest
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
+        UpdateLotHandler handler = new UpdateLotHandler(repository, publisher);
+        UpdateLotRequest request = new UpdateLotRequest
         {
             Name = "  Updated lot  ",
             Category = "  Furniture ",
