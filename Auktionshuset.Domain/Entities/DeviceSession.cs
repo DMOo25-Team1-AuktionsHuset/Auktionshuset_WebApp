@@ -8,8 +8,13 @@ namespace Auktionshuset.Domain.Entities {
         public required DateTime StartedAt { get; set; }
         public required DateTime EndedAt { get; set; }
 
-        public required Customer CustomerId { get; set; }
-        public required Auction AuctionId { get; set; }
-        public required Device DeviceId { get; set; }
+        public required Guid CustomerId { get; set; }
+        public required Customer Customer { get; set; }
+
+        public required Guid AuctionId { get; set; }
+        public required Auction Auction { get; set; }
+
+        public required Guid DeviceId { get; set; }
+        public required Device Device { get; set; }
     }
 }
