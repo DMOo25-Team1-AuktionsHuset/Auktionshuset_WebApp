@@ -21,7 +21,6 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            // Add infrastructure services here
             services.AddRabbitMq(configuration);
 
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();

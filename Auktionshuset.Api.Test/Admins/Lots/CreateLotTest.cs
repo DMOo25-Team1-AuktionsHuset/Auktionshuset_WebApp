@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
@@ -16,7 +17,7 @@ public class CreateLotTest {
     public async Task Endpoint_WithValidRequest_ReturnsCreatedResponseWithLotLocation() {
         // Arrange
         RecordingLotRepository repository = new RecordingLotRepository();
-        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingEventPublisher());
+        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingOutboxWriter());
 
         // Act
         var result = await CreateLotEndpoint.HandleAsync(
@@ -40,7 +41,7 @@ public class CreateLotTest {
     public async Task Endpoint_WithPaddedAndDuplicateValues_NormalizesRequestBeforeHandling() {
         // Arrange
         RecordingLotRepository repository = new RecordingLotRepository();
-        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingEventPublisher());
+        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingOutboxWriter());
         var request = CreateValidRequest(
             name: "  Antique vase  ",
             category: "  Ceramics  ",
@@ -65,8 +66,8 @@ public class CreateLotTest {
     public async Task HandleAsync_WithValidCommand_PersistsLotAndReturnsItsId() {
         // Arrange
         RecordingLotRepository repository = new RecordingLotRepository();
-        RecordingEventPublisher publisher = new RecordingEventPublisher();
-        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
+        RecordingOutboxWriter outboxWriter = new RecordingOutboxWriter();
+        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter);
         var command = CreateValidCommand();
 
         // Act
@@ -86,14 +87,14 @@ public class CreateLotTest {
     }
 
     /// <summary>
-    /// Verifies that the handler publishes a creation event that matches the saved lot.
+    /// Verifies that the handler adds a creation event to the outbox for the saved lot.
     /// </summary>
     [Fact]
     public async Task HandleAsync_WithValidCommand_PublishesEventForSavedLot() {
         // Arrange
         RecordingLotRepository repository = new RecordingLotRepository();
-        RecordingEventPublisher publisher = new RecordingEventPublisher();
-        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
+        RecordingOutboxWriter outboxWriter = new RecordingOutboxWriter();
+        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter);
         var command = CreateValidCommand();
 
         // Act
@@ -101,25 +102,25 @@ public class CreateLotTest {
 
         // Assert
         var savedLot = Assert.IsType<Lot>(repository.AddedLot);
-        var publishedEvent = Assert.IsType<LotCreatedIntegrationEvent>(publisher.PublishedEvent);
-        Assert.NotEqual(Guid.Empty, publishedEvent.EventId);
-        Assert.Equal(savedLot.LotId, publishedEvent.LotId);
-        Assert.Equal(savedLot.AuctionHouseId, publishedEvent.AuctionHouseId);
-        Assert.Equal(savedLot.Name, publishedEvent.Name);
-        Assert.Equal(savedLot.Category, publishedEvent.Category);
-        Assert.Equal(savedLot.Quantity, publishedEvent.Quantity);
-        Assert.Equal(savedLot.EstimatedValue, publishedEvent.EstimatedValue);
+        var outboxEvent = Assert.IsType<LotCreatedIntegrationEvent>(outboxWriter.AddedEvent);
+        Assert.NotEqual(Guid.Empty, outboxEvent.EventId);
+        Assert.Equal(savedLot.LotId, outboxEvent.LotId);
+        Assert.Equal(savedLot.AuctionHouseId, outboxEvent.AuctionHouseId);
+        Assert.Equal(savedLot.Name, outboxEvent.Name);
+        Assert.Equal(savedLot.Category, outboxEvent.Category);
+        Assert.Equal(savedLot.Quantity, outboxEvent.Quantity);
+        Assert.Equal(savedLot.EstimatedValue, outboxEvent.EstimatedValue);
     }
 
     /// <summary>
-    /// Verifies that the handler passes its cancellation token on to the repository and publisher.
+    /// Verifies that the handler passes its cancellation token on to the repository and outbox writer.
     /// </summary>
     [Fact]
     public async Task HandleAsync_ForwardsCancellationTokenToRepositoryAndPublisher() {
         // Arrange
         RecordingLotRepository repository = new RecordingLotRepository();
-        RecordingEventPublisher publisher = new RecordingEventPublisher();
-        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
+        RecordingOutboxWriter outboxWriter = new RecordingOutboxWriter();
+        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter);
         using CancellationTokenSource cancellationSource = new CancellationTokenSource();
 
         // Act
@@ -127,19 +128,19 @@ public class CreateLotTest {
 
         // Assert
         Assert.Equal(cancellationSource.Token, repository.CancellationToken);
-        Assert.Equal(cancellationSource.Token, publisher.CancellationToken);
+        Assert.Equal(cancellationSource.Token, outboxWriter.CancellationToken);
     }
 
     /// <summary>
-    /// Verifies that a failing save propagates the exception and publishes no event.
+    /// Verifies that a failing save propagates the exception and adds no outbox event.
     /// </summary>
     [Fact]
     public async Task HandleAsync_WhenSavingFails_DoesNotPublishEvent() {
         // Arrange
         InvalidOperationException expectedException = new InvalidOperationException("The lot could not be saved.");
         RecordingLotRepository repository = new RecordingLotRepository { ExceptionToThrow = expectedException };
-        RecordingEventPublisher publisher = new RecordingEventPublisher();
-        CreateLotHandler handler = new CreateLotHandler(repository, publisher);
+        RecordingOutboxWriter outboxWriter = new RecordingOutboxWriter();
+        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter);
 
         // Act
         var actualException = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -147,7 +148,7 @@ public class CreateLotTest {
 
         // Assert
         Assert.Same(expectedException, actualException);
-        Assert.Null(publisher.PublishedEvent);
+        Assert.Null(outboxWriter.AddedEvent);
     }
 
     /// <summary>
@@ -271,16 +272,15 @@ public class CreateLotTest {
         }
     }
 
-    private sealed class RecordingEventPublisher : IIntegrationEventPublisher {
-        public IIntegrationEvent? PublishedEvent { get; private set; }
+    private sealed class RecordingOutboxWriter : IOutboxWriter {
+        public IIntegrationEvent? AddedEvent { get; private set; }
         public CancellationToken CancellationToken { get; private set; }
 
         /// <summary>
-        /// Records the published event and the cancellation token it was called with.
+        /// Records the event added to the outbox and the cancellation token it was called with.
         /// </summary>
-        public Task PublishAsync<TEvent>(TEvent message, CancellationToken cancellationToken)
-            where TEvent : IIntegrationEvent {
-            PublishedEvent = message;
+        public Task AddAsync(IIntegrationEvent integrationEvent, CancellationToken cancellationToken = default) {
+            AddedEvent = integrationEvent;
             CancellationToken = cancellationToken;
             return Task.CompletedTask;
         }
