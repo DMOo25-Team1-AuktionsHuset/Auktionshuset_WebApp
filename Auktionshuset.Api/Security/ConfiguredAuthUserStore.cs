@@ -32,7 +32,7 @@ namespace Auktionshuset.Api.Security
                 Email = email,
                 PasswordHash = password,
                 Roles = [SecurityRoles.Admin],
-                Permissions = SecurityPermissons.All
+                Permissions = SecurityPermissions.All
             };
 
             user.PasswordHash = passwordHasher.HashPassword(user, password);

@@ -18,4 +18,13 @@ public static class SecurityPermissions
     public const string DeleteLot = "lots.delete";
     public const string ViewLots = "lots.read";
     public const string CreateAuction = "auctions.create";
+
+    public static readonly IReadOnlyCollection<string> All =
+        [
+            CreateLot,
+            UpdateLot,
+            DeleteLot,
+            ViewLots,
+            CreateAuction
+        ];
 }
