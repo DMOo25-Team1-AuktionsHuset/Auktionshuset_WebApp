@@ -13,7 +13,7 @@ namespace Auktionshuset.Api.Events.Admin.Auction {
         /// <param name="cancellationToken">The token used to cancel the operation.</param>
         /// <returns>A task that completes once the notification has been broadcast.</returns>
         public Task HandleAsync(AuctionCreatedIntegrationEvent message, CancellationToken cancellationToken) {
-            var notification = new CreateAuctionNotification(
+            CreateAuctionNotification notification = new CreateAuctionNotification(
                 EventId: message.EventId,
                 AuctionId: message.AuctionId,
                 Name: message.Name,

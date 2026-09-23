@@ -13,7 +13,7 @@ namespace Auktionshuset.Api.Events.Admin.Employee
     {
         public Task HandleAsync(EmployeeDeletedIntegrationEvent message, CancellationToken cancellationToken)
         {
-            var notification = new DeleteEmployeeNotification(
+            DeleteEmployeeNotification notification = new DeleteEmployeeNotification(
                 EmployeeId: message.EmployeeId);
             return hubContext.Clients.All.EmployeeDeletedAsync(notification);
         }

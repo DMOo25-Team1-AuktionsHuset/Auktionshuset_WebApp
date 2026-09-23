@@ -1,5 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Auctions.GetAuctions;
 
@@ -16,9 +17,9 @@ public sealed class GetAuctionsHandler(
     {
         var auctions = await auctionRepository.GetAllAsync(cancellationToken);
         var employees = await employeeRepository.GetAllAsync(cancellationToken);
-        var employeesById = employees.ToDictionary(employee => employee.EmployeeId);
+        Dictionary<Guid, Employee> employeesById = employees.ToDictionary(employee => employee.EmployeeId);
 
-        var overviews = new List<AuctionOverview>(auctions.Count);
+        List<AuctionOverview> overviews = new List<AuctionOverview>(auctions.Count);
 
         foreach (var auction in auctions)
         {
@@ -56,7 +57,7 @@ public sealed class GetAuctionsHandler(
 
         var auctionLots = await auctionRepository.GetAuctionLotsAsync(auctionId, cancellationToken);
         var employees = await employeeRepository.GetAllAsync(cancellationToken);
-        var employeesById = employees.ToDictionary(employee => employee.EmployeeId);
+        Dictionary<Guid, Employee> employeesById = employees.ToDictionary(employee => employee.EmployeeId);
 
         var lines = auctionLots
             .Select(auctionLot => new AuctionLotLine(

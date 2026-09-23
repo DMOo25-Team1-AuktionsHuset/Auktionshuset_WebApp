@@ -21,12 +21,14 @@ namespace Auktionshuset.Infrastructure.Data {
         public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
         public DbSet<BidCommandKey> BidCommandKeys => Set<BidCommandKey>();
         public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         /// <summary>
         /// Applies every <c>IEntityTypeConfiguration</c> declared in the infrastructure assembly.
         /// </summary>
         /// <param name="builder">The builder used to construct the model for this context.</param>
-        protected override void OnModelCreating(ModelBuilder builder) {
+        protected override void OnModelCreating(ModelBuilder builder) 
+        {
             base.OnModelCreating(builder);
 
             builder.ApplyConfigurationsFromAssembly(typeof(DbContext).Assembly);

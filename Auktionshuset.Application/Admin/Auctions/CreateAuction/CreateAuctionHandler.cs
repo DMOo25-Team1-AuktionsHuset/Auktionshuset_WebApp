@@ -17,7 +17,7 @@ public sealed class CreateAuctionHandler(
         CreateAuctionCommand command,
         CancellationToken cancellationToken)
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         var employee = command.EmployeeId is { } employeeId
             ? await employeeRepository.GetByIdAsync(employeeId, cancellationToken)
@@ -32,7 +32,7 @@ public sealed class CreateAuctionHandler(
             requireFutureStart: true,
             errors);
 
-        var auction = new AuctionEntity
+        AuctionEntity auction = new AuctionEntity
         {
             AuctionId = Guid.NewGuid(),
             Name = command.Name.Trim(),
@@ -64,7 +64,7 @@ public sealed class CreateAuctionHandler(
 
         await auctionRepository.AddAsync(auction, auctionLots, cancellationToken);
 
-        var integrationEvent = new AuctionCreatedIntegrationEvent(
+        AuctionCreatedIntegrationEvent integrationEvent = new AuctionCreatedIntegrationEvent(
             EventId: Guid.NewGuid(),
             AuctionId: auction.AuctionId,
             Name: auction.Name,

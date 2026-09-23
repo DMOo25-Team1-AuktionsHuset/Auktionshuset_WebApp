@@ -38,7 +38,7 @@ public static class UpdateAuctionEndpoint
         UpdateAuctionHandler handler,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateAuctionCommand(
+        UpdateAuctionCommand command = new UpdateAuctionCommand(
             AuctionId: auctionId,
             Name: request.Name.Trim(),
             StartsAt: request.StartsAt!.Value,

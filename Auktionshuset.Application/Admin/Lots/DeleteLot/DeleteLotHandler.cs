@@ -26,8 +26,8 @@ public sealed class DeleteLotHandler(
         {
             return false;
         }
-        
-        var integrationEvent = new LotDeletedIntegrationEvent(
+
+        LotDeletedIntegrationEvent integrationEvent = new LotDeletedIntegrationEvent(
             EventId: Guid.NewGuid(),
             LotId: command.LotId,
             OccurredAt: DateTime.UtcNow);

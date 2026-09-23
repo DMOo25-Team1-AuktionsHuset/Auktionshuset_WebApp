@@ -23,7 +23,7 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Missing();
         }
 
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         var employee = command.EmployeeId is { } employeeId
             ? await employeeRepository.GetByIdAsync(employeeId, cancellationToken)

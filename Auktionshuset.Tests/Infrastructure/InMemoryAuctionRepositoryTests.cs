@@ -13,7 +13,7 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task GetAllAsync_WithSeveralAuctions_OrdersByStartTimeDescending()
     {
-        var repository = new InMemoryAuctionRepository();
+        InMemoryAuctionRepository repository = new InMemoryAuctionRepository();
         var earliest = CreateAuction("Tidlig", DateTime.Now.AddDays(1));
         var latest = CreateAuction("Sen", DateTime.Now.AddDays(10));
 
@@ -31,7 +31,7 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task DeleteAsync_RemovesAuctionAndItsLotLines()
     {
-        var repository = new InMemoryAuctionRepository();
+        InMemoryAuctionRepository repository = new InMemoryAuctionRepository();
         var lot = TestData.CreateLot("Stol");
         var auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
         var other = CreateAuction("Efterårsauktion", DateTime.Now.AddDays(20));
@@ -64,7 +64,7 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task UpdateAsync_WithExistingAuction_ReplacesValuesAndLotLines()
     {
-        var repository = new InMemoryAuctionRepository();
+        InMemoryAuctionRepository repository = new InMemoryAuctionRepository();
         var first = TestData.CreateLot("Stol", quantity: 4);
         var second = TestData.CreateLot("Bord", quantity: 6);
         var auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
@@ -119,7 +119,7 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task AddAsync_WithDuplicateId_Throws()
     {
-        var repository = new InMemoryAuctionRepository();
+        InMemoryAuctionRepository repository = new InMemoryAuctionRepository();
         var auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
 
         await repository.AddAsync(auction, [], CancellationToken.None);
@@ -134,7 +134,7 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task GetAllAsync_WhenCancelled_Throws()
     {
-        using var cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>

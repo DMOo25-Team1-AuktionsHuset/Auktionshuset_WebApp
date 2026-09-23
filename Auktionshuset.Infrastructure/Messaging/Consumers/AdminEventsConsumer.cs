@@ -77,7 +77,7 @@ internal sealed class AdminEventsConsumer : BackgroundService
                 cancellationToken: stoppingToken);
         }
 
-        var consumer = new AsyncEventingBasicConsumer(channel);
+        AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(channel);
 
         consumer.ReceivedAsync += async (_, eventArgs) =>
         {

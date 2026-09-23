@@ -84,12 +84,12 @@ public class DeleteAuctionHandlerTests
         Employee employee)
     {
         var lots = await TestData.CreateLotRepositoryAsync();
-        var auctions = new InMemoryAuctionRepository();
-        var employees = new TestEmployeeRepository();
+        InMemoryAuctionRepository auctions = new InMemoryAuctionRepository();
+        TestEmployeeRepository employees = new TestEmployeeRepository();
         employees.Add(employee);
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        var createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher);
+        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher);
 
         var first = await createHandler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)),
@@ -107,11 +107,11 @@ public class DeleteAuctionHandlerTests
         params Lot[] lots)
     {
         var lotRepository = await TestData.CreateLotRepositoryAsync(lots);
-        var auctionRepository = new InMemoryAuctionRepository();
-        var employeeRepository = new TestEmployeeRepository();
+        InMemoryAuctionRepository auctionRepository = new InMemoryAuctionRepository();
+        TestEmployeeRepository employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
 
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
         var created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
             .HandleAsync(

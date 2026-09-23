@@ -17,7 +17,7 @@ namespace Auktionshuset.Api.Events.Admin.Auction
         /// <returns>A task that completes once the notification has been broadcast.</returns>
         public Task HandleAsync(AuctionUpdatedIntegrationEvent message, CancellationToken cancellationToken)
         {
-            var notification = new UpdateAuctionNotification(
+            UpdateAuctionNotification notification = new UpdateAuctionNotification(
                 EventId: message.EventId,
                 AuctionId: message.AuctionId,
                 Name: message.Name,

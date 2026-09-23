@@ -14,7 +14,7 @@ namespace Auktionshuset.Api.Events.Admin.Lot {
         /// <param name="message">The integration event describing the created lot.</param>
         /// <returns>A task that completes once the notification has been broadcast.</returns>
         public Task HandleAsync(LotCreatedIntegrationEvent message, CancellationToken cancellationToken) {
-            var notification = new CreateLotNotification(
+            CreateLotNotification notification = new CreateLotNotification(
                 EventId: message.EventId,
                 LotId: message.LotId,
                 AuctionHouseId: message.AuctionHouseId,

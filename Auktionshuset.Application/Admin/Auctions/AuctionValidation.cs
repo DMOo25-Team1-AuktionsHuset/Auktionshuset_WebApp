@@ -78,7 +78,7 @@ internal static class AuctionValidation
             errors.Add("Den samme genstand kan ikke tilføjes mere end én gang.");
         }
 
-        var auctionLots = new List<AuctionLot>();
+        List<AuctionLot> auctionLots = new List<AuctionLot>();
 
         foreach (var selection in selections)
         {
@@ -108,7 +108,9 @@ internal static class AuctionValidation
                 Auction = auction,
                 LotId = lot.LotId,
                 Lot = lot,
-                Quantity = selection.Quantity
+                Quantity = selection.Quantity,
+                OpenForBids = false,
+                CurrentHighestBid = null
             });
         }
 

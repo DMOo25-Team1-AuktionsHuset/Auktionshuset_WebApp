@@ -57,7 +57,7 @@ public class UpdateAuctionRequestTests
     [Fact]
     public void Validate_WithoutEmployee_HasNoErrors()
     {
-        var request = new UpdateAuctionRequest
+        UpdateAuctionRequest request = new UpdateAuctionRequest
         {
             Name = "Forårsauktion",
             StartsAt = DateTime.Now.AddDays(3),
@@ -73,7 +73,7 @@ public class UpdateAuctionRequestTests
     [Fact]
     public void Validate_WithDuplicateLotsAndLowQuantity_ReturnsBothErrors()
     {
-        var lotId = Guid.NewGuid();
+        Guid lotId = Guid.NewGuid();
 
         var errors = Validate(CreateValidRequest(lots:
             [new AuctionLotRequest(lotId, 0), new AuctionLotRequest(lotId, 1)]));
@@ -104,7 +104,7 @@ public class UpdateAuctionRequestTests
     /// </summary>
     private static IReadOnlyList<ValidationResult> Validate(UpdateAuctionRequest request)
     {
-        var results = new List<ValidationResult>();
+        List<ValidationResult> results = new List<ValidationResult>();
         Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
         return results;
     }

@@ -24,7 +24,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
         public async Task LotCreatedEvent_CanBePublishedToRabbitMq()
         {
             // Arrange 
-            var factory = new ConnectionFactory
+            ConnectionFactory factory = new ConnectionFactory
             {
                 HostName = "localhost",
                 UserName = "guest",
@@ -59,7 +59,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                 routingKey);
 
             // Act
-            var eventMessage = new LotCreatedIntegrationEvent(
+            LotCreatedIntegrationEvent eventMessage = new LotCreatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 LotId: Guid.NewGuid(),
                 AuctionHouseId: Guid.NewGuid(),
@@ -105,11 +105,11 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
         [Trait("Category", "Integration")]
         public async Task AdminConsumer_CallsLotCreatedHandler_WhenLotCreatedEventIsReceived()
         {
-            var receivedEvent =
+            TaskCompletionSource<LotCreatedIntegrationEvent> receivedEvent =
                 new TaskCompletionSource<LotCreatedIntegrationEvent>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
 
-            var handlerMock =
+            Mock<IIntegrationEventHandler<LotCreatedIntegrationEvent>> handlerMock =
                 new Mock<IIntegrationEventHandler<LotCreatedIntegrationEvent>>();
 
             handlerMock
@@ -120,7 +120,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                     (message, _) => receivedEvent.TrySetResult(message))
                 .Returns(Task.CompletedTask);
 
-            var services = new ServiceCollection();
+            ServiceCollection services = new ServiceCollection();
 
             services.AddScoped<
                 IIntegrationEventHandler<LotCreatedIntegrationEvent>>(
@@ -132,7 +132,7 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
             var scopeFactory =
                 serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
-            var factory = new ConnectionFactory
+            ConnectionFactory factory = new ConnectionFactory
             {
                 HostName = "localhost",
                 UserName = "guest",
@@ -168,15 +168,15 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 
             await publishChannel.QueuePurgeAsync(queueName);
 
-            using var consumer =
+            using AdminEventsConsumer consumer =
                 new AdminEventsConsumer(connection, scopeFactory);
 
-            using var cancellationSource =
+            using CancellationTokenSource cancellationSource =
                 new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
             await consumer.StartAsync(cancellationSource.Token);
 
-            var expectedEvent = new LotCreatedIntegrationEvent(
+            LotCreatedIntegrationEvent expectedEvent = new LotCreatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 LotId: Guid.NewGuid(),
                 AuctionHouseId: Guid.NewGuid(),

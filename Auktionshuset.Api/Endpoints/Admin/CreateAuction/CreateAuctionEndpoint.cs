@@ -36,7 +36,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
             [FromServices]CreateAuctionHandler handler,
             CancellationToken cancellationToken)
         {
-            var command = new CreateAuctionCommand(
+            CreateAuctionCommand command = new CreateAuctionCommand(
                 Name: request.Name.Trim(),
                 StartsAt: request.StartsAt!.Value,
                 EndsAt: request.EndsAt!.Value,
@@ -51,7 +51,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
                 return TypedResults.ValidationProblem(AuctionEndpointMapping.ToValidationErrors(result.Errors));
             }
 
-            var response = new CreateAuctionResponse(result.AuctionId, result.LotCount, result.ItemCount);
+            CreateAuctionResponse response = new CreateAuctionResponse(result.AuctionId, result.LotCount, result.ItemCount);
 
             return TypedResults.Created($"/api/auctions/{result.AuctionId}", response);
         }

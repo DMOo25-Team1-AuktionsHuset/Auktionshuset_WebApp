@@ -33,7 +33,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot {
             [FromBody]CreateLotRequest request, 
             [FromServices]CreateLotHandler handler, 
             CancellationToken cancellationToken) {
-            var command = new CreateLotCommand(
+            CreateLotCommand command = new CreateLotCommand(
                 Name: request.Name.Trim(),
                 Category: request.Category.Trim(),
                 Quantity: request.Quantity,

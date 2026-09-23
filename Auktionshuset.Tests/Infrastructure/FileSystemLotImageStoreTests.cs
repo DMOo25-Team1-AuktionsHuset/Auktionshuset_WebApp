@@ -119,7 +119,7 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
     [Fact]
     public async Task DeleteAsync_WhenCancelled_Throws()
     {
-        using var cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>

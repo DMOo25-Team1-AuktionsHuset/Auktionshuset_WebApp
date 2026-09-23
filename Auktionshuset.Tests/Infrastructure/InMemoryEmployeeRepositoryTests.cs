@@ -40,7 +40,7 @@ public class InMemoryEmployeeRepositoryTests
     [Fact]
     public async Task GetByIdAsync_WithSeededEmployee_ReturnsIt()
     {
-        var repository = new InMemoryEmployeeRepository();
+        InMemoryEmployeeRepository repository = new InMemoryEmployeeRepository();
         var seeded = (await repository.GetAllAsync(CancellationToken.None))[0];
 
         var employee = await repository.GetByIdAsync(seeded.EmployeeId, CancellationToken.None);
@@ -66,7 +66,7 @@ public class InMemoryEmployeeRepositoryTests
     [Fact]
     public async Task GetAllAsync_WhenCancelled_Throws()
     {
-        using var cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>

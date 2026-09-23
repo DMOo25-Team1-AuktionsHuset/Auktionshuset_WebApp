@@ -303,11 +303,11 @@ public class UpdateAuctionHandlerTests
         params Lot[] lots)
     {
         var lotRepository = await TestData.CreateLotRepositoryAsync(lots);
-        var auctionRepository = new InMemoryAuctionRepository();
-        var employeeRepository = new TestEmployeeRepository();
+        InMemoryAuctionRepository auctionRepository = new InMemoryAuctionRepository();
+        TestEmployeeRepository employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
 
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
         var created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
             .HandleAsync(
@@ -336,12 +336,12 @@ public class UpdateAuctionHandlerTests
         Employee employee)
     {
         var lotRepository = await TestData.CreateLotRepositoryAsync();
-        var auctionRepository = new InMemoryAuctionRepository();
-        var employeeRepository = new TestEmployeeRepository();
+        InMemoryAuctionRepository auctionRepository = new InMemoryAuctionRepository();
+        TestEmployeeRepository employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        var auction = new Auction
+        Auction auction = new Auction
         {
             AuctionId = Guid.NewGuid(),
             Name = "Igangværende auktion",

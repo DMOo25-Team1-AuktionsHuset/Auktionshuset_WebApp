@@ -47,7 +47,7 @@ public class SecurityServiceExtensionsTest
     {
         using var provider = CreateServiceProvider(enforceAuthorization: false);
         var authorizationService = provider.GetRequiredService<IAuthorizationService>();
-        var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
+        ClaimsPrincipal anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
         var policyNames = new[]
         {
             SecurityPolicies.Admin,
@@ -81,7 +81,7 @@ public class SecurityServiceExtensionsTest
             })
             .Build();
 
-        var services = new ServiceCollection();
+        ServiceCollection services = new ServiceCollection();
         services.AddLogging();
         services.AddSecurityServices(configuration);
 

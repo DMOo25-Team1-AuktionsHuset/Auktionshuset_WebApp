@@ -20,7 +20,7 @@ public class LotImageEndpointsTest
     {
         var lot = CreateLot();
         var repository = await CreateRepositoryAsync(lot);
-        var handler = new UploadLotImageHandler(
+        UploadLotImageHandler handler = new UploadLotImageHandler(
             repository,
             new FakeLotImageStore { NextFileName = "abc123.png" },
             new RecordingEventPublisher());
@@ -43,7 +43,7 @@ public class LotImageEndpointsTest
     public async Task Upload_WithUnknownLot_ReturnsNotFound()
     {
         var repository = await CreateRepositoryAsync();
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        UploadLotImageHandler handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
         var result = await LotImageEndpoints.HandleUploadAsync(
             Guid.NewGuid(),
@@ -62,7 +62,7 @@ public class LotImageEndpointsTest
     {
         var lot = CreateLot();
         var repository = await CreateRepositoryAsync(lot);
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        UploadLotImageHandler handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
         var result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -81,9 +81,9 @@ public class LotImageEndpointsTest
     {
         var lot = CreateLot();
         var repository = await CreateRepositoryAsync(lot);
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        UploadLotImageHandler handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
-        var context = new DefaultHttpContext();
+        DefaultHttpContext context = new DefaultHttpContext();
         context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream("{}"u8.ToArray());
 
@@ -104,8 +104,8 @@ public class LotImageEndpointsTest
     {
         var lot = CreateLot();
         var repository = await CreateRepositoryAsync(lot);
-        var imageStore = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+        FakeLotImageStore imageStore = new FakeLotImageStore();
+        UploadLotImageHandler handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
 
         var result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -128,8 +128,8 @@ public class LotImageEndpointsTest
     {
         var lot = CreateLot();
         var repository = await CreateRepositoryAsync(lot);
-        var imageStore = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+        FakeLotImageStore imageStore = new FakeLotImageStore();
+        UploadLotImageHandler handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
 
         var result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -149,7 +149,7 @@ public class LotImageEndpointsTest
     {
         var lot = CreateLot(imageFileName: "billede.jpg");
         var repository = await CreateRepositoryAsync(lot);
-        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        RemoveLotImageHandler handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
         var result = await LotImageEndpoints.HandleRemoveAsync(lot.LotId, handler, CancellationToken.None);
 
@@ -164,7 +164,7 @@ public class LotImageEndpointsTest
     public async Task Remove_WithUnknownLot_ReturnsNotFound()
     {
         var repository = await CreateRepositoryAsync();
-        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        RemoveLotImageHandler handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
         var result = await LotImageEndpoints.HandleRemoveAsync(Guid.NewGuid(), handler, CancellationToken.None);
 
@@ -186,11 +186,11 @@ public class LotImageEndpointsTest
     /// </summary>
     private static HttpRequest CreateMultipartRequest(byte[]? content, string? fileName, string? contentType)
     {
-        using var multipart = new MultipartFormDataContent();
+        using MultipartFormDataContent multipart = new MultipartFormDataContent();
 
         if (content is not null)
         {
-            var file = new ByteArrayContent(content);
+            ByteArrayContent file = new ByteArrayContent(content);
             file.Headers.ContentType = new MediaTypeHeaderValue(contentType!);
             multipart.Add(file, "file", fileName!);
         }
@@ -201,7 +201,7 @@ public class LotImageEndpointsTest
 
         var body = multipart.ReadAsByteArrayAsync().GetAwaiter().GetResult();
 
-        var context = new DefaultHttpContext();
+        DefaultHttpContext context = new DefaultHttpContext();
         context.Request.ContentType = multipart.Headers.ContentType!.ToString();
         context.Request.ContentLength = body.Length;
         context.Request.Body = new MemoryStream(body);
@@ -230,7 +230,7 @@ public class LotImageEndpointsTest
 
     private static async Task<InMemoryLotRepository> CreateRepositoryAsync(params Lot[] lots)
     {
-        var repository = new InMemoryLotRepository();
+        InMemoryLotRepository repository = new InMemoryLotRepository();
 
         foreach (var lot in lots)
         {

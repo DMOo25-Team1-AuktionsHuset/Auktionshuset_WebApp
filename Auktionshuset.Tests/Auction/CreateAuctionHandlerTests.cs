@@ -352,15 +352,15 @@ public class CreateAuctionHandlerTests
         params Lot[] lots)
     {
         var lotRepository = await TestData.CreateLotRepositoryAsync(lots);
-        var auctionRepository = new InMemoryAuctionRepository();
-        var employeeRepository = new TestEmployeeRepository();
+        InMemoryAuctionRepository auctionRepository = new InMemoryAuctionRepository();
+        TestEmployeeRepository employeeRepository = new TestEmployeeRepository();
 
         if (employee is not null)
         {
             employeeRepository.Add(employee);
         }
 
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
         return (
             new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher),

@@ -28,7 +28,7 @@ namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
                 return false;
             }
 
-            var integrationEvent = new EmployeeDeletedIntegrationEvent(
+            EmployeeDeletedIntegrationEvent integrationEvent = new EmployeeDeletedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 EmployeeId: command.EmployeeId,
                 OccurredAt: DateTime.UtcNow);

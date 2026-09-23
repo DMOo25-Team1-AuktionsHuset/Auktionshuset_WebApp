@@ -151,8 +151,8 @@ public sealed class LotService(HttpClient httpClient)
         string contentType,
         CancellationToken cancellationToken = default)
     {
-        using var form = new MultipartFormDataContent();
-        var fileContent = new StreamContent(content);
+        using MultipartFormDataContent form = new MultipartFormDataContent();
+        StreamContent fileContent = new StreamContent(content);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
         form.Add(fileContent, "file", string.IsNullOrWhiteSpace(fileName) ? "billede" : fileName);
