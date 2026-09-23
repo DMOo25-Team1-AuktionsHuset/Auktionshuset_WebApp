@@ -13,11 +13,11 @@ namespace Auktionshuset.Domain.Entities {
         public required Lot Lot { get; set; }
 
         public required int Quantity { get; set; }
-        public required bool OpenForBids { get; set; }
-        
+        public bool OpenForBids { get; set; }
+
         public decimal StartingPrice { get; set; }
 
-        public required Guid? CurrentHighestBid { get; set; }
-        public Bid? CurrentHighestBidId { get; set; }
+        public Guid? CurrentHighestBidId { get; set; }
+        public Bid? CurrentHighestBid { get; set; }
     }
 }

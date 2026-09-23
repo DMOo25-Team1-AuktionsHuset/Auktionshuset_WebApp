@@ -14,5 +14,8 @@ namespace Auktionshuset.Domain.Entities {
 
         public required Guid? DeviceSessionId { get; set; }
         public required DeviceSession? DeviceSession { get; set; }
+
+        public required Guid CustomerId { get; set; }
+        public required Customer Customer { get; set; }
     }
 }

@@ -21,6 +21,8 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         {
             entity.HasKey(al => al.AuctionLotId);
             entity.Property(al => al.Quantity).IsRequired();
+            entity.Property(al => al.OpenForBids).IsRequired();
+            entity.Property(al => al.StartingPrice).HasPrecision(18, 2);
 
             entity.HasOne(al => al.Auction)
                 .WithMany(a => a.AuctionLots)
@@ -31,6 +33,11 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
                 .WithMany(l => l.AuctionLots)
                 .HasForeignKey(al => al.LotId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(al => al.CurrentHighestBid)
+                .WithMany()
+                .HasForeignKey(al => al.CurrentHighestBidId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasIndex(al => new { al.AuctionId, al.LotId }).IsUnique();
         }

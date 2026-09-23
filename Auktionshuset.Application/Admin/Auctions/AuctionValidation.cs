@@ -1,4 +1,5 @@
 using Auktionshuset.Domain.Entities;
+using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions;
 
@@ -69,7 +70,7 @@ internal static class AuctionValidation
     internal static IReadOnlyCollection<AuctionLot> BuildAuctionLots(
         IReadOnlyCollection<AuctionLotSelection> selections,
         IReadOnlyDictionary<Guid, Lot> lotsById,
-        Auction auction,
+        AuctionEntity auction,
         List<string> errors)
     {
         if (selections.Select(selection => selection.LotId).Distinct().Count() != selections.Count)

@@ -8,6 +8,6 @@ namespace Auktionshuset.Application.Auction {
         bool Duplicate, 
         Guid? BidId, 
         int? SequenceNumber, 
-        decimal CurrentBid, 
+        decimal CurrentPrice, 
         string? ErrorCode);
 }
