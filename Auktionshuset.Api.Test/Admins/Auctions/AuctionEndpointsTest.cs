@@ -82,10 +82,10 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
-    /// Verifies that an auction can be created without an auctionarius.
+    /// Verifies that an auction cannot be created without its required auctionarius.
     /// </summary>
     [Fact]
-    public async Task Create_WithoutEmployee_ReturnsCreatedWithoutAuctionarius()
+    public async Task Create_WithoutEmployee_ReturnsValidationProblem()
     {
         var (context, _, _) = await CreateContextAsync();
 
@@ -94,11 +94,10 @@ public class AuctionEndpointsTest
             CreateHandler(context),
             CancellationToken.None);
 
-        var created = Assert.IsType<Created<CreateAuctionResponse>>(result.Result);
-
-        var stored = await context.Auctions.GetByIdAsync(created.Value!.AuctionId, CancellationToken.None);
-        Assert.NotNull(stored);
-        Assert.Null(stored.EmployeeId);
+        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        Assert.Contains(
+            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
+            message => message.Contains("tilknyttet auktionarius"));
     }
 
     /// <summary>
@@ -190,25 +189,24 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
-    /// Verifies that the dashboard reports an auction without an auctionarius as not assigned.
+    /// Verifies that a request without an auctionarius is rejected and is not listed.
     /// </summary>
     [Fact]
-    public async Task GetAuctions_WithoutEmployee_ReportsNotAssigned()
+    public async Task GetAuctions_WithoutEmployee_DoesNotCreateAnAuction()
     {
         var (context, _, _) = await CreateContextAsync();
 
-        await CreateAuctionEndpoint.HandleAsync(
+        var createResult = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(null, []),
             CreateHandler(context),
             CancellationToken.None);
+        Assert.IsType<ValidationProblem>(createResult.Result);
 
         var result = await GetAuctionsEndpoint.HandleGetAllAsync(
             new GetAuctionsHandler(context.Auctions, context.Employees),
             CancellationToken.None);
 
-        var row = Assert.Single(result.Value!);
-        Assert.Null(row.EmployeeId);
-        Assert.Equal("Ikke tildelt", row.EmployeeName);
+        Assert.Empty(result.Value!);
     }
 
     /// <summary>
@@ -286,10 +284,10 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
-    /// Verifies that an existing auctionarius is removed again when an auction is updated without one.
+    /// Verifies that an auction cannot be updated without its required auctionarius.
     /// </summary>
     [Fact]
-    public async Task Update_WithoutEmployee_ClearsAuctionarius()
+    public async Task Update_WithoutEmployee_ReturnsValidationProblem()
     {
         var (context, employee, _) = await CreateContextAsync();
         var auctionId = await CreateAuctionAsync(context, employee);
@@ -300,11 +298,14 @@ public class AuctionEndpointsTest
             new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
             CancellationToken.None);
 
-        Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
+        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        Assert.Contains(
+            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
+            message => message.Contains("tilknyttet auktionarius"));
 
         var stored = await context.Auctions.GetByIdAsync(auctionId, CancellationToken.None);
         Assert.NotNull(stored);
-        Assert.Null(stored.EmployeeId);
+        Assert.Equal(employee.EmployeeId, stored.EmployeeId);
     }
 
     /// <summary>
@@ -403,9 +404,9 @@ public class AuctionEndpointsTest
                 AuctionId = Guid.NewGuid(),
                 Name = "Gemt i lageret",
                 StartsAt = DateTime.Now.AddDays(3),
-                EndsAt = DateTime.Now.AddDays(4),
+                EndedAt = DateTime.Now.AddDays(4),
                 EmployeeId = employee.EmployeeId,
-                AuctionHouseId = Guid.NewGuid(),
+                AuctionHouseId = employee.AuctionHouseId,
                 AuctionStatus = AuctionStatuses.Upcoming
             },
             [],
@@ -468,7 +469,10 @@ public class AuctionEndpointsTest
     {
         var employees = new InMemoryEmployeeRepository();
         var seeded = (await employees.GetAllAsync(CancellationToken.None))[0];
-        var employee = new EmployeeRow(seeded.EmployeeId, $"{seeded.FirstName} {seeded.LastName}".Trim());
+        var employee = new EmployeeRow(
+            seeded.EmployeeId,
+            seeded.AuctionHouseId,
+            $"{seeded.FirstName} {seeded.LastName}".Trim());
 
         var lots = new InMemoryLotRepository();
         var lot = new Lot
@@ -480,7 +484,7 @@ public class AuctionEndpointsTest
             EstimatedValue = 500m,
             Description = "En genstand",
             Tags = ["træ"],
-            AuctionHouseId = Guid.NewGuid()
+            AuctionHouseId = employee.AuctionHouseId
         };
 
         await lots.AddAsync(lot, CancellationToken.None);
@@ -491,7 +495,7 @@ public class AuctionEndpointsTest
             lot);
     }
 
-    private sealed record EmployeeRow(Guid EmployeeId, string FullName);
+    private sealed record EmployeeRow(Guid EmployeeId, Guid AuctionHouseId, string FullName);
 
     private sealed record TestContext(
         InMemoryAuctionRepository Auctions,

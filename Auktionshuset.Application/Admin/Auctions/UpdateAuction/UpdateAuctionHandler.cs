@@ -38,6 +38,18 @@ public sealed class UpdateAuctionHandler(
             requireFutureStart: false,
             errors);
 
+        if (command.AuctionHouseId is { } auctionHouseId
+            && employee is not null
+            && employee.AuctionHouseId != auctionHouseId)
+        {
+            errors.Add("Auktionshuset skal svare til medarbejderens auktionshus.");
+        }
+
+        if (errors.Count > 0)
+        {
+            return UpdateAuctionResult.Invalid(errors);
+        }
+
         var lots = await lotRepository.GetAllAsync(cancellationToken);
         var auctionLots = AuctionValidation.BuildAuctionLots(
             command.Lots,
@@ -50,12 +62,13 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Invalid(errors);
         }
 
+        var assignedEmployee = employee!;
         auction.Name = command.Name.Trim();
         auction.StartsAt = command.StartsAt;
-        auction.EndsAt = command.EndsAt;
-        auction.EmployeeId = employee?.EmployeeId;
-        auction.Employee = employee;
-        auction.AuctionHouseId = command.AuctionHouseId ?? auction.AuctionHouseId;
+        auction.EndedAt = command.EndsAt;
+        auction.EmployeeId = assignedEmployee.EmployeeId;
+        auction.Employee = assignedEmployee;
+        auction.AuctionHouseId = assignedEmployee.AuctionHouseId;
         auction.AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now);
 
         var itemCount = AuctionValidation.CountItems(auctionLots);
@@ -74,7 +87,7 @@ public sealed class UpdateAuctionHandler(
                 Name: auction.Name,
                 Status: auction.AuctionStatus,
                 StartsAt: auction.StartsAt,
-                EndsAt: auction.EndsAt,
+                EndsAt: command.EndsAt,
                 LotCount: auctionLots.Count,
                 ItemCount: itemCount,
                 OccurredAt: DateTime.Now),

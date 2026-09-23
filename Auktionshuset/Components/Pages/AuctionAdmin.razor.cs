@@ -347,7 +347,7 @@ public partial class AuctionAdmin : IDisposable
                 Name = detail.Name,
                 StartDate = detail.StartsAt.Date,
                 StartTime = detail.StartsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EndTime = detail.EndsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
+                EndTime = detail.EndsAt?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
                 EmployeeId = detail.EmployeeId,
                 RequireFutureStart = detail.StartsAt > DateTime.Now
             };

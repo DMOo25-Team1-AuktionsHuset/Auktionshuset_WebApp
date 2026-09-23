@@ -30,9 +30,9 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     public string EndTime { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the identifier of the auctionarius. The value is optional: an auction can be
-    /// created and updated without an employee.
+    /// Gets or sets the required identifier of the auctionarius assigned to the auction.
     /// </summary>
+    [Required(ErrorMessage = "Vælg en auktionarius.")]
     public Guid? EmployeeId { get; set; }
 
     /// <summary>

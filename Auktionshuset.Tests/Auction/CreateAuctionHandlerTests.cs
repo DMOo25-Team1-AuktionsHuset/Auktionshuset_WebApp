@@ -156,10 +156,10 @@ public class CreateAuctionHandlerTests
     }
 
     /// <summary>
-    /// Verifies that an auction can be created without an auctionarius.
+    /// Verifies that an auction cannot be created without its required auctionarius.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithoutEmployee_CreatesAuctionWithoutAuctionarius()
+    public async Task HandleAsync_WithoutEmployee_ReturnsInvalid()
     {
         var (handler, auctions, _, _) = await CreateHandlerAsync();
 
@@ -167,12 +167,9 @@ public class CreateAuctionHandlerTests
             TestData.CreateCommand(null, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)),
             CancellationToken.None);
 
-        Assert.True(result.Succeeded);
-
-        var auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
-        Assert.NotNull(auction);
-        Assert.Null(auction.EmployeeId);
-        Assert.Null(auction.Employee);
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Contains("tilknyttet auktionarius"));
+        Assert.Empty(await auctions.GetAllAsync(CancellationToken.None));
     }
 
     /// <summary>

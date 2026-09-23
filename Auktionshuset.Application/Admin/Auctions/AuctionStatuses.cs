@@ -10,20 +10,20 @@ public static class AuctionStatuses
     public const string Ended = "Afsluttet";
 
     /// <summary>
-    /// Derives the status of an auction from its start and end time.
+    /// Derives the status of an auction from its start and optional end time.
     /// </summary>
     /// <param name="startsAt">The moment the auction starts.</param>
-    /// <param name="endsAt">The moment the auction ends.</param>
+    /// <param name="endsAt">The moment the auction ends, or <see langword="null"/> if it has no end time.</param>
     /// <param name="now">The current moment used for the comparison.</param>
     /// <returns><see cref="Upcoming"/>, <see cref="Live"/> or <see cref="Ended"/>.</returns>
-    public static string Derive(DateTime startsAt, DateTime endsAt, DateTime now)
+    public static string Derive(DateTime startsAt, DateTime? endsAt, DateTime now)
     {
         if (now < startsAt)
         {
             return Upcoming;
         }
 
-        return now < endsAt ? Live : Ended;
+        return endsAt is null || now < endsAt.Value ? Live : Ended;
     }
 
     /// <summary>

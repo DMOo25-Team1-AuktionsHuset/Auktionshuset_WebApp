@@ -16,7 +16,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         /// <param name="entity">The builder used to configure the <see cref="AuctionHouse"/> entity.</param>
         public void Configure(EntityTypeBuilder<AuctionHouse> entity) 
         {
-            entity.HasKey(ah => new { ah.AuctionHouseId });
+            entity.HasKey(ah => ah.AuctionHouseId);
             entity.Property(ah => ah.AuctionHouseName).IsRequired();
             entity.Property(ah => ah.Address).IsRequired();
             entity.Property(ah => ah.CVRNumber).IsRequired();

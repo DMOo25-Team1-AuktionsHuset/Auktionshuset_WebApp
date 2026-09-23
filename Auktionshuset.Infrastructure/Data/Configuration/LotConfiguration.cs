@@ -1,9 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text.Json;
 using Auktionshuset.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Auktionshuset.Infrastructure.Data.Configuration {
@@ -22,7 +20,21 @@ namespace Auktionshuset.Infrastructure.Data.Configuration {
             entity.Property(l => l.Quantity).IsRequired();
             entity.Property(l => l.EstimatedValue).IsRequired();
             entity.Property(l => l.Description).IsRequired();
-            entity.Property(l => l.Tags).IsRequired();
+            var tags = entity.Property(l => l.Tags)
+                .IsRequired()
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    value => JsonSerializer.Serialize(value, (JsonSerializerOptions?)null),
+                    value => JsonSerializer.Deserialize<List<string>>(value, (JsonSerializerOptions?)null)
+                        ?? new List<string>());
+            tags.Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                (left, right) => left == null
+                    ? right == null
+                    : right != null && left.SequenceEqual(right),
+                value => value == null
+                    ? 0
+                    : value.Aggregate(0, (hash, tag) => HashCode.Combine(hash, tag.GetHashCode())),
+                value => value == null ? new List<string>() : value.ToList()));
             entity.Property(l => l.ImageFileName).HasMaxLength(128);
 
             entity.HasOne(l => l.AuctionHouse)

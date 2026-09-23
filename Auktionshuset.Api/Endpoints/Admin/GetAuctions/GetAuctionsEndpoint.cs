@@ -47,9 +47,9 @@ public static class GetAuctionsEndpoint
             .Select(overview => new AuctionListItemResponse(
                 AuctionId: overview.Auction.AuctionId,
                 Name: overview.Auction.Name,
-                Status: AuctionStatuses.Derive(overview.Auction.StartsAt, overview.Auction.EndsAt, now),
+                Status: AuctionStatuses.Derive(overview.Auction.StartsAt, overview.Auction.EndedAt, now),
                 StartsAt: overview.Auction.StartsAt,
-                EndsAt: overview.Auction.EndsAt,
+                EndsAt: overview.Auction.EndedAt,
                 EmployeeId: overview.Auction.EmployeeId,
                 EmployeeName: overview.EmployeeName,
                 LotCount: overview.LotCount,
@@ -82,9 +82,9 @@ public static class GetAuctionsEndpoint
         var response = new AuctionDetailResponse(
             AuctionId: detail.Auction.AuctionId,
             Name: detail.Auction.Name,
-            Status: AuctionStatuses.Derive(detail.Auction.StartsAt, detail.Auction.EndsAt, DateTime.Now),
+            Status: AuctionStatuses.Derive(detail.Auction.StartsAt, detail.Auction.EndedAt, DateTime.Now),
             StartsAt: detail.Auction.StartsAt,
-            EndsAt: detail.Auction.EndsAt,
+            EndsAt: detail.Auction.EndedAt,
             EmployeeId: detail.Auction.EmployeeId,
             EmployeeName: detail.EmployeeName,
             LotCount: detail.LotCount,

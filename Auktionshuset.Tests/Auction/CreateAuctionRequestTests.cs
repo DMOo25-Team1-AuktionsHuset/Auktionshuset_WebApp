@@ -71,10 +71,10 @@ public class CreateAuctionRequestTests
     }
 
     /// <summary>
-    /// Verifies that an auction can be created without an auctionarius.
+    /// Verifies that an auctionarius is required.
     /// </summary>
     [Fact]
-    public void Validate_WithoutEmployee_HasNoErrors()
+    public void Validate_WithoutEmployee_ReturnsError()
     {
         var request = new CreateAuctionRequest
         {
@@ -83,7 +83,9 @@ public class CreateAuctionRequestTests
             EndsAt = DateTime.Now.AddDays(4)
         };
 
-        Assert.Empty(Validate(request));
+        Assert.Contains(
+            Validate(request),
+            error => error.MemberNames.Contains(nameof(CreateAuctionRequest.EmployeeId)));
     }
 
     /// <summary>

@@ -1,9 +1,9 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Lots;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,8 +21,18 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
+
+            var connectionString =
+                configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException(
+                    "Connection string 'DefaultConnection' blev ikke fundet.");
+
+            services.AddDbContext<AHDBContext>(options =>
+                options.UseNpgsql(connectionString));
+
             // Add infrastructure services here
             services.AddRabbitMq(configuration);
+            services.AddScoped<ILotRepository, EFLotRepo>();
 
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 

@@ -52,10 +52,10 @@ public class UpdateAuctionRequestTests
     }
 
     /// <summary>
-    /// Verifies that the auctionarius can be cleared when updating, so the field is optional.
+    /// Verifies that an auctionarius is required when updating.
     /// </summary>
     [Fact]
-    public void Validate_WithoutEmployee_HasNoErrors()
+    public void Validate_WithoutEmployee_ReturnsError()
     {
         var request = new UpdateAuctionRequest
         {
@@ -64,7 +64,9 @@ public class UpdateAuctionRequestTests
             EndsAt = DateTime.Now.AddDays(4)
         };
 
-        Assert.Empty(Validate(request));
+        Assert.Contains(
+            Validate(request),
+            error => error.MemberNames.Contains(nameof(UpdateAuctionRequest.EmployeeId)));
     }
 
     /// <summary>

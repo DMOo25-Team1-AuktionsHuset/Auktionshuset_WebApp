@@ -1,6 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 using Auktionshuset.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -31,6 +29,12 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
                 .WithMany(l => l.AuctionLots)
                 .HasForeignKey(al => al.LotId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(al => al.CurrentHighestBid)
+                .WithMany(bid => bid.CurrentHighestForAuctionLots)
+                .HasForeignKey(al => al.CurrentHighestBidId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(al => new { al.AuctionId, al.LotId }).IsUnique();
         }

@@ -4,8 +4,7 @@ namespace Auktionshuset.Application.Admin.Auctions.CreateAuction;
 /// The values needed to create an auction.
 /// </summary>
 /// <param name="EmployeeId">
-/// The identifier of the auctionarius, or <see langword="null"/> when the auction is created
-/// without an employee.
+/// The identifier of the required auctionarius assigned to the auction.
 /// </param>
 public sealed record CreateAuctionCommand(
     string Name,

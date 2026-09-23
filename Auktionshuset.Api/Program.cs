@@ -7,7 +7,6 @@ using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
@@ -32,7 +31,6 @@ builder.Services.AddSecurityServices(builder.Configuration);
 // needs its own service class
 builder.Services.AddScoped<CreateAuctionHandler>();
 
-builder.Services.AddSingleton<ILotRepository, InMemoryLotRepository>();
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
 

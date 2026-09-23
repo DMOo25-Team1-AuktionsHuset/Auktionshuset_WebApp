@@ -81,7 +81,7 @@
                     </div>
 
                     <div class="field field-wide">
-                        <label for="auction-employee">Auktionarius <span class="optional">(valgfrit)</span></label>
+                        <label for="auction-employee">Auktionarius</label>
                         @if (isLoadingEmployees)
                         {
                             <p class="inline-state" role="status">Henter medarbejdere...</p>
@@ -89,7 +89,7 @@
                         else
                         {
                             <InputSelect id="auction-employee" @bind-Value="model.EmployeeId">
-                                <option value="">Ingen auktionarius</option>
+                                <option value="">Vælg auktionarius</option>
                                 @foreach (var employee in employees)
                                 {
                                     <option value="@employee.EmployeeId">@employee.FirstName @employee.LastName</option>
@@ -98,7 +98,7 @@
 
                             @if (employees.Count == 0)
                             {
-                                <span class="help-text">Der er ingen medarbejdere at vælge. Auktionen kan gemmes uden auktionarius.</span>
+                                <span class="help-text">Der er ingen medarbejdere at vælge. Opret en medarbejder, før auktionen gemmes.</span>
                             }
                         }
                         <ValidationMessage For="@(() => model.EmployeeId)" />
@@ -414,7 +414,7 @@
 
                                 <td class="cell-date" data-label="Start">@auction.StartsAt.ToString("g", DanishCulture)</td>
 
-                                <td class="cell-date" data-label="Slut">@auction.EndsAt.ToString("g", DanishCulture)</td>
+                                <td class="cell-date" data-label="Slut">@(auction.EndsAt?.ToString("g", DanishCulture) ?? "Ikke fastsat")</td>
 
                                 <td class="cell-actions" data-label="Handlinger">
                                     @if (pendingDeleteId == auction.AuctionId)

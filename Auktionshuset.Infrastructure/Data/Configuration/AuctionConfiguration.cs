@@ -22,18 +22,17 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.HasKey(a => a.AuctionId);
             entity.Property(a => a.Name).IsRequired().HasMaxLength(120);
             entity.Property(a => a.StartsAt).IsRequired();
-            entity.Property(a => a.EndsAt).IsRequired();
+            entity.Property(a => a.EndedAt);
             entity.Property(a => a.AuctionStatus).IsRequired().HasMaxLength(32);
 
             entity.HasOne(a => a.AuctionHouse)
-                .WithMany()
+                .WithMany(auctionHouse => auctionHouse.Auctions)
                 .HasForeignKey(a => a.AuctionHouseId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(a => a.Employee)
-                .WithMany()
+                .WithMany(employee => employee.Auctions)
                 .HasForeignKey(a => a.EmployeeId)
-                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

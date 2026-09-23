@@ -56,17 +56,6 @@ public class GetAuctionsHandlerTests
     }
 
     /// <summary>
-    /// Verifies that an auction without an auctionarius is reported as not assigned without throwing.
-    /// </summary>
-    [Fact]
-    public async Task HandleAsync_WithoutEmployee_ReportsNotAssigned()
-    {
-        var handler = await CreateWithAuctionAsync(employeeId: null);
-
-        var overviews = await handler.HandleAsync(CancellationToken.None);
-
-        Assert.Equal("Ikke tildelt", Assert.Single(overviews).EmployeeName);
-    }
 
     /// <summary>
     /// Verifies that the image file names of the lots are reported so thumbnails can be built.
@@ -151,10 +140,10 @@ public class GetAuctionsHandlerTests
     }
 
     /// <summary>
-    /// Stores one auction without a stored auctionarius and returns a dashboard handler.
+    /// Stores one auction whose employee is not present in the employee repository.
     /// </summary>
-    /// <param name="employeeId">The auctionarius identifier stored on the auction, if any.</param>
-    private static async Task<GetAuctionsHandler> CreateWithAuctionAsync(Guid? employeeId)
+    /// <param name="employeeId">The auctionarius identifier stored on the auction.</param>
+    private static async Task<GetAuctionsHandler> CreateWithAuctionAsync(Guid employeeId)
     {
         var auctionRepository = new InMemoryAuctionRepository();
 
@@ -163,7 +152,7 @@ public class GetAuctionsHandlerTests
             AuctionId = Guid.NewGuid(),
             Name = "Forårsauktion",
             StartsAt = DateTime.Now.AddDays(2),
-            EndsAt = DateTime.Now.AddDays(3),
+            EndedAt = DateTime.Now.AddDays(3),
             EmployeeId = employeeId,
             AuctionHouseId = TestData.AuctionHouseId,
             AuctionStatus = AuctionStatuses.Upcoming

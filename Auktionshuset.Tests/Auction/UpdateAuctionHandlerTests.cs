@@ -142,10 +142,10 @@ public class UpdateAuctionHandlerTests
     }
 
     /// <summary>
-    /// Verifies that an existing auctionarius can be removed again by updating without one.
+    /// Verifies that an existing auction cannot be updated without its required auctionarius.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithoutEmployee_RemovesAuctionarius()
+    public async Task HandleAsync_WithoutEmployee_ReturnsInvalid()
     {
         var employee = TestData.CreateEmployee();
         var (handler, auctions, _, _, auctionId) = await CreateExistingAuctionAsync(employee);
@@ -161,12 +161,12 @@ public class UpdateAuctionHandlerTests
                 Lots: []),
             CancellationToken.None);
 
-        Assert.True(result.Succeeded);
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Contains("tilknyttet auktionarius"));
 
         var auction = await auctions.GetByIdAsync(auctionId, CancellationToken.None);
         Assert.NotNull(auction);
-        Assert.Null(auction.EmployeeId);
-        Assert.Null(auction.Employee);
+        Assert.Equal(employee.EmployeeId, auction.EmployeeId);
     }
 
     /// <summary>
@@ -346,7 +346,7 @@ public class UpdateAuctionHandlerTests
             AuctionId = Guid.NewGuid(),
             Name = "Igangværende auktion",
             StartsAt = DateTime.Now.AddDays(-2),
-            EndsAt = DateTime.Now.AddDays(2),
+            EndedAt = DateTime.Now.AddDays(2),
             EmployeeId = employee.EmployeeId,
             Employee = employee,
             AuctionHouseId = TestData.AuctionHouseId,

@@ -146,7 +146,7 @@ public class InMemoryAuctionRepositoryTests
         AuctionId = Guid.NewGuid(),
         Name = name,
         StartsAt = startsAt,
-        EndsAt = startsAt.AddHours(3),
+        EndedAt = startsAt.AddHours(3),
         EmployeeId = Guid.NewGuid(),
         AuctionHouseId = TestData.AuctionHouseId,
         AuctionStatus = AuctionStatuses.Upcoming

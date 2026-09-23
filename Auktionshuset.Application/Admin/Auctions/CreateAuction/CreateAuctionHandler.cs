@@ -32,15 +32,28 @@ public sealed class CreateAuctionHandler(
             requireFutureStart: true,
             errors);
 
+        if (command.AuctionHouseId is { } auctionHouseId
+            && employee is not null
+            && employee.AuctionHouseId != auctionHouseId)
+        {
+            errors.Add("Auktionshuset skal svare til medarbejderens auktionshus.");
+        }
+
+        if (errors.Count > 0)
+        {
+            return CreateAuctionResult.Invalid(errors);
+        }
+
+        var assignedEmployee = employee!;
         var auction = new AuctionEntity
         {
             AuctionId = Guid.NewGuid(),
             Name = command.Name.Trim(),
             StartsAt = command.StartsAt,
-            EndsAt = command.EndsAt,
-            EmployeeId = employee?.EmployeeId,
-            Employee = employee,
-            AuctionHouseId = command.AuctionHouseId,
+            EndedAt = command.EndsAt,
+            EmployeeId = assignedEmployee.EmployeeId,
+            Employee = assignedEmployee,
+            AuctionHouseId = assignedEmployee.AuctionHouseId,
             AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now)
         };
 
@@ -70,7 +83,7 @@ public sealed class CreateAuctionHandler(
             Name: auction.Name,
             Status: auction.AuctionStatus,
             StartsAt: auction.StartsAt,
-            EndsAt: auction.EndsAt,
+            EndsAt: command.EndsAt,
             LotCount: auctionLots.Count,
             ItemCount: itemCount,
             OccurredAt: DateTime.Now);
