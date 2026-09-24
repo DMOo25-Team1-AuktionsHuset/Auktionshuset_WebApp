@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Application.EventHandling {
-    public interface IIntegrationEventPublisher {
+﻿namespace Auktionshuset.Application.EventHandling
+{
+    public interface IIntegrationEventPublisher
+    {
         /// <summary>
         /// Publishes the specified integration event to every handler that is registered for its type.
         /// </summary>

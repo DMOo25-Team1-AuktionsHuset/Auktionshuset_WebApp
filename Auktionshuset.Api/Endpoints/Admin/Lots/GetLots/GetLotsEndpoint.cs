@@ -32,11 +32,11 @@ public static class GetLotsEndpoint
     /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>A 200 response containing every lot projected into <see cref="LotListItemResponse"/>.</returns>
     public static async Task<Ok<IReadOnlyList<LotListItemResponse>>> HandleAsync(
-        [FromServices]GetLotsHandler handler,
+        [FromServices] GetLotsHandler handler,
         CancellationToken cancellationToken)
     {
-        var lots = await handler.HandleAsync(cancellationToken);
-        var response = lots
+        IReadOnlyList<Domain.Entities.Lot> lots = await handler.HandleAsync(cancellationToken);
+        LotListItemResponse[] response = lots
             .Select(lot => new LotListItemResponse(
                 lot.LotId,
                 lot.Name,

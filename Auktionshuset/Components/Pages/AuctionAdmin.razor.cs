@@ -84,9 +84,9 @@ public partial class AuctionAdmin : IDisposable
     {
         get
         {
-            var term = pickerSearchTerm.Trim();
+            string term = pickerSearchTerm.Trim();
 
-            var matching = term.Length == 0
+            IEnumerable<LotListItemResponse> matching = term.Length == 0
                 ? lots.AsEnumerable()
                 : lots.Where(lot =>
                     lot.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
@@ -116,8 +116,8 @@ public partial class AuctionAdmin : IDisposable
     {
         get
         {
-            var startsAt = model.GetStartsAt();
-            var endsAt = model.GetEndsAt();
+            DateTime? startsAt = model.GetStartsAt();
+            DateTime? endsAt = model.GetEndsAt();
 
             if (startsAt is null || endsAt is null)
             {
@@ -132,8 +132,8 @@ public partial class AuctionAdmin : IDisposable
     {
         get
         {
-            var term = auctionSearchTerm.Trim();
-            var filtered = auctions.AsEnumerable();
+            string term = auctionSearchTerm.Trim();
+            IEnumerable<AuctionListItemResponse> filtered = auctions.AsEnumerable();
 
             if (statusFilter != AllStatusesFilter)
             {
@@ -238,7 +238,7 @@ public partial class AuctionAdmin : IDisposable
             return;
         }
 
-        var quantityError = ValidateQuantities();
+        string? quantityError = ValidateQuantities();
 
         if (quantityError is not null)
         {
@@ -247,8 +247,8 @@ public partial class AuctionAdmin : IDisposable
             return;
         }
 
-        var startsAt = model.GetStartsAt();
-        var endsAt = model.GetEndsAt();
+        DateTime? startsAt = model.GetStartsAt();
+        DateTime? endsAt = model.GetEndsAt();
 
         if (startsAt is null || endsAt is null)
         {
@@ -263,7 +263,7 @@ public partial class AuctionAdmin : IDisposable
 
         try
         {
-            var requestLots = selectedLots
+            AuctionLotRequest[] requestLots = selectedLots
                 .Select(entry => new AuctionLotRequest(entry.Key, entry.Value.Quantity))
                 .ToArray();
 
@@ -284,7 +284,7 @@ public partial class AuctionAdmin : IDisposable
             }
             else
             {
-                var response = await AuctionService.CreateAsync(new CreateAuctionRequest
+                CreateAuctionResponse response = await AuctionService.CreateAsync(new CreateAuctionRequest
                 {
                     Name = model.Name.Trim(),
                     StartsAt = startsAt,
@@ -330,7 +330,7 @@ public partial class AuctionAdmin : IDisposable
     {
         try
         {
-            var detail = await AuctionService.GetByIdAsync(auction.AuctionId);
+            AuctionDetailResponse? detail = await AuctionService.GetByIdAsync(auction.AuctionId);
 
             if (detail is null)
             {
@@ -356,9 +356,9 @@ public partial class AuctionAdmin : IDisposable
 
             selectedLots.Clear();
 
-            foreach (var line in detail.Lots)
+            foreach (AuctionLotResponse line in detail.Lots)
             {
-                var available = lots.FirstOrDefault(lot => lot.LotId == line.LotId)?.Quantity;
+                int? available = lots.FirstOrDefault(lot => lot.LotId == line.LotId)?.Quantity;
                 selectedLots[line.LotId] = new SelectedLot(line.Name, line.Quantity, available);
             }
 
@@ -424,14 +424,14 @@ public partial class AuctionAdmin : IDisposable
     /// <returns>A Danish error message, or <see langword="null"/> when every quantity is valid.</returns>
     private string? ValidateQuantities()
     {
-        foreach (var (lotId, line) in selectedLots)
+        foreach ((Guid lotId, SelectedLot? line) in selectedLots)
         {
             if (line.Quantity < 1)
             {
                 return $"Antallet for \"{line.Name}\" skal være mindst 1.";
             }
 
-            var available = line.Available
+            int? available = line.Available
                 ?? lots.FirstOrDefault(lot => lot.LotId == lotId)?.Quantity;
 
             if (available is { } stock && line.Quantity > stock)
@@ -614,7 +614,7 @@ public partial class AuctionAdmin : IDisposable
 
     private static string DeriveStatus(DateTime startsAt, DateTime endsAt)
     {
-        var now = DateTime.Now;
+        DateTime now = DateTime.Now;
 
         if (now < startsAt)
         {

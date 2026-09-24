@@ -19,7 +19,7 @@ public sealed class CreateAuctionHandler(
     {
         var errors = new List<string>();
 
-        var employee = command.EmployeeId is { } employeeId
+        Employee? employee = command.EmployeeId is { } employeeId
             ? await employeeRepository.GetByIdAsync(employeeId, cancellationToken)
             : null;
 
@@ -47,7 +47,7 @@ public sealed class CreateAuctionHandler(
         IReadOnlyCollection<AuctionLot> auctionLots = [];
         if (command.Lots.Count > 0)
         {
-            var lots = await lotRepository.GetAllAsync(cancellationToken);
+            IReadOnlyList<Lot> lots = await lotRepository.GetAllAsync(cancellationToken);
             auctionLots = AuctionValidation.BuildAuctionLots(
                 command.Lots,
                 lots.ToDictionary(lot => lot.LotId),
@@ -60,7 +60,7 @@ public sealed class CreateAuctionHandler(
             return CreateAuctionResult.Invalid(errors);
         }
 
-        var itemCount = AuctionValidation.CountItems(auctionLots);
+        int itemCount = AuctionValidation.CountItems(auctionLots);
 
         await auctionRepository.AddAsync(auction, auctionLots, cancellationToken);
 

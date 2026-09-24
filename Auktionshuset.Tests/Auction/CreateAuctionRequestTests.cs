@@ -23,7 +23,7 @@ public class CreateAuctionRequestTests
     [InlineData("a")]
     public void Validate_WithInvalidName_ReturnsError(string name)
     {
-        var errors = Validate(CreateValidRequest(name: name));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(name: name));
 
         Assert.Contains(errors, error => error.MemberNames.Contains(nameof(CreateAuctionRequest.Name)));
     }
@@ -41,7 +41,7 @@ public class CreateAuctionRequestTests
             EmployeeId = Guid.NewGuid()
         };
 
-        var errors = Validate(request);
+        IReadOnlyList<ValidationResult> errors = Validate(request);
 
         Assert.Contains(errors, error => error.MemberNames.Contains(nameof(CreateAuctionRequest.StartsAt)));
     }
@@ -52,7 +52,7 @@ public class CreateAuctionRequestTests
     [Fact]
     public void Validate_WithPastStart_ReturnsError()
     {
-        var errors = Validate(CreateValidRequest(startsAt: DateTime.Now.AddDays(-1)));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: DateTime.Now.AddDays(-1)));
 
         Assert.Contains(errors, error => error.ErrorMessage?.Contains("fremtiden") == true);
     }
@@ -63,9 +63,9 @@ public class CreateAuctionRequestTests
     [Fact]
     public void Validate_WithEndBeforeStart_ReturnsError()
     {
-        var startsAt = DateTime.Now.AddDays(3);
+        DateTime startsAt = DateTime.Now.AddDays(3);
 
-        var errors = Validate(CreateValidRequest(startsAt: startsAt, endsAt: startsAt.AddHours(-2)));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: startsAt, endsAt: startsAt.AddHours(-2)));
 
         Assert.Contains(errors, error => error.ErrorMessage?.Contains("efter starttidspunktet") == true);
     }
@@ -94,7 +94,7 @@ public class CreateAuctionRequestTests
     {
         var lotId = Guid.NewGuid();
 
-        var errors = Validate(CreateValidRequest(lots:
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(lots:
             [new AuctionLotRequest(lotId, 1), new AuctionLotRequest(lotId, 2)]));
 
         Assert.Contains(errors, error => error.ErrorMessage?.Contains("mere end én gang") == true);
@@ -108,7 +108,7 @@ public class CreateAuctionRequestTests
     [InlineData(-5)]
     public void Validate_WithQuantityBelowOne_ReturnsError(int quantity)
     {
-        var errors = Validate(CreateValidRequest(lots: [new AuctionLotRequest(Guid.NewGuid(), quantity)]));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(lots: [new AuctionLotRequest(Guid.NewGuid(), quantity)]));
 
         Assert.Contains(errors, error => error.ErrorMessage?.Contains("mindst 1") == true);
     }
@@ -121,14 +121,14 @@ public class CreateAuctionRequestTests
         DateTime? startsAt = null,
         DateTime? endsAt = null,
         AuctionLotRequest[]? lots = null) => new()
-    {
-        Name = name,
-        StartsAt = startsAt ?? DateTime.Now.AddDays(3),
-        EndsAt = endsAt ?? DateTime.Now.AddDays(4),
-        EmployeeId = Guid.NewGuid(),
-        AuctionHouseId = TestData.AuctionHouseId,
-        Lots = lots ?? [new AuctionLotRequest(Guid.NewGuid(), 2)]
-    };
+        {
+            Name = name,
+            StartsAt = startsAt ?? DateTime.Now.AddDays(3),
+            EndsAt = endsAt ?? DateTime.Now.AddDays(4),
+            EmployeeId = Guid.NewGuid(),
+            AuctionHouseId = TestData.AuctionHouseId,
+            Lots = lots ?? [new AuctionLotRequest(Guid.NewGuid(), 2)]
+        };
 
     /// <summary>
     /// Runs annotation and <see cref="IValidatableObject"/> validation on the request.

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Domain.Entities
+﻿namespace Auktionshuset.Domain.Entities
 {
     public class Auction
     {

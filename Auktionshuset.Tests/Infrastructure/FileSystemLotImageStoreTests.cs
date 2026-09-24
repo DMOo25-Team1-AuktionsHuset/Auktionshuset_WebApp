@@ -16,16 +16,16 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
     [Fact]
     public async Task SaveAsync_WithValidImage_WritesGeneratedFileName()
     {
-        var store = CreateStore();
-        var bytes = LotImageValidatorTests.ImageBytes("png");
+        FileSystemLotImageStore store = CreateStore();
+        byte[] bytes = LotImageValidatorTests.ImageBytes("png");
 
-        var fileName = await store.SaveAsync(new MemoryStream(bytes), ".png", CancellationToken.None);
+        string fileName = await store.SaveAsync(new MemoryStream(bytes), ".png", CancellationToken.None);
 
         Assert.EndsWith(".png", fileName, StringComparison.Ordinal);
         Assert.DoesNotContain('/', fileName);
         Assert.DoesNotContain('\\', fileName);
 
-        var written = await File.ReadAllBytesAsync(Path.Combine(rootPath, fileName));
+        byte[] written = await File.ReadAllBytesAsync(Path.Combine(rootPath, fileName));
         Assert.Equal(bytes, written);
     }
 
@@ -35,11 +35,11 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
     [Fact]
     public async Task SaveAsync_Twice_GeneratesDifferentFileNames()
     {
-        var store = CreateStore();
-        var bytes = LotImageValidatorTests.ImageBytes("jpeg");
+        FileSystemLotImageStore store = CreateStore();
+        byte[] bytes = LotImageValidatorTests.ImageBytes("jpeg");
 
-        var first = await store.SaveAsync(new MemoryStream(bytes), ".jpg", CancellationToken.None);
-        var second = await store.SaveAsync(new MemoryStream(bytes), ".jpg", CancellationToken.None);
+        string first = await store.SaveAsync(new MemoryStream(bytes), ".jpg", CancellationToken.None);
+        string second = await store.SaveAsync(new MemoryStream(bytes), ".jpg", CancellationToken.None);
 
         Assert.NotEqual(first, second);
     }
@@ -53,7 +53,7 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
     [InlineData("")]
     public async Task SaveAsync_WithUnsupportedExtension_Throws(string extension)
     {
-        var store = CreateStore();
+        FileSystemLotImageStore store = CreateStore();
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             store.SaveAsync(new MemoryStream([0x01]), extension, CancellationToken.None));
@@ -65,10 +65,10 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
     [Fact]
     public async Task DeleteAsync_WithStoredFile_RemovesIt()
     {
-        var store = CreateStore();
-        var fileName = await store.SaveAsync(new MemoryStream(LotImageValidatorTests.ImageBytes("webp")), ".webp", CancellationToken.None);
+        FileSystemLotImageStore store = CreateStore();
+        string fileName = await store.SaveAsync(new MemoryStream(LotImageValidatorTests.ImageBytes("webp")), ".webp", CancellationToken.None);
 
-        var deleted = await store.DeleteAsync(fileName, CancellationToken.None);
+        bool deleted = await store.DeleteAsync(fileName, CancellationToken.None);
 
         Assert.True(deleted);
         Assert.False(File.Exists(Path.Combine(rootPath, fileName)));
@@ -86,12 +86,12 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
     public async Task DeleteAsync_WithPathTraversal_IsRefused(string fileName)
     {
         Directory.CreateDirectory(rootPath);
-        var outside = Path.Combine(Path.GetDirectoryName(rootPath)!, "udenfor.png");
+        string outside = Path.Combine(Path.GetDirectoryName(rootPath)!, "udenfor.png");
         await File.WriteAllBytesAsync(outside, [0x01, 0x02]);
 
         try
         {
-            var deleted = await CreateStore().DeleteAsync(fileName, CancellationToken.None);
+            bool deleted = await CreateStore().DeleteAsync(fileName, CancellationToken.None);
 
             Assert.False(deleted);
             Assert.True(File.Exists(outside));
@@ -108,7 +108,7 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
     [Fact]
     public async Task DeleteAsync_WithUnknownFile_ReturnsFalse()
     {
-        var deleted = await CreateStore().DeleteAsync("findes-ikke.png", CancellationToken.None);
+        bool deleted = await CreateStore().DeleteAsync("findes-ikke.png", CancellationToken.None);
 
         Assert.False(deleted);
     }
@@ -133,7 +133,7 @@ public sealed class FileSystemLotImageStoreTests : IDisposable
             Directory.Delete(rootPath, recursive: true);
         }
 
-        var parent = Path.GetDirectoryName(rootPath);
+        string? parent = Path.GetDirectoryName(rootPath);
 
         if (parent is not null && Directory.Exists(parent) && !Directory.EnumerateFileSystemEntries(parent).Any())
         {

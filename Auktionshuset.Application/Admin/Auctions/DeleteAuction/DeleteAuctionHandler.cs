@@ -15,7 +15,7 @@ public sealed class DeleteAuctionHandler(
     /// <returns><see langword="true"/> when the auction was found and deleted; otherwise, <see langword="false"/>.</returns>
     public async Task<bool> HandleAsync(DeleteAuctionCommand command, CancellationToken cancellationToken)
     {
-        var deleted = await auctionRepository.DeleteAsync(command.AuctionId, cancellationToken);
+        bool deleted = await auctionRepository.DeleteAsync(command.AuctionId, cancellationToken);
 
         if (!deleted)
         {

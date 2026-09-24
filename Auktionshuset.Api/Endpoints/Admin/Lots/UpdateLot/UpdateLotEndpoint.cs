@@ -1,18 +1,20 @@
-﻿using Auktionshuset.Application.Admin.Lots;
-using Auktionshuset.Api.Security;
+﻿using Auktionshuset.Api.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot {
-    public static class UpdateLotEndpoint {
+namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot
+{
+    public static class UpdateLotEndpoint
+    {
         /// <summary>
         /// Maps the update-lot endpoint onto the supplied route group.
         /// </summary>
         /// <param name="group">The route group that the endpoint is mapped onto.</param>
         /// <returns>The same route group so that further endpoints can be chained.</returns>
-        public static RouteGroupBuilder MapUpdateLot(this RouteGroupBuilder group) {
+        public static RouteGroupBuilder MapUpdateLot(this RouteGroupBuilder group)
+        {
             group.MapPut("/{lotId:guid}", HandleAsync)
                 .WithName("UpdateLot")
                 .WithSummary("Updates a lot")
@@ -32,10 +34,10 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot {
         /// <param name="handler">The handler that updates the lot.</param>
         /// <returns>The updated lot identifier, or 404 when the lot does not exist.</returns>
         public static async Task<Results<Ok<UpdateLotResponse>, NotFound>> HandleAsync(
-            [FromRoute]Guid lotId, 
-            [FromBody]UpdateLotRequest request, 
-            [FromServices]UpdateLotHandler handler, 
-            CancellationToken cancellationToken) 
+            [FromRoute] Guid lotId,
+            [FromBody] UpdateLotRequest request,
+            [FromServices] UpdateLotHandler handler,
+            CancellationToken cancellationToken)
         {
             var command = new UpdateLotCommand(
                 LotId: lotId,
@@ -50,7 +52,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot {
                     .ToArray(),
                 AuctionHouseId: request.AuctionHouseId);
 
-            var result = await handler.HandleAsync(command, cancellationToken);
+            UpdateLotResult? result = await handler.HandleAsync(command, cancellationToken);
 
             return result == null ? TypedResults.NotFound() : TypedResults.Ok(new UpdateLotResponse(result.LotId));
         }

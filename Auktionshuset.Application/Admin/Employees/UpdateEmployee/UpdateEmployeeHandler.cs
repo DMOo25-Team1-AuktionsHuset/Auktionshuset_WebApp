@@ -1,15 +1,17 @@
 ﻿using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.EventHandling;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Auktionshuset.Domain.Entities;
 
-namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee {
-    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IIntegrationEventPublisher eventPublisher) {
-        public async Task<UpdateEmployeeResult?> HandleAsync(UpdateEmployeeCommand command, CancellationToken cancellationToken) {
-            var employee = await employeeRepository.GetByIdAsync(command.EmployeeId, cancellationToken);
+namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
+{
+    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IIntegrationEventPublisher eventPublisher)
+    {
+        public async Task<UpdateEmployeeResult?> HandleAsync(UpdateEmployeeCommand command, CancellationToken cancellationToken)
+        {
+            Employee? employee = await employeeRepository.GetByIdAsync(command.EmployeeId, cancellationToken);
 
-            if(employee == null) {
+            if (employee == null)
+            {
                 return null;
             }
 

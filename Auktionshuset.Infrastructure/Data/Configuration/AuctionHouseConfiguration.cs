@@ -1,20 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Auktionshuset.Domain.Entities;
+﻿using Auktionshuset.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Auktionshuset.Infrastructure.Data.Configuration 
+namespace Auktionshuset.Infrastructure.Data.Configuration
 {
-    public class AuctionHouseConfiguration : IEntityTypeConfiguration<AuctionHouse> 
+    public class AuctionHouseConfiguration : IEntityTypeConfiguration<AuctionHouse>
     {
         /// <summary>
         /// Configures the <see cref="AuctionHouse"/> entity, its composite key and its required
         /// properties.
         /// </summary>
         /// <param name="entity">The builder used to configure the <see cref="AuctionHouse"/> entity.</param>
-        public void Configure(EntityTypeBuilder<AuctionHouse> entity) 
+        public void Configure(EntityTypeBuilder<AuctionHouse> entity)
         {
             entity.HasKey(ah => new { ah.AuctionHouseId });
             entity.Property(ah => ah.AuctionHouseName).IsRequired();

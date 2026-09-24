@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 
@@ -18,11 +17,11 @@ public sealed class AuctionService(HttpClient httpClient)
     public async Task<IReadOnlyList<AuctionListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync("api/auctions", cancellationToken);
+        using HttpResponseMessage response = await httpClient.GetAsync("api/auctions", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
-            var message = await ApiProblemReader.ReadMessageAsync(
+            string message = await ApiProblemReader.ReadMessageAsync(
                 response,
                 cancellationToken,
                 "Auktionerne",
@@ -56,7 +55,7 @@ public sealed class AuctionService(HttpClient httpClient)
         Guid auctionId,
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync($"api/auctions/{auctionId}", cancellationToken);
+        using HttpResponseMessage response = await httpClient.GetAsync($"api/auctions/{auctionId}", cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -65,7 +64,7 @@ public sealed class AuctionService(HttpClient httpClient)
 
         if (!response.IsSuccessStatusCode)
         {
-            var message = await ApiProblemReader.ReadMessageAsync(
+            string message = await ApiProblemReader.ReadMessageAsync(
                 response,
                 cancellationToken,
                 "Auktionen",
@@ -98,7 +97,7 @@ public sealed class AuctionService(HttpClient httpClient)
         CreateAuctionRequest request,
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PostAsJsonAsync("api/auctions", request, cancellationToken);
+        using HttpResponseMessage response = await httpClient.PostAsJsonAsync("api/auctions", request, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -108,7 +107,7 @@ public sealed class AuctionService(HttpClient httpClient)
                 cancellationToken);
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "oprettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "oprettes");
         throw new AuctionApiException(message, response.StatusCode);
     }
 
@@ -125,7 +124,7 @@ public sealed class AuctionService(HttpClient httpClient)
         UpdateAuctionRequest request,
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PutAsJsonAsync($"api/auctions/{auctionId}", request, cancellationToken);
+        using HttpResponseMessage response = await httpClient.PutAsJsonAsync($"api/auctions/{auctionId}", request, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -142,7 +141,7 @@ public sealed class AuctionService(HttpClient httpClient)
                 cancellationToken);
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "gemmes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "gemmes");
         throw new AuctionApiException(message, response.StatusCode);
     }
 
@@ -155,7 +154,7 @@ public sealed class AuctionService(HttpClient httpClient)
     /// <exception cref="AuctionApiException">Thrown when the auction no longer exists or the call fails.</exception>
     public async Task DeleteAsync(Guid auctionId, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.DeleteAsync($"api/auctions/{auctionId}", cancellationToken);
+        using HttpResponseMessage response = await httpClient.DeleteAsync($"api/auctions/{auctionId}", cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -167,7 +166,7 @@ public sealed class AuctionService(HttpClient httpClient)
             throw new AuctionApiException("Auktionen blev ikke fundet.", response.StatusCode);
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "slettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "slettes");
         throw new AuctionApiException(message, response.StatusCode);
     }
 

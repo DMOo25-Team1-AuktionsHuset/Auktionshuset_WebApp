@@ -33,7 +33,7 @@ internal static class AuctionValidation
         bool requireFutureStart,
         List<string> errors)
     {
-        var trimmedName = name?.Trim() ?? string.Empty;
+        string trimmedName = name?.Trim() ?? string.Empty;
 
         if (trimmedName.Length < MinNameLength || trimmedName.Length > MaxNameLength)
         {
@@ -79,9 +79,9 @@ internal static class AuctionValidation
 
         var auctionLots = new List<AuctionLot>();
 
-        foreach (var selection in selections)
+        foreach (AuctionLotSelection selection in selections)
         {
-            if (!lotsById.TryGetValue(selection.LotId, out var lot))
+            if (!lotsById.TryGetValue(selection.LotId, out Lot? lot))
             {
                 errors.Add("En eller flere af de valgte genstande findes ikke i lageret.");
                 continue;

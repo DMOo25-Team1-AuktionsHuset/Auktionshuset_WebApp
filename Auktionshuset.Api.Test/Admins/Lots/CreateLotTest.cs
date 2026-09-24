@@ -5,28 +5,31 @@ using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Domain.Entities;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Auktionshuset.Api.Test.Admins.Lots;
 
-public class CreateLotTest {
+public class CreateLotTest
+{
     /// <summary>
     /// Verifies that a valid request returns 201 together with the location of the created lot.
     /// </summary>
     [Fact]
-    public async Task Endpoint_WithValidRequest_ReturnsCreatedResponseWithLotLocation() {
+    public async Task Endpoint_WithValidRequest_ReturnsCreatedResponseWithLotLocation()
+    {
         // Arrange
         var repository = new RecordingLotRepository();
         var handler = new CreateLotHandler(repository, new RecordingEventPublisher());
 
         // Act
-        var result = await CreateLotEndpoint.HandleAsync(
+        Created<CreateLotResponse> result = await CreateLotEndpoint.HandleAsync(
             CreateValidRequest(),
             handler,
             CancellationToken.None);
 
         // Assert
-        var savedLot = Assert.IsType<Lot>(repository.AddedLot);
-        var response = Assert.IsType<CreateLotResponse>(result.Value);
+        Lot savedLot = Assert.IsType<Lot>(repository.AddedLot);
+        CreateLotResponse response = Assert.IsType<CreateLotResponse>(result.Value);
         Assert.Equal(201, result.StatusCode);
         Assert.NotEqual(Guid.Empty, response.LotId);
         Assert.Equal(savedLot.LotId, response.LotId);
@@ -37,11 +40,12 @@ public class CreateLotTest {
     /// Verifies that padding is trimmed and duplicate tags are removed before the lot is saved.
     /// </summary>
     [Fact]
-    public async Task Endpoint_WithPaddedAndDuplicateValues_NormalizesRequestBeforeHandling() {
+    public async Task Endpoint_WithPaddedAndDuplicateValues_NormalizesRequestBeforeHandling()
+    {
         // Arrange
         var repository = new RecordingLotRepository();
         var handler = new CreateLotHandler(repository, new RecordingEventPublisher());
-        var request = CreateValidRequest(
+        CreateLotRequest request = CreateValidRequest(
             name: "  Antique vase  ",
             category: "  Ceramics  ",
             description: "  Hand-painted porcelain  ",
@@ -51,7 +55,7 @@ public class CreateLotTest {
         await CreateLotEndpoint.HandleAsync(request, handler, CancellationToken.None);
 
         // Assert
-        var savedLot = Assert.IsType<Lot>(repository.AddedLot);
+        Lot savedLot = Assert.IsType<Lot>(repository.AddedLot);
         Assert.Equal("Antique vase", savedLot.Name);
         Assert.Equal("Ceramics", savedLot.Category);
         Assert.Equal("Hand-painted porcelain", savedLot.Description);
@@ -62,18 +66,19 @@ public class CreateLotTest {
     /// Verifies that the handler stores every command value and returns the persisted lot id.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithValidCommand_PersistsLotAndReturnsItsId() {
+    public async Task HandleAsync_WithValidCommand_PersistsLotAndReturnsItsId()
+    {
         // Arrange
         var repository = new RecordingLotRepository();
         var publisher = new RecordingEventPublisher();
         var handler = new CreateLotHandler(repository, publisher);
-        var command = CreateValidCommand();
+        CreateLotCommand command = CreateValidCommand();
 
         // Act
-        var result = await handler.HandleAsync(command, CancellationToken.None);
+        CreateLotResult result = await handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        var savedLot = Assert.IsType<Lot>(repository.AddedLot);
+        Lot savedLot = Assert.IsType<Lot>(repository.AddedLot);
         Assert.NotEqual(Guid.Empty, savedLot.LotId);
         Assert.Equal(savedLot.LotId, result.LotId);
         Assert.Equal(command.Name, savedLot.Name);
@@ -89,19 +94,20 @@ public class CreateLotTest {
     /// Verifies that the handler publishes a creation event that matches the saved lot.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithValidCommand_PublishesEventForSavedLot() {
+    public async Task HandleAsync_WithValidCommand_PublishesEventForSavedLot()
+    {
         // Arrange
         var repository = new RecordingLotRepository();
         var publisher = new RecordingEventPublisher();
         var handler = new CreateLotHandler(repository, publisher);
-        var command = CreateValidCommand();
+        CreateLotCommand command = CreateValidCommand();
 
         // Act
         await handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        var savedLot = Assert.IsType<Lot>(repository.AddedLot);
-        var publishedEvent = Assert.IsType<LotCreatedIntegrationEvent>(publisher.PublishedEvent);
+        Lot savedLot = Assert.IsType<Lot>(repository.AddedLot);
+        LotCreatedIntegrationEvent publishedEvent = Assert.IsType<LotCreatedIntegrationEvent>(publisher.PublishedEvent);
         Assert.NotEqual(Guid.Empty, publishedEvent.EventId);
         Assert.Equal(savedLot.LotId, publishedEvent.LotId);
         Assert.Equal(savedLot.AuctionHouseId, publishedEvent.AuctionHouseId);
@@ -115,7 +121,8 @@ public class CreateLotTest {
     /// Verifies that the handler passes its cancellation token on to the repository and publisher.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_ForwardsCancellationTokenToRepositoryAndPublisher() {
+    public async Task HandleAsync_ForwardsCancellationTokenToRepositoryAndPublisher()
+    {
         // Arrange
         var repository = new RecordingLotRepository();
         var publisher = new RecordingEventPublisher();
@@ -134,7 +141,8 @@ public class CreateLotTest {
     /// Verifies that a failing save propagates the exception and publishes no event.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WhenSavingFails_DoesNotPublishEvent() {
+    public async Task HandleAsync_WhenSavingFails_DoesNotPublishEvent()
+    {
         // Arrange
         var expectedException = new InvalidOperationException("The lot could not be saved.");
         var repository = new RecordingLotRepository { ExceptionToThrow = expectedException };
@@ -142,7 +150,7 @@ public class CreateLotTest {
         var handler = new CreateLotHandler(repository, publisher);
 
         // Act
-        var actualException = await Assert.ThrowsAsync<InvalidOperationException>(
+        InvalidOperationException actualException = await Assert.ThrowsAsync<InvalidOperationException>(
             () => handler.HandleAsync(CreateValidCommand(), CancellationToken.None));
 
         // Assert
@@ -157,9 +165,10 @@ public class CreateLotTest {
     [MemberData(nameof(InvalidRequests))]
     public void CreateLotRequest_WithInvalidInput_FailsValidation(
         CreateLotRequest request,
-        string invalidMember) {
+        string invalidMember)
+    {
         // Act
-        var validationResults = Validate(request);
+        IReadOnlyList<ValidationResult> validationResults = Validate(request);
 
         // Assert
         Assert.Contains(validationResults, result => result.MemberNames.Contains(invalidMember));
@@ -194,21 +203,23 @@ public class CreateLotTest {
         decimal estimatedValue = 1_250.00m,
         string description = "Hand-painted porcelain",
         string[]? tags = null,
-        string auctionHouseId = "53bc9a77-1e5d-47be-9446-8919ea020961") => new() {
-        Name = name,
-        Category = category,
-        Quantity = quantity,
-        EstimatedValue = estimatedValue,
-        Description = description,
-        Tags = tags ?? ["antique", "vase"],
-        AuctionHouseId = Guid.Parse(auctionHouseId)
-    };
+        string auctionHouseId = "53bc9a77-1e5d-47be-9446-8919ea020961") => new()
+        {
+            Name = name,
+            Category = category,
+            Quantity = quantity,
+            EstimatedValue = estimatedValue,
+            Description = description,
+            Tags = tags ?? ["antique", "vase"],
+            AuctionHouseId = Guid.Parse(auctionHouseId)
+        };
 
     /// <summary>
     /// Builds a valid create-lot command from a valid request.
     /// </summary>
-    private static CreateLotCommand CreateValidCommand() {
-        var request = CreateValidRequest();
+    private static CreateLotCommand CreateValidCommand()
+    {
+        CreateLotRequest request = CreateValidRequest();
         return new CreateLotCommand(
             request.Name,
             request.Category,
@@ -223,13 +234,15 @@ public class CreateLotTest {
     /// Runs annotation and <see cref="IValidatableObject"/> validation on the request.
     /// </summary>
     /// <returns>Every validation result produced for the request.</returns>
-    private static IReadOnlyList<ValidationResult> Validate(CreateLotRequest request) {
+    private static IReadOnlyList<ValidationResult> Validate(CreateLotRequest request)
+    {
         var results = new List<ValidationResult>();
         Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
         return results;
     }
 
-    private sealed class RecordingLotRepository : ILotRepository {
+    private sealed class RecordingLotRepository : ILotRepository
+    {
         /// <summary>
         /// Unused by these tests; the stub only supports adding.
         /// </summary>
@@ -242,7 +255,8 @@ public class CreateLotTest {
         /// Records the added lot and cancellation token, returning a faulted task when the stub is
         /// configured to throw.
         /// </summary>
-        public Task AddAsync(Lot lot, CancellationToken cancellationToken) {
+        public Task AddAsync(Lot lot, CancellationToken cancellationToken)
+        {
             AddedLot = lot;
             CancellationToken = cancellationToken;
             return ExceptionToThrow is null
@@ -259,19 +273,22 @@ public class CreateLotTest {
         /// <summary>
         /// Unused by these tests; the stub only supports adding.
         /// </summary>
-        public Task<Lot?> GetByIdAsync(Guid lotId, CancellationToken cancellationToken) {
+        public Task<Lot?> GetByIdAsync(Guid lotId, CancellationToken cancellationToken)
+        {
             throw new NotImplementedException();
         }
 
         /// <summary>
         /// Unused by these tests; the stub only supports adding.
         /// </summary>
-        public Task UpdateAsync(Lot lot, CancellationToken cancellationToken) {
+        public Task UpdateAsync(Lot lot, CancellationToken cancellationToken)
+        {
             throw new NotImplementedException();
         }
     }
 
-    private sealed class RecordingEventPublisher : IIntegrationEventPublisher {
+    private sealed class RecordingEventPublisher : IIntegrationEventPublisher
+    {
         public IIntegrationEvent? PublishedEvent { get; private set; }
         public CancellationToken CancellationToken { get; private set; }
 
@@ -279,7 +296,8 @@ public class CreateLotTest {
         /// Records the published event and the cancellation token it was called with.
         /// </summary>
         public Task PublishAsync<TEvent>(TEvent message, CancellationToken cancellationToken)
-            where TEvent : IIntegrationEvent {
+            where TEvent : IIntegrationEvent
+        {
             PublishedEvent = message;
             CancellationToken = cancellationToken;
             return Task.CompletedTask;

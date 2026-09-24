@@ -1,9 +1,7 @@
 ﻿using Auktionshuset.Application.EventHandling;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Auktionshuset.Application.Admin.Lots.UpdateLot {
+namespace Auktionshuset.Application.Admin.Lots.UpdateLot
+{
     public sealed record LotUpdatedIntegrationEvent(
         Guid EventId,
         Guid LotId,

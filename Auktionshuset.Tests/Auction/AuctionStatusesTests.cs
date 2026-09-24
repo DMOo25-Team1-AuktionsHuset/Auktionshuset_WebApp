@@ -13,7 +13,7 @@ public class AuctionStatusesTests
     {
         var now = new DateTime(2026, 5, 1, 12, 0, 0);
 
-        var status = AuctionStatuses.Derive(now.AddHours(1), now.AddHours(5), now);
+        string status = AuctionStatuses.Derive(now.AddHours(1), now.AddHours(5), now);
 
         Assert.Equal(AuctionStatuses.Upcoming, status);
     }
@@ -26,7 +26,7 @@ public class AuctionStatusesTests
     {
         var now = new DateTime(2026, 5, 1, 12, 0, 0);
 
-        var status = AuctionStatuses.Derive(now.AddHours(-1), now.AddHours(1), now);
+        string status = AuctionStatuses.Derive(now.AddHours(-1), now.AddHours(1), now);
 
         Assert.Equal(AuctionStatuses.Live, status);
     }
@@ -39,7 +39,7 @@ public class AuctionStatusesTests
     {
         var now = new DateTime(2026, 5, 1, 12, 0, 0);
 
-        var status = AuctionStatuses.Derive(now.AddHours(-5), now.AddHours(-1), now);
+        string status = AuctionStatuses.Derive(now.AddHours(-5), now.AddHours(-1), now);
 
         Assert.Equal(AuctionStatuses.Ended, status);
     }

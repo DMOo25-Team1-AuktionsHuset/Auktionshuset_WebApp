@@ -56,8 +56,8 @@ public static class LotImageEndpoints
             return Invalid("Vedhæft billedet som en fil.");
         }
 
-        var form = await request.ReadFormAsync(cancellationToken);
-        var file = form.Files.Count == 1
+        IFormCollection form = await request.ReadFormAsync(cancellationToken);
+        IFormFile? file = form.Files.Count == 1
             ? form.Files[0]
             : form.Files.FirstOrDefault(candidate => candidate.Name == FileFieldName);
 
@@ -84,7 +84,7 @@ public static class LotImageEndpoints
             Length: buffer.Length,
             Content: buffer);
 
-        var result = await handler.HandleAsync(command, cancellationToken);
+        LotImageResult result = await handler.HandleAsync(command, cancellationToken);
 
         if (result.NotFound)
         {
@@ -111,7 +111,7 @@ public static class LotImageEndpoints
         RemoveLotImageHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(lotId, cancellationToken);
+        LotImageResult result = await handler.HandleAsync(lotId, cancellationToken);
 
         return result.NotFound
             ? TypedResults.NotFound()

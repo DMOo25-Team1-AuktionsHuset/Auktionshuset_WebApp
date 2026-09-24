@@ -40,10 +40,10 @@ public static class GetAuctionsEndpoint
         GetAuctionsHandler handler,
         CancellationToken cancellationToken)
     {
-        var auctions = await handler.HandleAsync(cancellationToken);
-        var now = DateTime.Now;
+        IReadOnlyList<AuctionOverview> auctions = await handler.HandleAsync(cancellationToken);
+        DateTime now = DateTime.Now;
 
-        var response = auctions
+        AuctionListItemResponse[] response = auctions
             .Select(overview => new AuctionListItemResponse(
                 AuctionId: overview.Auction.AuctionId,
                 Name: overview.Auction.Name,
@@ -72,7 +72,7 @@ public static class GetAuctionsEndpoint
         GetAuctionsHandler handler,
         CancellationToken cancellationToken)
     {
-        var detail = await handler.HandleByIdAsync(auctionId, cancellationToken);
+        AuctionDetail? detail = await handler.HandleByIdAsync(auctionId, cancellationToken);
 
         if (detail is null)
         {

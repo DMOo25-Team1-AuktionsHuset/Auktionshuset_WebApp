@@ -16,7 +16,7 @@ using Auktionshuset.Infrastructure.Service.Lots;
 using Microsoft.Extensions.FileProviders;
 
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -46,7 +46,7 @@ builder.Services.AddScoped<
 //Infrastructure Services
 builder.Services.AddInfrastructure(builder.Configuration);
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -57,7 +57,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Serve the uploaded lot images from the same folder the image store writes to.
-var imageStoreOptions = app.Services.GetRequiredService<LotImageStoreOptions>();
+LotImageStoreOptions imageStoreOptions = app.Services.GetRequiredService<LotImageStoreOptions>();
 Directory.CreateDirectory(imageStoreOptions.RootPath);
 
 app.UseStaticFiles(new StaticFileOptions

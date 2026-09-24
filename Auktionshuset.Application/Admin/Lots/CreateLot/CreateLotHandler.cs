@@ -1,20 +1,20 @@
 ﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
-using Auktionshuset.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Auktionshuset.Application.Admin.Lots.CreateLot {
-    public class CreateLotHandler(ILotRepository lotRepository, IIntegrationEventPublisher eventPublisher) {
+namespace Auktionshuset.Application.Admin.Lots.CreateLot
+{
+    public class CreateLotHandler(ILotRepository lotRepository, IIntegrationEventPublisher eventPublisher)
+    {
         /// <summary>
         /// Creates a lot from the specified command, adds it to the repository, and publishes a
         /// <see cref="LotCreatedIntegrationEvent"/> for it.
         /// </summary>
         /// <param name="command">The values used to create the new lot.</param>
         /// <returns>A result containing the identifier of the newly created lot.</returns>
-        public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken) {
-            var lot = new Domain.Entities.Lot {
+        public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken)
+        {
+            var lot = new Domain.Entities.Lot
+            {
                 LotId = Guid.NewGuid(),
                 Name = command.Name,
                 Category = command.Category,

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Domain.Entities {
-    public class Customer {
+﻿namespace Auktionshuset.Domain.Entities
+{
+    public class Customer
+    {
         public required Guid CustomerId { get; set; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }

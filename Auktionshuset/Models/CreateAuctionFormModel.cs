@@ -44,7 +44,7 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (RequireFutureStart
-            && TryCombine(StartDate, StartTime, out var upcomingStart)
+            && TryCombine(StartDate, StartTime, out DateTime upcomingStart)
             && upcomingStart <= DateTime.Now)
         {
             yield return new ValidationResult(
@@ -53,8 +53,8 @@ public sealed class CreateAuctionFormModel : IValidatableObject
         }
 
         // An auction runs on one date, so the end moment is the start date plus the end time.
-        if (TryCombine(StartDate, StartTime, out var start)
-            && TryCombine(StartDate, EndTime, out var end)
+        if (TryCombine(StartDate, StartTime, out DateTime start)
+            && TryCombine(StartDate, EndTime, out DateTime end)
             && end <= start)
         {
             yield return new ValidationResult(
@@ -67,20 +67,20 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     /// Combines the start date and start time into a single moment.
     /// </summary>
     /// <returns>The start moment, or <see langword="null"/> when the fields are not filled in yet.</returns>
-    public DateTime? GetStartsAt() => TryCombine(StartDate, StartTime, out var value) ? value : null;
+    public DateTime? GetStartsAt() => TryCombine(StartDate, StartTime, out DateTime value) ? value : null;
 
     /// <summary>
     /// Combines the start date and end time into a single moment, since an auction lasts one date.
     /// </summary>
     /// <returns>The end moment, or <see langword="null"/> when the fields are not filled in yet.</returns>
-    public DateTime? GetEndsAt() => TryCombine(StartDate, EndTime, out var value) ? value : null;
+    public DateTime? GetEndsAt() => TryCombine(StartDate, EndTime, out DateTime value) ? value : null;
 
     private static bool TryCombine(DateTime? date, string time, out DateTime value)
     {
         value = default;
 
         if (date is null
-            || !TimeOnly.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+            || !TimeOnly.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly parsed))
         {
             return false;
         }

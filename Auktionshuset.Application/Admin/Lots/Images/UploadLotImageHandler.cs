@@ -1,6 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Lots.Images;
 
@@ -19,7 +19,7 @@ public sealed class UploadLotImageHandler(
         UploadLotImageCommand command,
         CancellationToken cancellationToken)
     {
-        var lot = await lotRepository.GetByIdAsync(command.LotId, cancellationToken);
+        Lot? lot = await lotRepository.GetByIdAsync(command.LotId, cancellationToken);
 
         if (lot is null)
         {
@@ -36,13 +36,13 @@ public sealed class UploadLotImageHandler(
             return LotImageResult.Invalid(["Billedet må højst være 5 MB."]);
         }
 
-        if (!LotImageValidator.TryValidate(command.Content, command.Length, out var extension))
+        if (!LotImageValidator.TryValidate(command.Content, command.Length, out string? extension))
         {
             return LotImageResult.Invalid(["Billedet skal være i formatet JPEG, PNG eller WebP."]);
         }
 
-        var previousFileName = lot.ImageFileName;
-        var fileName = await imageStore.SaveAsync(command.Content, extension, cancellationToken);
+        string? previousFileName = lot.ImageFileName;
+        string fileName = await imageStore.SaveAsync(command.Content, extension, cancellationToken);
 
         lot.ImageFileName = fileName;
         await lotRepository.UpdateAsync(lot, cancellationToken);

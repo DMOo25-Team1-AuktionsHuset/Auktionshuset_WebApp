@@ -1,13 +1,13 @@
 using Auktionshuset.Components;
 using Auktionshuset.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var apiBaseUrl = builder.Configuration["Api:BaseUrl"]
+string apiBaseUrl = builder.Configuration["Api:BaseUrl"]
     ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
 
 builder.Services.AddHttpClient<LotService>(client =>
@@ -27,7 +27,7 @@ builder.Services.AddHttpClient<EmployeeService>(client =>
 
 builder.Services.AddScoped<AuctionRealtimeService>();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

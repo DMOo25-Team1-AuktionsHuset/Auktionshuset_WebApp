@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Domain.Entities {
-    public class DeviceSession {
+﻿namespace Auktionshuset.Domain.Entities
+{
+    public class DeviceSession
+    {
         public required Guid DeviceSessionId { get; set; }
         public required DateTime StartedAt { get; set; }
         public required DateTime EndedAt { get; set; }
