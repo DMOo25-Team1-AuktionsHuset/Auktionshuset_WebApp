@@ -2,6 +2,7 @@ using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Events.Admin.Auction;
+using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
@@ -51,6 +52,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi().AllowAnonymous();
 }
+
+await app.MigrateAndSeedDatabaseAsync();
 
 app.UseHttpsRedirection();
 
