@@ -1,12 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Auktionshuset.Domain.Entities;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Auktionshuset.Infrastructure.Data.Configuration {
+namespace Auktionshuset.Infrastructure.Data.Configuration
+{
     public class LotConfiguration : IEntityTypeConfiguration<Lot>
     {
         /// <summary>

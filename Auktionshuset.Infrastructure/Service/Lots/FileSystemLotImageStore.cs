@@ -44,8 +44,8 @@ namespace Auktionshuset.Infrastructure.Service.Lots
 
             Directory.CreateDirectory(_rootPath);
 
-            var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-            var path = Path.Combine(_rootPath, fileName);
+            string fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+            string path = Path.Combine(_rootPath, fileName);
 
             if (content.CanSeek)
             {
@@ -74,7 +74,7 @@ namespace Auktionshuset.Infrastructure.Service.Lots
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var path = ResolvePath(fileName);
+            string? path = ResolvePath(fileName);
 
             if (path is null || !File.Exists(path))
             {
@@ -112,8 +112,8 @@ namespace Auktionshuset.Infrastructure.Service.Lots
                 return null;
             }
 
-            var root = Path.GetFullPath(_rootPath);
-            var path = Path.GetFullPath(Path.Combine(root, fileName));
+            string root = Path.GetFullPath(_rootPath);
+            string path = Path.GetFullPath(Path.Combine(root, fileName));
 
             return path.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
                 ? path

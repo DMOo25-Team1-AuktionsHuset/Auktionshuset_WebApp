@@ -14,12 +14,12 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithSelectedLots_CreatesAuctionWithQuantities()
     {
-        var employee = TestData.CreateEmployee();
-        var first = TestData.CreateLot("Stol", quantity: 4);
-        var second = TestData.CreateLot("Bord", quantity: 2);
-        var (handler, auctions, _, _) = await CreateHandlerAsync(employee, first, second);
+        Employee employee = TestData.CreateEmployee();
+        Lot first = TestData.CreateLot("Stol", quantity: 4);
+        Lot second = TestData.CreateLot("Bord", quantity: 2);
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee, first, second);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
                 DateTime.Now.AddDays(7),
@@ -33,7 +33,7 @@ public class CreateAuctionHandlerTests
         Assert.Equal(2, result.LotCount);
         Assert.Equal(4, result.ItemCount);
 
-        var auctionLots = await auctions.GetAuctionLotsAsync(result.AuctionId, CancellationToken.None);
+        IReadOnlyList<AuctionLot> auctionLots = await auctions.GetAuctionLotsAsync(result.AuctionId, CancellationToken.None);
         Assert.Equal(2, auctionLots.Count);
         Assert.Equal(2, auctionLots.Single(line => line.LotId == first.LotId).Quantity);
         Assert.Equal(2, auctionLots.Single(line => line.LotId == second.LotId).Quantity);
@@ -45,11 +45,11 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithSelectedLots_KeepsLotReferenceForDashboard()
     {
-        var employee = TestData.CreateEmployee();
-        var lot = TestData.CreateLot("Vase");
-        var (handler, auctions, _, _) = await CreateHandlerAsync(employee, lot);
+        Employee employee = TestData.CreateEmployee();
+        Lot lot = TestData.CreateLot("Vase");
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee, lot);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
                 DateTime.Now.AddDays(2),
@@ -57,7 +57,7 @@ public class CreateAuctionHandlerTests
                 new AuctionLotSelection(lot.LotId, 1)),
             CancellationToken.None);
 
-        var storedLotLine = Assert.Single(await auctions.GetAuctionLotsAsync(result.AuctionId, CancellationToken.None));
+        AuctionLot storedLotLine = Assert.Single(await auctions.GetAuctionLotsAsync(result.AuctionId, CancellationToken.None));
         Assert.Equal("Vase", storedLotLine.Lot.Name);
     }
 
@@ -67,10 +67,10 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithoutLots_CreatesAuctionWithNoRelationships()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, auctions, _, _) = await CreateHandlerAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)),
             CancellationToken.None);
 
@@ -86,10 +86,10 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithPastStart_ReturnsInvalidAndStoresNothing()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, auctions, _, _) = await CreateHandlerAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(-1), DateTime.Now.AddDays(1)),
             CancellationToken.None);
 
@@ -105,11 +105,11 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithEndBeforeStart_ReturnsInvalid()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, _, _, _) = await CreateHandlerAsync(employee);
-        var startsAt = DateTime.Now.AddDays(3);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
+        DateTime startsAt = DateTime.Now.AddDays(3);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, startsAt, startsAt.AddHours(-1)),
             CancellationToken.None);
 
@@ -125,15 +125,15 @@ public class CreateAuctionHandlerTests
     [InlineData("a")]
     public async Task HandleAsync_WithInvalidName_ReturnsInvalid(string name)
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, _, _, _) = await CreateHandlerAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
-        var command = TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)) with
+        CreateAuctionCommand command = TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)) with
         {
             Name = name
         };
 
-        var result = await handler.HandleAsync(command, CancellationToken.None);
+        CreateAuctionResult result = await handler.HandleAsync(command, CancellationToken.None);
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, error => error.Contains("Auktionsnavn"));
@@ -145,9 +145,9 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithUnknownEmployee_ReturnsInvalid()
     {
-        var (handler, _, _, _) = await CreateHandlerAsync();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync();
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(Guid.NewGuid(), DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)),
             CancellationToken.None);
 
@@ -161,15 +161,15 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithoutEmployee_CreatesAuctionWithoutAuctionarius()
     {
-        var (handler, auctions, _, _) = await CreateHandlerAsync();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync();
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(null, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)),
             CancellationToken.None);
 
         Assert.True(result.Succeeded);
 
-        var auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
+        Auction? auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
         Assert.NotNull(auction);
         Assert.Null(auction.EmployeeId);
         Assert.Null(auction.Employee);
@@ -181,10 +181,10 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithUnknownLot_ReturnsInvalid()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, _, _, _) = await CreateHandlerAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
                 DateTime.Now.AddDays(2),
@@ -202,11 +202,11 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithDuplicateLots_ReturnsInvalid()
     {
-        var employee = TestData.CreateEmployee();
-        var lot = TestData.CreateLot("Lampe", quantity: 3);
-        var (handler, _, _, _) = await CreateHandlerAsync(employee, lot);
+        Employee employee = TestData.CreateEmployee();
+        Lot lot = TestData.CreateLot("Lampe", quantity: 3);
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee, lot);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
                 DateTime.Now.AddDays(2),
@@ -227,11 +227,11 @@ public class CreateAuctionHandlerTests
     [InlineData(-3)]
     public async Task HandleAsync_WithQuantityBelowOne_ReturnsInvalid(int quantity)
     {
-        var employee = TestData.CreateEmployee();
-        var lot = TestData.CreateLot("Lampe", quantity: 5);
-        var (handler, _, _, _) = await CreateHandlerAsync(employee, lot);
+        Employee employee = TestData.CreateEmployee();
+        Lot lot = TestData.CreateLot("Lampe", quantity: 5);
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee, lot);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
                 DateTime.Now.AddDays(2),
@@ -249,11 +249,11 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithQuantityAboveStock_ReturnsInvalid()
     {
-        var employee = TestData.CreateEmployee();
-        var lot = TestData.CreateLot("Lampe", quantity: 2);
-        var (handler, _, _, _) = await CreateHandlerAsync(employee, lot);
+        Employee employee = TestData.CreateEmployee();
+        Lot lot = TestData.CreateLot("Lampe", quantity: 2);
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee, lot);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
                 DateTime.Now.AddDays(2),
@@ -271,14 +271,14 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithFutureStart_StoresUpcomingStatus()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, auctions, _, _) = await CreateHandlerAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(5), DateTime.Now.AddDays(6)),
             CancellationToken.None);
 
-        var auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
+        Auction? auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
         Assert.NotNull(auction);
         Assert.Equal(AuctionStatuses.Upcoming, auction.AuctionStatus);
     }
@@ -289,14 +289,14 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidCommand_StoresAuctionarius()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, auctions, _, _) = await CreateHandlerAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(5), DateTime.Now.AddDays(6)),
             CancellationToken.None);
 
-        var auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
+        Auction? auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
         Assert.NotNull(auction);
         Assert.Equal(employee.EmployeeId, auction.EmployeeId);
     }
@@ -307,17 +307,17 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidCommand_PublishesAuctionCreatedEvent()
     {
-        var employee = TestData.CreateEmployee();
-        var lot = TestData.CreateLot("Bord", quantity: 3);
-        var startsAt = DateTime.Now.AddDays(5);
-        var endsAt = DateTime.Now.AddDays(6);
-        var (handler, _, _, publisher) = await CreateHandlerAsync(employee, lot);
+        Employee employee = TestData.CreateEmployee();
+        Lot lot = TestData.CreateLot("Bord", quantity: 3);
+        DateTime startsAt = DateTime.Now.AddDays(5);
+        DateTime endsAt = DateTime.Now.AddDays(6);
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher? publisher) = await CreateHandlerAsync(employee, lot);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, startsAt, endsAt, new AuctionLotSelection(lot.LotId, 3)),
             CancellationToken.None);
 
-        var published = Assert.Single(publisher.Published.OfType<AuctionCreatedIntegrationEvent>());
+        AuctionCreatedIntegrationEvent published = Assert.Single(publisher.Published.OfType<AuctionCreatedIntegrationEvent>());
         Assert.NotEqual(Guid.Empty, published.EventId);
         Assert.Equal(result.AuctionId, published.AuctionId);
         Assert.Equal("Forårsauktion", published.Name);
@@ -333,10 +333,10 @@ public class CreateAuctionHandlerTests
     [Fact]
     public async Task HandleAsync_WithInvalidCommand_DoesNotPublishEvent()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, _, _, publisher) = await CreateHandlerAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher? publisher) = await CreateHandlerAsync(employee);
 
-        var result = await handler.HandleAsync(
+        CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(-2), DateTime.Now.AddDays(1)),
             CancellationToken.None);
 
@@ -351,7 +351,7 @@ public class CreateAuctionHandlerTests
         Employee? employee = null,
         params Lot[] lots)
     {
-        var lotRepository = await TestData.CreateLotRepositoryAsync(lots);
+        InMemoryLotRepository lotRepository = await TestData.CreateLotRepositoryAsync(lots);
         var auctionRepository = new InMemoryAuctionRepository();
         var employeeRepository = new TestEmployeeRepository();
 

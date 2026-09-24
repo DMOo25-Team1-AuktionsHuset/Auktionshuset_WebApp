@@ -1,4 +1,3 @@
-using Auktionshuset.Domain.Entities;
 using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions.GetAuctions;

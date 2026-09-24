@@ -1,4 +1,5 @@
-﻿namespace Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot {
+﻿namespace Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot
+{
     public sealed record UpdateLotNotification(
         Guid EventId,
         Guid LotId,

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Domain.Entities {
-    public class AuctionLot {
+﻿namespace Auktionshuset.Domain.Entities
+{
+    public class AuctionLot
+    {
         public required Guid AuctionLotId { get; set; }
 
         public required Guid AuctionId { get; set; }

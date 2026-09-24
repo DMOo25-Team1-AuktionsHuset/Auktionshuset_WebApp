@@ -15,14 +15,14 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleAsync_WithLots_ReportsLotAndItemCounts()
     {
-        var employee = TestData.CreateEmployee();
-        var first = TestData.CreateLot("Stol", quantity: 5);
-        var second = TestData.CreateLot("Bord", quantity: 4);
-        var (handler, auctionId) = await CreateAsync(employee, (first, 2), (second, 1));
+        Employee employee = TestData.CreateEmployee();
+        Lot first = TestData.CreateLot("Stol", quantity: 5);
+        Lot second = TestData.CreateLot("Bord", quantity: 4);
+        (GetAuctionsHandler? handler, Guid auctionId) = await CreateAsync(employee, (first, 2), (second, 1));
 
-        var overviews = await handler.HandleAsync(CancellationToken.None);
+        IReadOnlyList<AuctionOverview> overviews = await handler.HandleAsync(CancellationToken.None);
 
-        var overview = Assert.Single(overviews);
+        AuctionOverview overview = Assert.Single(overviews);
         Assert.Equal(auctionId, overview.Auction.AuctionId);
         Assert.Equal(2, overview.LotCount);
         Assert.Equal(3, overview.ItemCount);
@@ -34,10 +34,10 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleAsync_WithAuctionarius_ReportsEmployeeName()
     {
-        var employee = TestData.CreateEmployee("Henrik", "Sørensen");
-        var (handler, _) = await CreateAsync(employee);
+        Employee employee = TestData.CreateEmployee("Henrik", "Sørensen");
+        (GetAuctionsHandler? handler, Guid _) = await CreateAsync(employee);
 
-        var overviews = await handler.HandleAsync(CancellationToken.None);
+        IReadOnlyList<AuctionOverview> overviews = await handler.HandleAsync(CancellationToken.None);
 
         Assert.Equal("Henrik Sørensen", Assert.Single(overviews).EmployeeName);
     }
@@ -48,9 +48,9 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleAsync_WithoutStoredEmployee_ReportsNotAssigned()
     {
-        var handler = await CreateWithAuctionAsync(employeeId: Guid.NewGuid());
+        GetAuctionsHandler handler = await CreateWithAuctionAsync(employeeId: Guid.NewGuid());
 
-        var overviews = await handler.HandleAsync(CancellationToken.None);
+        IReadOnlyList<AuctionOverview> overviews = await handler.HandleAsync(CancellationToken.None);
 
         Assert.Equal("Ikke tildelt", Assert.Single(overviews).EmployeeName);
     }
@@ -61,9 +61,9 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleAsync_WithoutEmployee_ReportsNotAssigned()
     {
-        var handler = await CreateWithAuctionAsync(employeeId: null);
+        GetAuctionsHandler handler = await CreateWithAuctionAsync(employeeId: null);
 
-        var overviews = await handler.HandleAsync(CancellationToken.None);
+        IReadOnlyList<AuctionOverview> overviews = await handler.HandleAsync(CancellationToken.None);
 
         Assert.Equal("Ikke tildelt", Assert.Single(overviews).EmployeeName);
     }
@@ -74,11 +74,11 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleAsync_WithLotImages_ReportsImageFileNames()
     {
-        var employee = TestData.CreateEmployee();
-        var lot = TestData.CreateLot("Vase", imageFileName: "a1b2c3.png");
-        var (handler, _) = await CreateAsync(employee, (lot, 1));
+        Employee employee = TestData.CreateEmployee();
+        Lot lot = TestData.CreateLot("Vase", imageFileName: "a1b2c3.png");
+        (GetAuctionsHandler? handler, Guid _) = await CreateAsync(employee, (lot, 1));
 
-        var overviews = await handler.HandleAsync(CancellationToken.None);
+        IReadOnlyList<AuctionOverview> overviews = await handler.HandleAsync(CancellationToken.None);
 
         Assert.Equal("a1b2c3.png", Assert.Single(Assert.Single(overviews).ImageFileNames));
     }
@@ -89,17 +89,17 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleByIdAsync_WithLots_ReturnsLotLines()
     {
-        var employee = TestData.CreateEmployee();
-        var lot = TestData.CreateLot("Vase", quantity: 3, imageFileName: "bilde.webp");
-        var (handler, auctionId) = await CreateAsync(employee, (lot, 1));
+        Employee employee = TestData.CreateEmployee();
+        Lot lot = TestData.CreateLot("Vase", quantity: 3, imageFileName: "bilde.webp");
+        (GetAuctionsHandler? handler, Guid auctionId) = await CreateAsync(employee, (lot, 1));
 
-        var detail = await handler.HandleByIdAsync(auctionId, CancellationToken.None);
+        AuctionDetail? detail = await handler.HandleByIdAsync(auctionId, CancellationToken.None);
 
         Assert.NotNull(detail);
         Assert.Equal(1, detail.LotCount);
         Assert.Equal(1, detail.ItemCount);
 
-        var line = Assert.Single(detail.Lots);
+        AuctionLotLine line = Assert.Single(detail.Lots);
         Assert.Equal(lot.LotId, line.LotId);
         Assert.Equal("Vase", line.Name);
         Assert.Equal("Møbler", line.Category);
@@ -113,8 +113,8 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleByIdAsync_WithUnknownAuction_ReturnsNull()
     {
-        var employee = TestData.CreateEmployee();
-        var (handler, _) = await CreateAsync(employee);
+        Employee employee = TestData.CreateEmployee();
+        (GetAuctionsHandler? handler, Guid _) = await CreateAsync(employee);
 
         Assert.Null(await handler.HandleByIdAsync(Guid.NewGuid(), CancellationToken.None));
     }
@@ -125,25 +125,25 @@ public class GetAuctionsHandlerTests
     [Fact]
     public async Task HandleAsync_WithSeveralAuctions_OrdersByStartTimeDescending()
     {
-        var employee = TestData.CreateEmployee();
-        var lotRepository = await TestData.CreateLotRepositoryAsync();
+        Employee employee = TestData.CreateEmployee();
+        InMemoryLotRepository lotRepository = await TestData.CreateLotRepositoryAsync();
         var auctionRepository = new InMemoryAuctionRepository();
         var employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
         var publisher = new RecordingEventPublisher();
         var createHandler = new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher);
 
-        var earliest = await createHandler.HandleAsync(
+        CreateAuctionResult earliest = await createHandler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)) with { Name = "Tidlig" },
             CancellationToken.None);
 
-        var latest = await createHandler.HandleAsync(
+        CreateAuctionResult latest = await createHandler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(20), DateTime.Now.AddDays(21)) with { Name = "Sen" },
             CancellationToken.None);
 
         var handler = new GetAuctionsHandler(auctionRepository, employeeRepository);
 
-        var overviews = await handler.HandleAsync(CancellationToken.None);
+        IReadOnlyList<AuctionOverview> overviews = await handler.HandleAsync(CancellationToken.None);
 
         Assert.Equal(2, overviews.Count);
         Assert.Equal(latest.AuctionId, overviews[0].Auction.AuctionId);
@@ -181,14 +181,14 @@ public class GetAuctionsHandlerTests
         Employee employee,
         params (Lot Lot, int Quantity)[] selections)
     {
-        var lots = selections.Select(selection => selection.Lot).ToArray();
-        var lotRepository = await TestData.CreateLotRepositoryAsync(lots);
+        Lot[] lots = selections.Select(selection => selection.Lot).ToArray();
+        InMemoryLotRepository lotRepository = await TestData.CreateLotRepositoryAsync(lots);
         var auctionRepository = new InMemoryAuctionRepository();
         var employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
         var publisher = new RecordingEventPublisher();
 
-        var created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,

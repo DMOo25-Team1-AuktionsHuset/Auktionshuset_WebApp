@@ -33,7 +33,7 @@ public static class DeleteAuctionEndpoint
         DeleteAuctionHandler handler,
         CancellationToken cancellationToken)
     {
-        var deleted = await handler.HandleAsync(new DeleteAuctionCommand(auctionId), cancellationToken);
+        bool deleted = await handler.HandleAsync(new DeleteAuctionCommand(auctionId), cancellationToken);
 
         return deleted ? TypedResults.NoContent() : TypedResults.NotFound();
     }

@@ -69,9 +69,9 @@ public static class LotImageValidator
             return false;
         }
 
-        var header = new byte[HeaderLength];
+        byte[] header = new byte[HeaderLength];
         content.Position = 0;
-        var read = content.Read(header, 0, header.Length);
+        int read = content.Read(header, 0, header.Length);
         content.Position = 0;
 
         return TryGetExtension(header.AsSpan(0, read), out extension);

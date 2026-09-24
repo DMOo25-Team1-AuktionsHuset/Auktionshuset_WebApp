@@ -14,7 +14,6 @@ using System.Text.Json;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
-using System.Reflection.Metadata;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
 
@@ -36,11 +35,11 @@ internal sealed class AdminEventsConsumer : BackgroundService
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        await using var channel =
+        await using IChannel channel =
             await _connection.CreateChannelAsync(
                 cancellationToken: stoppingToken);
 
-        var exchangeName = RabbitMqTopology.EventExchange;
+        string exchangeName = RabbitMqTopology.EventExchange;
 
         await channel.ExchangeDeclareAsync(
             exchange: exchangeName,
@@ -56,7 +55,7 @@ internal sealed class AdminEventsConsumer : BackgroundService
             autoDelete: false,
             cancellationToken: stoppingToken);
 
-        foreach (var routingKey in new[]
+        foreach (string? routingKey in new[]
         {
             RabbitMqTopology.RoutingKeys.LotCreated,
             RabbitMqTopology.RoutingKeys.LotUpdated,
@@ -81,7 +80,7 @@ internal sealed class AdminEventsConsumer : BackgroundService
 
         consumer.ReceivedAsync += async (_, eventArgs) =>
         {
-            var json = Encoding.UTF8.GetString(eventArgs.Body.ToArray());
+            string json = Encoding.UTF8.GetString(eventArgs.Body.ToArray());
 
             switch (eventArgs.RoutingKey)
             {
@@ -118,7 +117,7 @@ internal sealed class AdminEventsConsumer : BackgroundService
                 case var routingKey
                     when routingKey == RabbitMqTopology.RoutingKeys.EmployeeDeleted:
                     await HandleAsync<EmployeeDeletedIntegrationEvent>(
-                        json, stoppingToken); 
+                        json, stoppingToken);
                     break;
 
                 case var routingKey
@@ -168,13 +167,13 @@ internal sealed class AdminEventsConsumer : BackgroundService
         CancellationToken cancellationToken)
         where TEvent : IIntegrationEvent
     {
-        var message = JsonSerializer.Deserialize<TEvent>(json)
+        TEvent message = JsonSerializer.Deserialize<TEvent>(json)
             ?? throw new InvalidOperationException(
                 $"Failed to deserialize {typeof(TEvent).Name}");
 
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
 
-        var handler = scope.ServiceProvider
+        IIntegrationEventHandler<TEvent> handler = scope.ServiceProvider
             .GetRequiredService<IIntegrationEventHandler<TEvent>>();
 
         await handler.HandleAsync(message, cancellationToken);

@@ -17,7 +17,7 @@ public sealed class AuctionRealtimeService : IAsyncDisposable
 
     public AuctionRealtimeService(IConfiguration configuration)
     {
-        var apiBaseUrl = configuration["Api:BaseUrl"]
+        string apiBaseUrl = configuration["Api:BaseUrl"]
             ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
 
         hubUrl = $"{apiBaseUrl.TrimEnd('/')}/hubs/auction";
@@ -40,7 +40,7 @@ public sealed class AuctionRealtimeService : IAsyncDisposable
                 return;
             }
 
-            var hubConnection = new HubConnectionBuilder()
+            HubConnection hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
                 .WithAutomaticReconnect()
                 .Build();

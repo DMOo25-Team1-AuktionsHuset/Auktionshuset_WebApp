@@ -16,11 +16,11 @@ public class GetEmployeesTest
     [Fact]
     public async Task HandleAsync_ReturnsSeededEmployees()
     {
-        var result = await GetEmployeesEndpoint.HandleAsync(
+        Ok<IReadOnlyList<EmployeeListItemResponse>> result = await GetEmployeesEndpoint.HandleAsync(
             new GetEmployeesHandler(new InMemoryEmployeeRepository()),
             CancellationToken.None);
 
-        var employees = Assert.IsType<Ok<IReadOnlyList<EmployeeListItemResponse>>>(result).Value!;
+        IReadOnlyList<EmployeeListItemResponse> employees = Assert.IsType<Ok<IReadOnlyList<EmployeeListItemResponse>>>(result).Value!;
 
         Assert.NotEmpty(employees);
         Assert.All(employees, employee => Assert.NotEqual(Guid.Empty, employee.EmployeeId));
@@ -33,11 +33,11 @@ public class GetEmployeesTest
     [Fact]
     public async Task HandleAsync_PreservesFirstAndLastName()
     {
-        var result = await GetEmployeesEndpoint.HandleAsync(
+        Ok<IReadOnlyList<EmployeeListItemResponse>> result = await GetEmployeesEndpoint.HandleAsync(
             new GetEmployeesHandler(new InMemoryEmployeeRepository()),
             CancellationToken.None);
 
-        var employees = Assert.IsType<Ok<IReadOnlyList<EmployeeListItemResponse>>>(result).Value!;
+        IReadOnlyList<EmployeeListItemResponse> employees = Assert.IsType<Ok<IReadOnlyList<EmployeeListItemResponse>>>(result).Value!;
 
         Assert.Contains(
             employees,
@@ -50,7 +50,7 @@ public class GetEmployeesTest
     [Fact]
     public async Task HandleAsync_WithoutEmployees_ReturnsEmptyList()
     {
-        var result = await GetEmployeesEndpoint.HandleAsync(
+        Ok<IReadOnlyList<EmployeeListItemResponse>> result = await GetEmployeesEndpoint.HandleAsync(
             new GetEmployeesHandler(new EmptyEmployeeRepository()),
             CancellationToken.None);
 

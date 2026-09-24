@@ -1,18 +1,20 @@
-using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot {
-    public static class CreateLotEndpoint {
+namespace Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot
+{
+    public static class CreateLotEndpoint
+    {
         /// <summary>
         /// Maps the create-lot endpoint onto the supplied route group.
         /// </summary>
         /// <param name="group">The route group that the endpoint is mapped onto.</param>
         /// <returns>The same route group so that further endpoints can be chained.</returns>
-        public static RouteGroupBuilder MapCreateLot(this RouteGroupBuilder group) {
+        public static RouteGroupBuilder MapCreateLot(this RouteGroupBuilder group)
+        {
             group.MapPost("/", HandleAsync)
                 .WithName("CreateLot")
                 .WithSummary("Creates a new auction lot")
@@ -30,9 +32,10 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot {
         /// <param name="handler">The handler that creates the lot.</param>
         /// <returns>A 201 response carrying the new lot identifier.</returns>
         public static async Task<Created<CreateLotResponse>> HandleAsync(
-            [FromBody]CreateLotRequest request, 
-            [FromServices]CreateLotHandler handler, 
-            CancellationToken cancellationToken) {
+            [FromBody] CreateLotRequest request,
+            [FromServices] CreateLotHandler handler,
+            CancellationToken cancellationToken)
+        {
             var command = new CreateLotCommand(
                 Name: request.Name.Trim(),
                 Category: request.Category.Trim(),
@@ -45,7 +48,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot {
                     .ToArray(),
                 AuctionHouseId: request.AuctionHouseId);
 
-            var result = await handler.HandleAsync(command, cancellationToken);
+            CreateLotResult result = await handler.HandleAsync(command, cancellationToken);
 
             return TypedResults.Created($"/api/lots/{result.LotId}", new CreateLotResponse(result.LotId));
         }

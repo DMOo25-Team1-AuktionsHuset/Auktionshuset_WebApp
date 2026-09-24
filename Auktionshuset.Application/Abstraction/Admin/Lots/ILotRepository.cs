@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Auktionshuset.Domain.Entities;
 
-namespace Auktionshuset.Application.Abstraction.Admin.Lots {
-    public interface ILotRepository {
+namespace Auktionshuset.Application.Abstraction.Admin.Lots
+{
+    public interface ILotRepository
+    {
         /// <summary>
         /// Adds a lot to the repository.
         /// </summary>

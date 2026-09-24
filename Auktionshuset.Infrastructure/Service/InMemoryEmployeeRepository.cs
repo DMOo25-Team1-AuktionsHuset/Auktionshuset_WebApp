@@ -20,16 +20,6 @@ namespace Auktionshuset.Infrastructure.Service
         /// </summary>
         public InMemoryEmployeeRepository()
         {
-            var auctionHouse = new AuctionHouse
-            {
-                AuctionHouseId = AuctionHouseId,
-                AuctionHouseName = "Haderslev Auktionshus",
-                Address = "Auktionsvej 1, 6100 Haderslev",
-                CVRNumber = 31415926,
-                PhoneNumber = "+45 74 52 10 00",
-                Email = "kontakt@haderslev-auktionshus.dk"
-            };
-
             Add(new Employee
             {
                 EmployeeId = Guid.Parse("8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60"),
@@ -51,7 +41,7 @@ namespace Auktionshuset.Infrastructure.Service
             });
 
             Add(new Employee
-        {
+            {
                 EmployeeId = Guid.Parse("c14b6f38-9e2a-4715-a8d0-5f3e2c7b9a02"),
                 AuctionHouseId = AuctionHouseId,
                 FirstName = "Louise",
@@ -95,7 +85,7 @@ namespace Auktionshuset.Infrastructure.Service
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            _employees.TryGetValue(employeeId, out var employee);
+            _employees.TryGetValue(employeeId, out Employee? employee);
 
             return Task.FromResult(employee);
         }

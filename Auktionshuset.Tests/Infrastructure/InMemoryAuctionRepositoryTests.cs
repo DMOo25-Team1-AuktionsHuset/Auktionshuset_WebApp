@@ -14,13 +14,13 @@ public class InMemoryAuctionRepositoryTests
     public async Task GetAllAsync_WithSeveralAuctions_OrdersByStartTimeDescending()
     {
         var repository = new InMemoryAuctionRepository();
-        var earliest = CreateAuction("Tidlig", DateTime.Now.AddDays(1));
-        var latest = CreateAuction("Sen", DateTime.Now.AddDays(10));
+        Auction earliest = CreateAuction("Tidlig", DateTime.Now.AddDays(1));
+        Auction latest = CreateAuction("Sen", DateTime.Now.AddDays(10));
 
         await repository.AddAsync(earliest, [], CancellationToken.None);
         await repository.AddAsync(latest, [], CancellationToken.None);
 
-        var auctions = await repository.GetAllAsync(CancellationToken.None);
+        IReadOnlyList<Auction> auctions = await repository.GetAllAsync(CancellationToken.None);
 
         Assert.Equal([latest.AuctionId, earliest.AuctionId], auctions.Select(auction => auction.AuctionId));
     }
@@ -32,14 +32,14 @@ public class InMemoryAuctionRepositoryTests
     public async Task DeleteAsync_RemovesAuctionAndItsLotLines()
     {
         var repository = new InMemoryAuctionRepository();
-        var lot = TestData.CreateLot("Stol");
-        var auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
-        var other = CreateAuction("Efterårsauktion", DateTime.Now.AddDays(20));
+        Lot lot = TestData.CreateLot("Stol");
+        Auction auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
+        Auction other = CreateAuction("Efterårsauktion", DateTime.Now.AddDays(20));
 
         await repository.AddAsync(auction, [CreateAuctionLot(auction, lot, 2)], CancellationToken.None);
         await repository.AddAsync(other, [], CancellationToken.None);
 
-        var deleted = await repository.DeleteAsync(auction.AuctionId, CancellationToken.None);
+        bool deleted = await repository.DeleteAsync(auction.AuctionId, CancellationToken.None);
 
         Assert.True(deleted);
         Assert.Null(await repository.GetByIdAsync(auction.AuctionId, CancellationToken.None));
@@ -53,7 +53,7 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task DeleteAsync_WithUnknownAuction_ReturnsFalse()
     {
-        var deleted = await new InMemoryAuctionRepository().DeleteAsync(Guid.NewGuid(), CancellationToken.None);
+        bool deleted = await new InMemoryAuctionRepository().DeleteAsync(Guid.NewGuid(), CancellationToken.None);
 
         Assert.False(deleted);
     }
@@ -65,26 +65,26 @@ public class InMemoryAuctionRepositoryTests
     public async Task UpdateAsync_WithExistingAuction_ReplacesValuesAndLotLines()
     {
         var repository = new InMemoryAuctionRepository();
-        var first = TestData.CreateLot("Stol", quantity: 4);
-        var second = TestData.CreateLot("Bord", quantity: 6);
-        var auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
+        Lot first = TestData.CreateLot("Stol", quantity: 4);
+        Lot second = TestData.CreateLot("Bord", quantity: 6);
+        Auction auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
 
         await repository.AddAsync(auction, [CreateAuctionLot(auction, first, 1)], CancellationToken.None);
 
         auction.Name = "Efterårsauktion";
         auction.StartsAt = DateTime.Now.AddDays(30);
 
-        var updated = await repository.UpdateAsync(
+        bool updated = await repository.UpdateAsync(
             auction,
             [CreateAuctionLot(auction, second, 3)],
             CancellationToken.None);
 
         Assert.True(updated);
 
-        var stored = await repository.GetByIdAsync(auction.AuctionId, CancellationToken.None);
+        Auction? stored = await repository.GetByIdAsync(auction.AuctionId, CancellationToken.None);
         Assert.Equal("Efterårsauktion", stored!.Name);
 
-        var line = Assert.Single(await repository.GetAuctionLotsAsync(auction.AuctionId, CancellationToken.None));
+        AuctionLot line = Assert.Single(await repository.GetAuctionLotsAsync(auction.AuctionId, CancellationToken.None));
         Assert.Equal(second.LotId, line.LotId);
         Assert.Equal(3, line.Quantity);
     }
@@ -95,9 +95,9 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task UpdateAsync_WithUnknownAuction_ReturnsFalse()
     {
-        var auction = CreateAuction("Ukendt", DateTime.Now.AddDays(2));
+        Auction auction = CreateAuction("Ukendt", DateTime.Now.AddDays(2));
 
-        var updated = await new InMemoryAuctionRepository().UpdateAsync(auction, [], CancellationToken.None);
+        bool updated = await new InMemoryAuctionRepository().UpdateAsync(auction, [], CancellationToken.None);
 
         Assert.False(updated);
     }
@@ -108,7 +108,7 @@ public class InMemoryAuctionRepositoryTests
     [Fact]
     public async Task GetAuctionLotsAsync_WithUnknownAuction_ReturnsEmpty()
     {
-        var lines = await new InMemoryAuctionRepository().GetAuctionLotsAsync(Guid.NewGuid(), CancellationToken.None);
+        IReadOnlyList<AuctionLot> lines = await new InMemoryAuctionRepository().GetAuctionLotsAsync(Guid.NewGuid(), CancellationToken.None);
 
         Assert.Empty(lines);
     }
@@ -120,7 +120,7 @@ public class InMemoryAuctionRepositoryTests
     public async Task AddAsync_WithDuplicateId_Throws()
     {
         var repository = new InMemoryAuctionRepository();
-        var auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
+        Auction auction = CreateAuction("Forårsauktion", DateTime.Now.AddDays(2));
 
         await repository.AddAsync(auction, [], CancellationToken.None);
 

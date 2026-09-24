@@ -34,7 +34,7 @@ public static class DeleteLotEndpoint
         [FromServices] DeleteLotHandler handler,
         CancellationToken cancellationToken)
     {
-        var deleted = await handler.HandleAsync(new DeleteLotCommand(lotId), cancellationToken);
+        bool deleted = await handler.HandleAsync(new DeleteLotCommand(lotId), cancellationToken);
         return deleted ? TypedResults.NoContent() : TypedResults.NotFound();
     }
 }
