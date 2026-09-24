@@ -109,3 +109,23 @@ Content-Type: application/json
 }
 
 ###
+// to test for correct credentials
+
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@auktionshuset.dk",
+  "password": "Indsæt-korrekt-kode-her"
+}
+
+###
+// to test for incorrect credentials
+
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "forkert@example.dk",
+  "password": "forkert-password"
+}

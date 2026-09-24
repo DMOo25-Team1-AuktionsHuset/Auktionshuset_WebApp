@@ -30,7 +30,7 @@ namespace Auktionshuset.Api.Security
             {
                 UserId = Guid.NewGuid(),
                 Email = email,
-                PasswordHash = password,
+                PasswordHash = string.Empty,
                 Roles = [SecurityRoles.Admin],
                 Permissions = SecurityPermissions.All
             };

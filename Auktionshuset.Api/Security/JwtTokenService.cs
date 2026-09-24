@@ -11,7 +11,7 @@ public interface IAccessTokenService
 {
     IssuedAccessToken Issue(AuthUser user);
 }
-public sealed class JwtTokenService(IConfiguration configuration, TimeProvider timeprovider) : IAccessTokenService
+public sealed class JwtTokenService(IConfiguration configuration, TimeProvider timeProvider) : IAccessTokenService
 
 {
     private const int DefaultLifetimeMinutes = 60;
@@ -38,7 +38,7 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
                 "Configuration value 'Authentication:AccessTokenLifetimeMinutes' must be greater than zero");
         }
 
-        var issuedAt = timeprovider.GetUtcNow();
+        var issuedAt = timeProvider.GetUtcNow();
         var expiresAt = issuedAt.AddMinutes(lifetimeMinutes);
         var claims = CreateClaims(user);
         var credentials = new SigningCredentials(
@@ -76,5 +76,5 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
 
     private string GetRequiredValue(string key) =>
         configuration[key]
-        ?? throw new InvalidOperationException($"Missing configuration value {key}'.");
+        ?? throw new InvalidOperationException($"Missing configuration value '{key}'.");
 }

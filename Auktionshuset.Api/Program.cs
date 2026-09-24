@@ -1,5 +1,6 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Events.Admin.Auction;
+using Auktionshuset.Api.Endpoints.Auth;
 using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
@@ -70,6 +71,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapAuthEndpoints();
 app.MapLotEndpoints();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
