@@ -111,18 +111,18 @@ Content-Type: application/json
 ###
 // to test for correct credentials
 
-POST {{host}}/api/auth/login
+POST {{Auktionshuset.Api_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
   "email": "admin@auktionshuset.dk",
-  "password": "Indsæt-korrekt-kode-her"
+  "password": "INDSÆT-EGET-PASSWORD"
 }
 
 ###
 // to test for incorrect credentials
 
-POST {{host}}/api/auth/login
+POST {{Auktionshuset.Api_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
