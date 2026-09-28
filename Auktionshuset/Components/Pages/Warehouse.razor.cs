@@ -70,7 +70,7 @@ public partial class Warehouse : IAsyncDisposable
     {
         get
         {
-            var term = searchTerm.Trim();
+            string term = searchTerm.Trim();
 
             if (term.Length == 0)
             {
@@ -124,7 +124,7 @@ public partial class Warehouse : IAsyncDisposable
 
         try
         {
-            var successMessage = await SaveLotAsync();
+            string successMessage = await SaveLotAsync();
 
             await LoadLotsAsync();
             ResetForm();
@@ -174,7 +174,7 @@ public partial class Warehouse : IAsyncDisposable
             return "Genstanden blev opdateret.";
         }
 
-        var response = await LotService.CreateAsync(new CreateLotRequest
+        CreateLotResponse response = await LotService.CreateAsync(new CreateLotRequest
         {
             Name = model.Name.Trim(),
             Category = model.Category.Trim(),
@@ -351,7 +351,7 @@ public partial class Warehouse : IAsyncDisposable
     {
         imageError = null;
 
-        var file = args.File;
+        IBrowserFile file = args.File;
 
         if (file.Size <= 0)
         {
@@ -365,7 +365,7 @@ public partial class Warehouse : IAsyncDisposable
             return;
         }
 
-        var extension = Path.GetExtension(file.Name);
+        string extension = Path.GetExtension(file.Name);
 
         if (!AllowedImageExtensions.Contains(extension))
         {
@@ -375,7 +375,7 @@ public partial class Warehouse : IAsyncDisposable
 
         try
         {
-            await using var stream = file.OpenReadStream(MaxImageBytes);
+            await using Stream stream = file.OpenReadStream(MaxImageBytes);
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer);
 
@@ -399,7 +399,7 @@ public partial class Warehouse : IAsyncDisposable
     /// </summary>
     private void RemoveImage()
     {
-        var hadStoredImage = existingImageUrl is not null;
+        bool hadStoredImage = existingImageUrl is not null;
 
         ClearPendingImage();
         imageError = null;
@@ -506,7 +506,7 @@ public partial class Warehouse : IAsyncDisposable
             return;
         }
 
-        var apiBaseUrl = Configuration["Api:BaseUrl"]
+        string apiBaseUrl = Configuration["Api:BaseUrl"]
                          ?? throw new InvalidOperationException(
                              "Configuration Value 'Api:BaseUrl' is required.");
 

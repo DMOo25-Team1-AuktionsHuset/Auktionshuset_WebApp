@@ -47,7 +47,7 @@ public static class UpdateAuctionEndpoint
             AuctionHouseId: request.AuctionHouseId,
             Lots: AuctionEndpointMapping.ToSelections(request.Lots));
 
-        var result = await handler.HandleAsync(command, cancellationToken);
+        UpdateAuctionResult result = await handler.HandleAsync(command, cancellationToken);
 
         if (result.NotFound)
         {

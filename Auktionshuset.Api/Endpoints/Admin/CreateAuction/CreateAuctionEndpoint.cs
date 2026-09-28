@@ -1,4 +1,3 @@
-using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -32,8 +31,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
         /// <param name="cancellationToken">The token used to cancel the operation.</param>
         /// <returns>The created auction response or a validation problem.</returns>
         public static async Task<Results<Created<CreateAuctionResponse>, ValidationProblem>> HandleAsync(
-            [FromBody]CreateAuctionRequest request,
-            [FromServices]CreateAuctionHandler handler,
+            [FromBody] CreateAuctionRequest request,
+            [FromServices] CreateAuctionHandler handler,
             CancellationToken cancellationToken)
         {
             var command = new CreateAuctionCommand(
@@ -44,7 +43,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
                 AuctionHouseId: request.AuctionHouseId,
                 Lots: AuctionEndpointMapping.ToSelections(request.Lots));
 
-            var result = await handler.HandleAsync(command, cancellationToken);
+            CreateAuctionResult result = await handler.HandleAsync(command, cancellationToken);
 
             if (!result.Succeeded)
             {

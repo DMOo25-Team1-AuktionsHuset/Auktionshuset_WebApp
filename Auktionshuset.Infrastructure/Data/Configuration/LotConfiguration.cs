@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Auktionshuset.Infrastructure.Data.Configuration {
+namespace Auktionshuset.Infrastructure.Data.Configuration
+{
     public class LotConfiguration : IEntityTypeConfiguration<Lot>
     {
         /// <summary>

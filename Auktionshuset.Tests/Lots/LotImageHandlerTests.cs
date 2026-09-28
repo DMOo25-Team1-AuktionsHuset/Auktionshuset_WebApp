@@ -15,14 +15,14 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Upload_WithValidImage_StoresReferenceAndPublishesUpdate()
     {
-        var lot = TestData.CreateLot("Vase");
-        var repository = await TestData.CreateLotRepositoryAsync(lot);
+        Lot lot = TestData.CreateLot("Vase");
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore { NextFileName = "abc123.png" };
         var publisher = new RecordingEventPublisher();
         var handler = new UploadLotImageHandler(repository, store, publisher);
-        var bytes = LotImageValidatorTests.ImageBytes("png");
+        byte[] bytes = LotImageValidatorTests.ImageBytes("png");
 
-        var result = await handler.HandleAsync(
+        LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(lot.LotId, bytes, "min-vase.png", "image/png"),
             CancellationToken.None);
 
@@ -31,10 +31,10 @@ public class LotImageHandlerTests
         Assert.Equal(".png", store.SavedExtension);
         Assert.Equal(bytes.Length, store.SavedLength);
 
-        var stored = await repository.GetByIdAsync(lot.LotId, CancellationToken.None);
+        Lot? stored = await repository.GetByIdAsync(lot.LotId, CancellationToken.None);
         Assert.Equal("abc123.png", stored!.ImageFileName);
 
-        var published = Assert.Single(publisher.Published.OfType<LotUpdatedIntegrationEvent>());
+        LotUpdatedIntegrationEvent published = Assert.Single(publisher.Published.OfType<LotUpdatedIntegrationEvent>());
         Assert.Equal(lot.LotId, published.LotId);
         Assert.Equal("abc123.png", published.ImageFileName);
     }
@@ -45,12 +45,12 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Upload_WhenImageAlreadyExists_RemovesPreviousFile()
     {
-        var lot = TestData.CreateLot("Vase", imageFileName: "tidligere.jpg");
-        var repository = await TestData.CreateLotRepositoryAsync(lot);
+        Lot lot = TestData.CreateLot("Vase", imageFileName: "tidligere.jpg");
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore { NextFileName = "nyt.webp" };
         var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher());
 
-        var result = await handler.HandleAsync(
+        LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(lot.LotId, LotImageValidatorTests.ImageBytes("webp"), "nyt.webp", "image/webp"),
             CancellationToken.None);
 
@@ -65,12 +65,12 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Upload_WithUnknownLot_ReportsNotFound()
     {
-        var repository = await TestData.CreateLotRepositoryAsync();
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync();
         var store = new FakeLotImageStore();
         var publisher = new RecordingEventPublisher();
         var handler = new UploadLotImageHandler(repository, store, publisher);
 
-        var result = await handler.HandleAsync(
+        LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(Guid.NewGuid(), LotImageValidatorTests.ImageBytes("png"), "billede.png", "image/png"),
             CancellationToken.None);
 
@@ -86,12 +86,12 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Upload_WithEmptyFile_IsRejected()
     {
-        var lot = TestData.CreateLot("Vase");
-        var repository = await TestData.CreateLotRepositoryAsync(lot);
+        Lot lot = TestData.CreateLot("Vase");
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
         var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher());
 
-        var result = await handler.HandleAsync(
+        LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(lot.LotId, [], "tom.png", "image/png"),
             CancellationToken.None);
 
@@ -106,12 +106,12 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Upload_WithTooLargeFile_IsRejected()
     {
-        var lot = TestData.CreateLot("Vase");
-        var repository = await TestData.CreateLotRepositoryAsync(lot);
+        Lot lot = TestData.CreateLot("Vase");
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
         var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher());
 
-        var command = CreateUploadCommand(
+        UploadLotImageCommand command = CreateUploadCommand(
             lot.LotId,
             LotImageValidatorTests.ImageBytes("png"),
             "stort.png",
@@ -120,7 +120,7 @@ public class LotImageHandlerTests
             Length = LotImageValidator.MaxSizeInBytes + 1
         };
 
-        var result = await handler.HandleAsync(command, CancellationToken.None);
+        LotImageResult result = await handler.HandleAsync(command, CancellationToken.None);
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, error => error.Contains("5 MB"));
@@ -133,13 +133,13 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Upload_WithUnsupportedContent_IsRejected()
     {
-        var lot = TestData.CreateLot("Vase");
-        var repository = await TestData.CreateLotRepositoryAsync(lot);
+        Lot lot = TestData.CreateLot("Vase");
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
         var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher());
-        var bytes = "dette er ikke et billede"u8.ToArray();
+        byte[] bytes = "dette er ikke et billede"u8.ToArray();
 
-        var result = await handler.HandleAsync(
+        LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(lot.LotId, bytes, "snyd.png", "image/png"),
             CancellationToken.None);
 
@@ -155,20 +155,20 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Remove_WithStoredImage_ClearsReferenceAndDeletesFile()
     {
-        var lot = TestData.CreateLot("Vase", imageFileName: "billede.jpg");
-        var repository = await TestData.CreateLotRepositoryAsync(lot);
+        Lot lot = TestData.CreateLot("Vase", imageFileName: "billede.jpg");
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
         var publisher = new RecordingEventPublisher();
         var handler = new RemoveLotImageHandler(repository, store, publisher);
 
-        var result = await handler.HandleAsync(lot.LotId, CancellationToken.None);
+        LotImageResult result = await handler.HandleAsync(lot.LotId, CancellationToken.None);
 
         Assert.True(result.Succeeded);
         Assert.Null(result.ImageFileName);
         Assert.Equal("billede.jpg", Assert.Single(store.Deleted));
         Assert.Null((await repository.GetByIdAsync(lot.LotId, CancellationToken.None))!.ImageFileName);
 
-        var published = Assert.Single(publisher.Published.OfType<LotUpdatedIntegrationEvent>());
+        LotUpdatedIntegrationEvent published = Assert.Single(publisher.Published.OfType<LotUpdatedIntegrationEvent>());
         Assert.Null(published.ImageFileName);
     }
 
@@ -178,13 +178,13 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Remove_WithoutStoredImage_SucceedsWithoutDeleting()
     {
-        var lot = TestData.CreateLot("Vase");
-        var repository = await TestData.CreateLotRepositoryAsync(lot);
+        Lot lot = TestData.CreateLot("Vase");
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
         var publisher = new RecordingEventPublisher();
         var handler = new RemoveLotImageHandler(repository, store, publisher);
 
-        var result = await handler.HandleAsync(lot.LotId, CancellationToken.None);
+        LotImageResult result = await handler.HandleAsync(lot.LotId, CancellationToken.None);
 
         Assert.True(result.Succeeded);
         Assert.Null(result.ImageFileName);
@@ -198,11 +198,11 @@ public class LotImageHandlerTests
     [Fact]
     public async Task Remove_WithUnknownLot_ReportsNotFound()
     {
-        var repository = await TestData.CreateLotRepositoryAsync();
+        InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync();
         var store = new FakeLotImageStore();
         var handler = new RemoveLotImageHandler(repository, store, new RecordingEventPublisher());
 
-        var result = await handler.HandleAsync(Guid.NewGuid(), CancellationToken.None);
+        LotImageResult result = await handler.HandleAsync(Guid.NewGuid(), CancellationToken.None);
 
         Assert.True(result.NotFound);
         Assert.Empty(store.Deleted);

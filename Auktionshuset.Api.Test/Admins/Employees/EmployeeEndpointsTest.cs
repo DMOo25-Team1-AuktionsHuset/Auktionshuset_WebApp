@@ -20,31 +20,31 @@ public class EmployeeEndpointsTest
         var repository = new TestEmployeeRepository();
         var publisher = new RecordingEventPublisher();
         var handler = new CreateEmployeeHandler(repository, publisher);
-        var request = CreateRequest(
+        CreateEmployeeRequest request = CreateRequest(
             firstName: "  Anna  ",
             lastName: "  Jensen ",
             address: "  Main Street 1  ");
 
-        var result = await CreateEmployeeEndpoint.HandleAsync(request, handler, CancellationToken.None);
+        Created<CreateEmployeeResponse> result = await CreateEmployeeEndpoint.HandleAsync(request, handler, CancellationToken.None);
 
-        var response = Assert.IsType<CreateEmployeeResponse>(result.Value);
+        CreateEmployeeResponse response = Assert.IsType<CreateEmployeeResponse>(result.Value);
         Assert.Equal(201, result.StatusCode);
         Assert.Equal($"/api/employees/{response.EmployeeId}", result.Location);
 
-        var saved = await repository.GetByIdAsync(response.EmployeeId, CancellationToken.None);
+        Employee? saved = await repository.GetByIdAsync(response.EmployeeId, CancellationToken.None);
         Assert.NotNull(saved);
         Assert.Equal("Anna", saved.FirstName);
         Assert.Equal("Jensen", saved.LastName);
         Assert.Equal("Main Street 1", saved.Address);
 
-        var published = Assert.Single(publisher.OfType<EmployeeCreatedIntegrationEvent>());
+        EmployeeCreatedIntegrationEvent published = Assert.Single(publisher.OfType<EmployeeCreatedIntegrationEvent>());
         Assert.Equal(response.EmployeeId, published.EmployeeId);
     }
 
     [Fact]
     public async Task Update_WithExistingEmployee_TrimsValuesAndReturnsOk()
     {
-        var employee = CreateEmployee();
+        Employee employee = CreateEmployee();
         var repository = new TestEmployeeRepository(employee);
         var publisher = new RecordingEventPublisher();
         var handler = new UpdateEmployeeHandler(repository, publisher);
@@ -57,16 +57,16 @@ public class EmployeeEndpointsTest
             AuctionHouseId = employee.AuctionHouseId
         };
 
-        var result = await UpdateEmployeeEndpoint.HandleAsync(
+        Results<Ok<UpdateEmployeeResponse>, NotFound> result = await UpdateEmployeeEndpoint.HandleAsync(
             employee.EmployeeId,
             request,
             handler,
             CancellationToken.None);
 
-        var response = Assert.IsType<Ok<UpdateEmployeeResponse>>(result.Result).Value!;
+        UpdateEmployeeResponse response = Assert.IsType<Ok<UpdateEmployeeResponse>>(result.Result).Value!;
         Assert.Equal(employee.EmployeeId, response.EmployeeId);
 
-        var updated = await repository.GetByIdAsync(employee.EmployeeId, CancellationToken.None);
+        Employee? updated = await repository.GetByIdAsync(employee.EmployeeId, CancellationToken.None);
         Assert.NotNull(updated);
         Assert.Equal("Updated", updated.FirstName);
         Assert.Equal("Employee", updated.LastName);
@@ -81,7 +81,7 @@ public class EmployeeEndpointsTest
         var repository = new TestEmployeeRepository();
         var handler = new UpdateEmployeeHandler(repository, new RecordingEventPublisher());
 
-        var result = await UpdateEmployeeEndpoint.HandleAsync(
+        Results<Ok<UpdateEmployeeResponse>, NotFound> result = await UpdateEmployeeEndpoint.HandleAsync(
             Guid.NewGuid(),
             CreateUpdateRequest(),
             handler,
@@ -93,12 +93,12 @@ public class EmployeeEndpointsTest
     [Fact]
     public async Task Delete_WithExistingEmployee_ReturnsNoContentAndPublishesEvent()
     {
-        var employee = CreateEmployee();
+        Employee employee = CreateEmployee();
         var repository = new TestEmployeeRepository(employee);
         var publisher = new RecordingEventPublisher();
         var handler = new DeleteEmployeeHandler(repository, publisher);
 
-        var result = await DeleteEmployeeEndpoint.HandleAsync(
+        Results<NoContent, NotFound> result = await DeleteEmployeeEndpoint.HandleAsync(
             employee.EmployeeId,
             handler,
             CancellationToken.None);
@@ -111,7 +111,7 @@ public class EmployeeEndpointsTest
     [Fact]
     public async Task Delete_WithUnknownEmployee_ReturnsNotFound()
     {
-        var result = await DeleteEmployeeEndpoint.HandleAsync(
+        Results<NoContent, NotFound> result = await DeleteEmployeeEndpoint.HandleAsync(
             Guid.NewGuid(),
             new DeleteEmployeeHandler(new TestEmployeeRepository(), new RecordingEventPublisher()),
             CancellationToken.None);
@@ -123,13 +123,13 @@ public class EmployeeEndpointsTest
         string firstName = "Anna",
         string lastName = "Jensen",
         string address = "Main Street 1") => new()
-    {
-        FirstName = firstName,
-        LastName = lastName,
-        BirthDate = new DateOnly(1990, 5, 20),
-        Address = address,
-        AuctionHouseId = Guid.Parse("2f1b7c4e-8a3d-4c5f-9e10-6d4a8b2c1f30")
-    };
+        {
+            FirstName = firstName,
+            LastName = lastName,
+            BirthDate = new DateOnly(1990, 5, 20),
+            Address = address,
+            AuctionHouseId = Guid.Parse("2f1b7c4e-8a3d-4c5f-9e10-6d4a8b2c1f30")
+        };
 
     private static UpdateEmployeeRequest CreateUpdateRequest() => new()
     {
@@ -177,7 +177,7 @@ public class EmployeeEndpointsTest
         public Task<Employee?> GetByIdAsync(Guid employeeId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            employees.TryGetValue(employeeId, out var employee);
+            employees.TryGetValue(employeeId, out Employee? employee);
             return Task.FromResult(employee);
         }
 

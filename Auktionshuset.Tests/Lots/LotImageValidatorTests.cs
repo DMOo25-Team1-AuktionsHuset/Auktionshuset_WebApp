@@ -14,9 +14,9 @@ public class LotImageValidatorTests
     [InlineData("webp", ".webp")]
     public void TryValidate_WithSupportedImage_ReturnsExtension(string kind, string expectedExtension)
     {
-        var bytes = ImageBytes(kind);
+        byte[] bytes = ImageBytes(kind);
 
-        var accepted = LotImageValidator.TryValidate(new MemoryStream(bytes), bytes.Length, out var extension);
+        bool accepted = LotImageValidator.TryValidate(new MemoryStream(bytes), bytes.Length, out string? extension);
 
         Assert.True(accepted);
         Assert.Equal(expectedExtension, extension);
@@ -31,9 +31,9 @@ public class LotImageValidatorTests
     [InlineData("")]
     public void TryValidate_WithUnsupportedContent_IsRejected(string content)
     {
-        var bytes = System.Text.Encoding.ASCII.GetBytes(content);
+        byte[] bytes = System.Text.Encoding.ASCII.GetBytes(content);
 
-        var accepted = LotImageValidator.TryValidate(new MemoryStream(bytes), bytes.Length, out var extension);
+        bool accepted = LotImageValidator.TryValidate(new MemoryStream(bytes), bytes.Length, out string? extension);
 
         Assert.False(accepted);
         Assert.Equal(string.Empty, extension);
@@ -45,10 +45,10 @@ public class LotImageValidatorTests
     [Fact]
     public void TryValidate_WithTooLargeFile_IsRejected()
     {
-        var bytes = ImageBytes("png");
-        var size = LotImageValidator.MaxSizeInBytes + 1;
+        byte[] bytes = ImageBytes("png");
+        long size = LotImageValidator.MaxSizeInBytes + 1;
 
-        var accepted = LotImageValidator.TryValidate(new MemoryStream(bytes), size, out var extension);
+        bool accepted = LotImageValidator.TryValidate(new MemoryStream(bytes), size, out string? extension);
 
         Assert.False(accepted);
         Assert.Equal(string.Empty, extension);
@@ -60,7 +60,7 @@ public class LotImageValidatorTests
     [Fact]
     public void TryValidate_WithEmptyFile_IsRejected()
     {
-        var accepted = LotImageValidator.TryValidate(new MemoryStream(), 0, out var extension);
+        bool accepted = LotImageValidator.TryValidate(new MemoryStream(), 0, out string? extension);
 
         Assert.False(accepted);
         Assert.Equal(string.Empty, extension);
@@ -72,9 +72,9 @@ public class LotImageValidatorTests
     [Fact]
     public void TryValidate_WithNonSeekableStream_IsRejected()
     {
-        var bytes = ImageBytes("jpeg");
+        byte[] bytes = ImageBytes("jpeg");
 
-        var accepted = LotImageValidator.TryValidate(new NonSeekableStream(bytes), bytes.Length, out var extension);
+        bool accepted = LotImageValidator.TryValidate(new NonSeekableStream(bytes), bytes.Length, out string? extension);
 
         Assert.False(accepted);
         Assert.Equal(string.Empty, extension);
@@ -86,7 +86,7 @@ public class LotImageValidatorTests
     [Fact]
     public void TryValidate_WithSupportedImage_RewindsStream()
     {
-        var bytes = ImageBytes("png");
+        byte[] bytes = ImageBytes("png");
         using var stream = new MemoryStream(bytes);
 
         LotImageValidator.TryValidate(stream, bytes.Length, out _);

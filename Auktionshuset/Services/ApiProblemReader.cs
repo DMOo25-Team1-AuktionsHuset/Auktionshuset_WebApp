@@ -26,13 +26,13 @@ internal static class ApiProblemReader
     {
         try
         {
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            var root = document.RootElement;
+            await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            JsonElement root = document.RootElement;
 
-            if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
+            if (root.TryGetProperty("errors", out JsonElement errors) && errors.ValueKind == JsonValueKind.Object)
             {
-                var validationMessages = errors.EnumerateObject()
+                string?[] validationMessages = errors.EnumerateObject()
                     .SelectMany(error => error.Value.ValueKind == JsonValueKind.Array
                         ? error.Value.EnumerateArray()
                             .Select(value => value.GetString())
@@ -47,13 +47,13 @@ internal static class ApiProblemReader
                 }
             }
 
-            if (root.TryGetProperty("detail", out var detail)
+            if (root.TryGetProperty("detail", out JsonElement detail)
                 && !string.IsNullOrWhiteSpace(detail.GetString()))
             {
                 return detail.GetString()!;
             }
 
-            if (root.TryGetProperty("title", out var title)
+            if (root.TryGetProperty("title", out JsonElement title)
                 && !string.IsNullOrWhiteSpace(title.GetString()))
             {
                 return title.GetString()!;

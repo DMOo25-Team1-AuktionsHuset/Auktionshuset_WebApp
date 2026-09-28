@@ -1,4 +1,5 @@
-namespace Auktionshuset.Contracts.Dto.Admin.Auction {
+namespace Auktionshuset.Contracts.Dto.Admin.Auction
+{
     public sealed record CreateAuctionNotification(
         Guid EventId,
         Guid AuctionId,

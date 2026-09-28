@@ -6,14 +6,17 @@ using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Auktionshuset.Api.Events.Admin.Lot {
-    public class UpdateLotRealTimeHandler(IHubContext<LotHub, ILotClient> hubContext) : IIntegrationEventHandler<LotUpdatedIntegrationEvent> {
+namespace Auktionshuset.Api.Events.Admin.Lot
+{
+    public class UpdateLotRealTimeHandler(IHubContext<LotHub, ILotClient> hubContext) : IIntegrationEventHandler<LotUpdatedIntegrationEvent>
+    {
         /// <summary>
         /// Broadcasts a lot-updated notification to all connected clients.
         /// </summary>
         /// <param name="message">The integration event describing the updated lot.</param>
         /// <returns>A task that completes once the notification has been broadcast.</returns>
-        public Task HandleAsync(LotUpdatedIntegrationEvent message, CancellationToken cancellationToken) {
+        public Task HandleAsync(LotUpdatedIntegrationEvent message, CancellationToken cancellationToken)
+        {
             var notification = new UpdateLotNotification(
                 EventId: message.EventId,
                 LotId: message.LotId,

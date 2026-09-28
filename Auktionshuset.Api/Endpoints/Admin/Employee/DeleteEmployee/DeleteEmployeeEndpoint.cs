@@ -2,8 +2,9 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee {
-    public static class DeleteEmployeeEndpoint 
+namespace Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee
+{
+    public static class DeleteEmployeeEndpoint
     {
         public static RouteGroupBuilder MapDeleteEmployee(this RouteGroupBuilder group)
         {
@@ -20,8 +21,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee {
             [FromServices] DeleteEmployeeHandler handler,
             CancellationToken cancellationToken)
         {
-                var deleted = await handler.HandleAsync(new DeleteEmployeeCommand(employeeId), cancellationToken);
-                return deleted ? TypedResults.NoContent() : TypedResults.NotFound();
+            bool deleted = await handler.HandleAsync(new DeleteEmployeeCommand(employeeId), cancellationToken);
+            return deleted ? TypedResults.NoContent() : TypedResults.NotFound();
         }
     }
 }

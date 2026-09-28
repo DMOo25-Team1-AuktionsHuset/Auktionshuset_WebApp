@@ -2,7 +2,8 @@
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees {
+namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
+{
     public static class GetEmployeesEndpoint
     {
         /// <summary>
@@ -31,9 +32,9 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees {
             GetEmployeesHandler handler,
             CancellationToken cancellationToken)
         {
-            var employees = await handler.HandleAsync(cancellationToken);
+            IReadOnlyList<Domain.Entities.Employee> employees = await handler.HandleAsync(cancellationToken);
 
-            var response = employees
+            EmployeeListItemResponse[] response = employees
                 .Select(employee => new EmployeeListItemResponse(
                     EmployeeId: employee.EmployeeId,
                     FirstName: employee.FirstName,

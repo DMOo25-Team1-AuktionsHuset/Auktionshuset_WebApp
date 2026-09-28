@@ -16,7 +16,7 @@ public sealed class UpdateAuctionHandler(
         UpdateAuctionCommand command,
         CancellationToken cancellationToken)
     {
-        var auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
+        Auction? auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
 
         if (auction is null)
         {
@@ -25,7 +25,7 @@ public sealed class UpdateAuctionHandler(
 
         var errors = new List<string>();
 
-        var employee = command.EmployeeId is { } employeeId
+        Employee? employee = command.EmployeeId is { } employeeId
             ? await employeeRepository.GetByIdAsync(employeeId, cancellationToken)
             : null;
 
@@ -71,9 +71,9 @@ public sealed class UpdateAuctionHandler(
         auction.AuctionHouseId = assignedEmployee.AuctionHouseId;
         auction.AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now);
 
-        var itemCount = AuctionValidation.CountItems(auctionLots);
+        int itemCount = AuctionValidation.CountItems(auctionLots);
 
-        var updated = await auctionRepository.UpdateAsync(auction, auctionLots, cancellationToken);
+        bool updated = await auctionRepository.UpdateAsync(auction, auctionLots, cancellationToken);
 
         if (!updated)
         {

@@ -1,5 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Auctions.GetAuctions;
 
@@ -14,15 +15,15 @@ public sealed class GetAuctionsHandler(
     /// <returns>A read-only list of every auction with its auctionarius and lot totals.</returns>
     public async Task<IReadOnlyList<AuctionOverview>> HandleAsync(CancellationToken cancellationToken)
     {
-        var auctions = await auctionRepository.GetAllAsync(cancellationToken);
-        var employees = await employeeRepository.GetAllAsync(cancellationToken);
+        IReadOnlyList<Auction> auctions = await auctionRepository.GetAllAsync(cancellationToken);
+        IReadOnlyList<Employee> employees = await employeeRepository.GetAllAsync(cancellationToken);
         var employeesById = employees.ToDictionary(employee => employee.EmployeeId);
 
         var overviews = new List<AuctionOverview>(auctions.Count);
 
-        foreach (var auction in auctions)
+        foreach (Auction auction in auctions)
         {
-            var auctionLots = await auctionRepository.GetAuctionLotsAsync(auction.AuctionId, cancellationToken);
+            IReadOnlyList<AuctionLot> auctionLots = await auctionRepository.GetAuctionLotsAsync(auction.AuctionId, cancellationToken);
 
             overviews.Add(new AuctionOverview(
                 Auction: auction,
@@ -47,18 +48,18 @@ public sealed class GetAuctionsHandler(
     /// <returns>The auction detail, or <see langword="null"/> when no auction has that identifier.</returns>
     public async Task<AuctionDetail?> HandleByIdAsync(Guid auctionId, CancellationToken cancellationToken)
     {
-        var auction = await auctionRepository.GetByIdAsync(auctionId, cancellationToken);
+        Auction? auction = await auctionRepository.GetByIdAsync(auctionId, cancellationToken);
 
         if (auction is null)
         {
             return null;
         }
 
-        var auctionLots = await auctionRepository.GetAuctionLotsAsync(auctionId, cancellationToken);
-        var employees = await employeeRepository.GetAllAsync(cancellationToken);
+        IReadOnlyList<AuctionLot> auctionLots = await auctionRepository.GetAuctionLotsAsync(auctionId, cancellationToken);
+        IReadOnlyList<Employee> employees = await employeeRepository.GetAllAsync(cancellationToken);
         var employeesById = employees.ToDictionary(employee => employee.EmployeeId);
 
-        var lines = auctionLots
+        AuctionLotLine[] lines = auctionLots
             .Select(auctionLot => new AuctionLotLine(
                 LotId: auctionLot.LotId,
                 Name: auctionLot.Lot.Name,
@@ -93,7 +94,7 @@ public sealed class GetAuctionsHandler(
         }
 
         if (auction.EmployeeId is { } employeeId
-            && employeesById.TryGetValue(employeeId, out var employee))
+            && employeesById.TryGetValue(employeeId, out Employee? employee))
         {
             return $"{employee.FirstName} {employee.LastName}".Trim();
         }

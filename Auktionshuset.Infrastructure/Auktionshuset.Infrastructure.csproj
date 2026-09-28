@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>4d8da54a-e281-417a-89aa-b29b8b1d1efc</UserSecretsId>
+
+	  <EnableNETAnalyzers>true</EnableNETAnalyzers>
+	  <AnalysisLevel>latest</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>

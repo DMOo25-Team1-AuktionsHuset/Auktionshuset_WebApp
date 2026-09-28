@@ -1,12 +1,8 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.EventHandling;
 using Microsoft.Extensions.DependencyInjection;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Exceptions;
 using Moq;
-using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
@@ -31,10 +27,10 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                 Password = "guest"
             };
 
-            await using var connection =
+            await using IConnection connection =
                 await factory.CreateConnectionAsync();
 
-            await using var channel =
+            await using IChannel channel =
                 await connection.CreateChannelAsync();
 
             const string exchange = "auktionshuset.events";
@@ -69,25 +65,25 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                 EstimatedValue: 100,
                 OccurredAt: DateTime.UtcNow);
 
-            var json = JsonSerializer.Serialize(eventMessage);
-            var body = Encoding.UTF8.GetBytes(json);
+            string json = JsonSerializer.Serialize(eventMessage);
+            byte[] body = Encoding.UTF8.GetBytes(json);
 
             await channel.BasicPublishAsync(
                 exchange,
                 routingKey,
                 body);
 
-            var result = await channel.BasicGetAsync(
+            BasicGetResult? result = await channel.BasicGetAsync(
                 queue,
                 autoAck: true);
 
             // Assert
             Assert.NotNull(result);
 
-            var receivedJson =
+            string receivedJson =
                 Encoding.UTF8.GetString(result!.Body.ToArray());
 
-            var receivedEvent =
+            LotCreatedIntegrationEvent? receivedEvent =
                 JsonSerializer.Deserialize<LotCreatedIntegrationEvent>(
                     receivedJson);
 
@@ -126,10 +122,10 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                 IIntegrationEventHandler<LotCreatedIntegrationEvent>>(
                 _ => handlerMock.Object);
 
-            await using var serviceProvider =
+            await using ServiceProvider serviceProvider =
                 services.BuildServiceProvider();
 
-            var scopeFactory =
+            IServiceScopeFactory scopeFactory =
                 serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
             var factory = new ConnectionFactory
@@ -139,10 +135,10 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                 Password = "guest"
             };
 
-            await using var connection =
+            await using IConnection connection =
                 await factory.CreateConnectionAsync();
 
-            await using var publishChannel =
+            await using IChannel publishChannel =
                 await connection.CreateChannelAsync();
 
             const string exchangeName = "auktionshuset.events";
@@ -186,15 +182,15 @@ namespace Auktionshuset.Infrastructure.Test.Admins.Lots
                 EstimatedValue: 1500,
                 OccurredAt: DateTime.UtcNow);
 
-            var json = JsonSerializer.Serialize(expectedEvent);
-            var body = Encoding.UTF8.GetBytes(json);
+            string json = JsonSerializer.Serialize(expectedEvent);
+            byte[] body = Encoding.UTF8.GetBytes(json);
 
             await publishChannel.BasicPublishAsync(
                 exchange: exchangeName,
                 routingKey: routingKey,
                 body: body);
 
-            var actualEvent =
+            LotCreatedIntegrationEvent actualEvent =
                 await receivedEvent.Task.WaitAsync(
                     TimeSpan.FromSeconds(5));
 

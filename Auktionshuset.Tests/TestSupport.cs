@@ -45,7 +45,7 @@ internal sealed class TestEmployeeRepository : IEmployeeRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        employees.TryGetValue(employeeId, out var employee);
+        employees.TryGetValue(employeeId, out Employee? employee);
 
         return Task.FromResult(employee);
     }
@@ -130,7 +130,7 @@ internal static class TestData
     {
         var repository = new InMemoryLotRepository();
 
-        foreach (var lot in lots)
+        foreach (Lot lot in lots)
         {
             await repository.AddAsync(lot, CancellationToken.None);
         }
