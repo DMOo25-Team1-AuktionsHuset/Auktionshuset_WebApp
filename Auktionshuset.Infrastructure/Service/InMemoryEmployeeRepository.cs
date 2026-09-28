@@ -1,5 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Domain.Entities;
+using Auktionshuset.Domain;
 using System.Collections.Concurrent;
 
 namespace Auktionshuset.Infrastructure.Service
@@ -10,7 +11,7 @@ namespace Auktionshuset.Infrastructure.Service
     /// </summary>
     public class InMemoryEmployeeRepository : IEmployeeRepository
     {
-        private static readonly Guid AuctionHouseId = Guid.Parse("2f1b7c4e-8a3d-4c5f-9e10-6d4a8b2c1f30");
+        private static readonly Guid AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId;
 
         private readonly ConcurrentDictionary<Guid, Employee> _employees = [];
 
@@ -53,12 +54,20 @@ namespace Auktionshuset.Infrastructure.Service
 
         public Task AddAsync(Employee employee, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_employees.TryAdd(employee.EmployeeId, employee))
+            {
+                throw new InvalidOperationException($"An employee with ID {employee.EmployeeId} already exists");
+            }
+
+            return Task.CompletedTask;
         }
 
         public Task<bool> DeleteAsync(Guid employeeId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(_employees.TryRemove(employeeId, out _));
         }
 
         /// <summary>

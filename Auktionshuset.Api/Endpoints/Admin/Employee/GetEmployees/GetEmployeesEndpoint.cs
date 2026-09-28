@@ -40,7 +40,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
                     FirstName: employee.FirstName,
                     LastName: employee.LastName,
                     BirthDate: employee.BirthDate,
-                    Address: employee.Address))
+                    Address: employee.Address,
+                    AuctionHouseId: employee.AuctionHouseId))
                 .ToArray();
 
             return TypedResults.Ok<IReadOnlyList<EmployeeListItemResponse>>(response);

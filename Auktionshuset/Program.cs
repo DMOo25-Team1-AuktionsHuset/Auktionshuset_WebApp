@@ -26,6 +26,7 @@ builder.Services.AddHttpClient<EmployeeService>(client =>
 });
 
 builder.Services.AddScoped<AuctionRealtimeService>();
+builder.Services.AddScoped<EmployeeRealtimeService>();
 
 WebApplication app = builder.Build();
 

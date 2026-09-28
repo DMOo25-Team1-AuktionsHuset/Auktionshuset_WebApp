@@ -282,7 +282,7 @@
                                     }
                                     else
                                     {
-                                        <span class="clamp-tags @(isExpanded ? "clamp-off" : null)" id="@($"lot-tags-{lot.LotId}")">
+                                        <span class="clamp-tags" id="@($"lot-tags-{lot.LotId}")">
                                             @foreach (var tag in lot.Tags)
                                             {
                                                 <span class="tag">@tag</span>
@@ -317,7 +317,7 @@
                                             <button type="button"
                                                     class="btn btn-secondary btn-sm"
                                                     aria-expanded="@isExpanded"
-                                                    aria-controls="@($"lot-desc-{lot.LotId} lot-tags-{lot.LotId}")"
+                                                    aria-controls="@($"lot-desc-{lot.LotId}")"
                                                     @onclick:stopPropagation="true"
                                                     @onclick="() => ToggleExpanded(lot.LotId)">
                                                 @(isExpanded ? "Vis mindre" : "Vis mere")

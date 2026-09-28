@@ -1,4 +1,5 @@
 ﻿using Auktionshuset.Api.Events.Admin.Employee;
+using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
@@ -11,6 +12,8 @@ namespace Auktionshuset.Api.Services
         internal static IServiceCollection AddEmployeeHandler(
             this IServiceCollection services)
         {
+            services.AddScoped<GetEmployeesHandler>();
+            services.AddScoped<GetEmployeeByIdHandler>();
             services.AddScoped<CreateEmployeeHandler>();
             services.AddScoped<UpdateEmployeeHandler>();
             services.AddScoped<DeleteEmployeeHandler>();

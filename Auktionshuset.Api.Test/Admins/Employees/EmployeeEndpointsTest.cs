@@ -1,5 +1,8 @@
 using Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee;
 using Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployeeById;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
+using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
@@ -7,6 +10,7 @@ using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
+using Auktionshuset.Domain;
 using Auktionshuset.Domain.Entities;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -14,6 +18,43 @@ namespace Auktionshuset.Api.Test.Admins.Employees;
 
 public class EmployeeEndpointsTest
 {
+    [Fact]
+    public async Task GetById_WithExistingEmployee_ReturnsEmployeeAndAuctionHouseId()
+    {
+        Employee employee = CreateEmployee();
+        var handler = new GetEmployeeByIdHandler(new TestEmployeeRepository(employee));
+
+        Results<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>, NotFound> result =
+            await GetEmployeeByIdEndpoint.HandleAsync(employee.EmployeeId, handler, CancellationToken.None);
+
+        var response = Assert.IsType<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>>(result.Result).Value!;
+        Assert.Equal(employee.EmployeeId, response.EmployeeId);
+        Assert.Equal(employee.AuctionHouseId, response.AuctionHouseId);
+    }
+
+    [Fact]
+    public async Task GetById_WithUnknownEmployee_ReturnsNotFound()
+    {
+        var handler = new GetEmployeeByIdHandler(new TestEmployeeRepository());
+
+        Results<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>, NotFound> result =
+            await GetEmployeeByIdEndpoint.HandleAsync(Guid.NewGuid(), handler, CancellationToken.None);
+
+        Assert.IsType<NotFound>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetAll_IncludesAuctionHouseId()
+    {
+        Employee employee = CreateEmployee();
+        var handler = new GetEmployeesHandler(new TestEmployeeRepository(employee));
+
+        Ok<IReadOnlyList<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeListItemResponse>> result =
+            await GetEmployeesEndpoint.HandleAsync(handler, CancellationToken.None);
+
+        Assert.Equal(employee.AuctionHouseId, Assert.Single(result.Value!).AuctionHouseId);
+    }
+
     [Fact]
     public async Task Create_WithValidRequest_TrimsValuesAndReturnsCreatedLocation()
     {
@@ -29,7 +70,7 @@ public class EmployeeEndpointsTest
 
         CreateEmployeeResponse response = Assert.IsType<CreateEmployeeResponse>(result.Value);
         Assert.Equal(201, result.StatusCode);
-        Assert.Equal($"/api/employees/{response.EmployeeId}", result.Location);
+        Assert.Equal($"/api/employee/{response.EmployeeId}", result.Location);
 
         Employee? saved = await repository.GetByIdAsync(response.EmployeeId, CancellationToken.None);
         Assert.NotNull(saved);
@@ -128,7 +169,7 @@ public class EmployeeEndpointsTest
             LastName = lastName,
             BirthDate = new DateOnly(1990, 5, 20),
             Address = address,
-            AuctionHouseId = Guid.Parse("2f1b7c4e-8a3d-4c5f-9e10-6d4a8b2c1f30")
+            AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
         };
 
     private static UpdateEmployeeRequest CreateUpdateRequest() => new()

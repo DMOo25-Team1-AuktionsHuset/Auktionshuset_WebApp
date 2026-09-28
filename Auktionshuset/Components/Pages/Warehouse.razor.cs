@@ -3,6 +3,7 @@ using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Models;
+using Auktionshuset.Domain;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -25,7 +26,6 @@ public partial class Warehouse : IAsyncDisposable
 
     private static readonly CultureInfo DanishCulture = CultureInfo.GetCultureInfo("da-DK");
 
-    private static readonly Guid DefaultAuctionHouseId = Guid.Parse("8cc2c7dc-6244-41e7-805f-a90f9279c540");
 
     private readonly HashSet<Guid> expandedLotIds = [];
 
@@ -182,7 +182,7 @@ public partial class Warehouse : IAsyncDisposable
             EstimatedValue = model.EstimatedValue,
             Description = model.Description.Trim(),
             Tags = model.GetTags(),
-            AuctionHouseId = DefaultAuctionHouseId
+            AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
         });
 
         await PersistImageAsync(response.LotId);
@@ -449,7 +449,7 @@ public partial class Warehouse : IAsyncDisposable
 
         model = new LotFormModel
         {
-            AuctionHouseId = DefaultAuctionHouseId.ToString()
+            AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId.ToString()
         };
 
         editContext = new EditContext(model);
