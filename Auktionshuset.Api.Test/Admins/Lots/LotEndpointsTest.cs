@@ -15,20 +15,20 @@ public class LotEndpointsTest
     [Fact]
     public async Task GetLots_ReturnsProjectedLotsAndImageUrls()
     {
-        InMemoryLotRepository repository = new InMemoryLotRepository();
-        var withImage = CreateLot("With image", "lot.png");
-        var withoutImage = CreateLot("Without image");
+        var repository = new InMemoryLotRepository();
+        Lot withImage = CreateLot("With image", "lot.png");
+        Lot withoutImage = CreateLot("Without image");
         await repository.AddAsync(withImage, CancellationToken.None);
         await repository.AddAsync(withoutImage, CancellationToken.None);
 
-        var result = await GetLotsEndpoint.HandleAsync(
+        Ok<IReadOnlyList<LotListItemResponse>> result = await GetLotsEndpoint.HandleAsync(
             new GetLotsHandler(repository),
             CancellationToken.None);
 
-        var lots = Assert.IsType<Ok<IReadOnlyList<LotListItemResponse>>>(result).Value!;
+        IReadOnlyList<LotListItemResponse> lots = Assert.IsType<Ok<IReadOnlyList<LotListItemResponse>>>(result).Value!;
         Assert.Equal(2, lots.Count);
 
-        var projected = Assert.Single(lots, lot => lot.LotId == withImage.LotId);
+        LotListItemResponse projected = Assert.Single(lots, lot => lot.LotId == withImage.LotId);
         Assert.Equal(withImage.Name, projected.Name);
         Assert.Equal(withImage.Category, projected.Category);
         Assert.Equal(withImage.Quantity, projected.Quantity);
@@ -44,7 +44,7 @@ public class LotEndpointsTest
     [Fact]
     public async Task GetLots_WithoutLots_ReturnsEmptyList()
     {
-        var result = await GetLotsEndpoint.HandleAsync(
+        Ok<IReadOnlyList<LotListItemResponse>> result = await GetLotsEndpoint.HandleAsync(
             new GetLotsHandler(new InMemoryLotRepository()),
             CancellationToken.None);
 
@@ -54,8 +54,8 @@ public class LotEndpointsTest
     [Fact]
     public async Task Update_WithExistingLot_TrimsValuesAndRemovesDuplicateTags()
     {
-        var lot = CreateLot("Original");
-        InMemoryLotRepository repository = new InMemoryLotRepository();
+        Lot lot = CreateLot("Original");
+        var repository = new InMemoryLotRepository();
         await repository.AddAsync(lot, CancellationToken.None);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
         UpdateLotHandler handler = new UpdateLotHandler(repository, publisher);
@@ -70,16 +70,16 @@ public class LotEndpointsTest
             AuctionHouseId = lot.AuctionHouseId
         };
 
-        var result = await UpdateLotEndpoint.HandleAsync(
+        Results<Ok<UpdateLotResponse>, NotFound> result = await UpdateLotEndpoint.HandleAsync(
             lot.LotId,
             request,
             handler,
             CancellationToken.None);
 
-        var response = Assert.IsType<Ok<UpdateLotResponse>>(result.Result).Value!;
+        UpdateLotResponse response = Assert.IsType<Ok<UpdateLotResponse>>(result.Result).Value!;
         Assert.Equal(lot.LotId, response.LotId);
 
-        var updated = await repository.GetByIdAsync(lot.LotId, CancellationToken.None);
+        Lot? updated = await repository.GetByIdAsync(lot.LotId, CancellationToken.None);
         Assert.NotNull(updated);
         Assert.Equal("Updated lot", updated.Name);
         Assert.Equal("Furniture", updated.Category);
@@ -93,7 +93,7 @@ public class LotEndpointsTest
     [Fact]
     public async Task Update_WithUnknownLot_ReturnsNotFound()
     {
-        var result = await UpdateLotEndpoint.HandleAsync(
+        Results<Ok<UpdateLotResponse>, NotFound> result = await UpdateLotEndpoint.HandleAsync(
             Guid.NewGuid(),
             new UpdateLotRequest
             {

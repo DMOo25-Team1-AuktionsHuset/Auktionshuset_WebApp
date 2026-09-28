@@ -1,7 +1,5 @@
 ﻿using Auktionshuset.Application.EventHandling;
 using RabbitMQ.Client;
-using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
@@ -30,20 +28,20 @@ namespace Auktionshuset.Infrastructure.Messaging
         /// resolved for its type.
         /// </summary>
         /// <typeparam name="TEvent">The type of integration event being published.</typeparam>
-        /// <param name="integrationEvent">The integration event to serialize and publish.</param>
+        /// <param name="message">The integration event to serialize and publish.</param>
         /// <returns>A task that completes once the message has been published to the channel.</returns>
         /// <exception cref="InvalidOperationException">
         /// Thrown when no routing key is defined for <typeparamref name="TEvent"/>.
         /// </exception>
         /// <seealso cref="RabbitMqRoutingKeyResolver"/>
         public async Task PublishAsync<TEvent>(
-            TEvent integrationEvent,
-            CancellationToken cancellationToken = default)
+            TEvent message,
+            CancellationToken cancellationToken)
             where TEvent : IIntegrationEvent
 
         {
-            var routingKey = _routingKeyResolver.Resolve<TEvent>();
-            await using var channel = await _connection.CreateChannelAsync(
+            string routingKey = _routingKeyResolver.Resolve<TEvent>();
+            await using IChannel channel = await _connection.CreateChannelAsync(
                 cancellationToken: cancellationToken);
 
             const string exchangeName = "auktionshuset.events";
@@ -55,8 +53,8 @@ namespace Auktionshuset.Infrastructure.Messaging
                 autoDelete: false,
                 cancellationToken: cancellationToken);
 
-            var json = JsonSerializer.Serialize(integrationEvent);
-            var body = Encoding.UTF8.GetBytes(json);
+            string json = JsonSerializer.Serialize(message);
+            byte[] body = Encoding.UTF8.GetBytes(json);
 
             await channel.BasicPublishAsync(
                 exchange: exchangeName,

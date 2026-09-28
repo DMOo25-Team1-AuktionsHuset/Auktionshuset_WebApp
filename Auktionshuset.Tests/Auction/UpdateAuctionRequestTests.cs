@@ -33,9 +33,9 @@ public class UpdateAuctionRequestTests
     [Fact]
     public void Validate_WithEndBeforeStart_ReturnsError()
     {
-        var startsAt = DateTime.Now.AddDays(4);
+        DateTime startsAt = DateTime.Now.AddDays(4);
 
-        var errors = Validate(CreateValidRequest(startsAt: startsAt, endsAt: startsAt.AddMinutes(-1)));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: startsAt, endsAt: startsAt.AddMinutes(-1)));
 
         Assert.Contains(errors, error => error.ErrorMessage?.Contains("efter starttidspunktet") == true);
     }
@@ -46,16 +46,16 @@ public class UpdateAuctionRequestTests
     [Fact]
     public void Validate_WithoutName_ReturnsError()
     {
-        var errors = Validate(CreateValidRequest(name: string.Empty));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(name: string.Empty));
 
         Assert.Contains(errors, error => error.MemberNames.Contains(nameof(UpdateAuctionRequest.Name)));
     }
 
     /// <summary>
-    /// Verifies that the auctionarius can be cleared when updating, so the field is optional.
+    /// Verifies that an auctionarius is required when updating.
     /// </summary>
     [Fact]
-    public void Validate_WithoutEmployee_HasNoErrors()
+    public void Validate_WithoutEmployee_ReturnsError()
     {
         UpdateAuctionRequest request = new UpdateAuctionRequest
         {
@@ -64,7 +64,9 @@ public class UpdateAuctionRequestTests
             EndsAt = DateTime.Now.AddDays(4)
         };
 
-        Assert.Empty(Validate(request));
+        Assert.Contains(
+            Validate(request),
+            error => error.MemberNames.Contains(nameof(UpdateAuctionRequest.EmployeeId)));
     }
 
     /// <summary>
@@ -75,7 +77,7 @@ public class UpdateAuctionRequestTests
     {
         Guid lotId = Guid.NewGuid();
 
-        var errors = Validate(CreateValidRequest(lots:
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(lots:
             [new AuctionLotRequest(lotId, 0), new AuctionLotRequest(lotId, 1)]));
 
         Assert.Contains(errors, error => error.ErrorMessage?.Contains("mere end én gang") == true);
@@ -90,14 +92,14 @@ public class UpdateAuctionRequestTests
         DateTime? startsAt = null,
         DateTime? endsAt = null,
         AuctionLotRequest[]? lots = null) => new()
-    {
-        Name = name,
-        StartsAt = startsAt ?? DateTime.Now.AddDays(3),
-        EndsAt = endsAt ?? DateTime.Now.AddDays(4),
-        EmployeeId = Guid.NewGuid(),
-        AuctionHouseId = TestData.AuctionHouseId,
-        Lots = lots ?? [new AuctionLotRequest(Guid.NewGuid(), 1)]
-    };
+        {
+            Name = name,
+            StartsAt = startsAt ?? DateTime.Now.AddDays(3),
+            EndsAt = endsAt ?? DateTime.Now.AddDays(4),
+            EmployeeId = Guid.NewGuid(),
+            AuctionHouseId = TestData.AuctionHouseId,
+            Lots = lots ?? [new AuctionLotRequest(Guid.NewGuid(), 1)]
+        };
 
     /// <summary>
     /// Runs annotation and <see cref="IValidatableObject"/> validation on the request.

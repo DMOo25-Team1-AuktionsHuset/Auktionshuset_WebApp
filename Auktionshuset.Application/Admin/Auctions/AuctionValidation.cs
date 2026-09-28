@@ -18,8 +18,8 @@ internal static class AuctionValidation
     /// <param name="name">The auction name supplied by the caller.</param>
     /// <param name="startsAt">The supplied start time.</param>
     /// <param name="endsAt">The supplied end time.</param>
-    /// <param name="employeeId">The auctionarius identifier supplied by the caller, if any.</param>
-    /// <param name="employee">The employee looked up for the supplied employee identifier, if any.</param>
+    /// <param name="employeeId">The required auctionarius identifier supplied by the caller.</param>
+    /// <param name="employee">The employee looked up for the supplied employee identifier.</param>
     /// <param name="requireFutureStart">
     /// When <see langword="true"/>, the start time has to lie in the future. Updating an auction that
     /// already started must not be blocked by this rule.
@@ -34,7 +34,7 @@ internal static class AuctionValidation
         bool requireFutureStart,
         List<string> errors)
     {
-        var trimmedName = name?.Trim() ?? string.Empty;
+        string trimmedName = name?.Trim() ?? string.Empty;
 
         if (trimmedName.Length < MinNameLength || trimmedName.Length > MaxNameLength)
         {
@@ -51,8 +51,11 @@ internal static class AuctionValidation
             errors.Add("Sluttidspunktet skal ligge efter starttidspunktet.");
         }
 
-        // An auctionarius is optional, but a supplied one has to exist.
-        if (employeeId is not null && employee is null)
+        if (employeeId is null)
+        {
+            errors.Add("En auktion skal have en tilknyttet auktionarius.");
+        }
+        else if (employee is null)
         {
             errors.Add("Den valgte auktionarius findes ikke.");
         }
@@ -80,9 +83,9 @@ internal static class AuctionValidation
 
         List<AuctionLot> auctionLots = new List<AuctionLot>();
 
-        foreach (var selection in selections)
+        foreach (AuctionLotSelection selection in selections)
         {
-            if (!lotsById.TryGetValue(selection.LotId, out var lot))
+            if (!lotsById.TryGetValue(selection.LotId, out Lot? lot))
             {
                 errors.Add("En eller flere af de valgte genstande findes ikke i lageret.");
                 continue;

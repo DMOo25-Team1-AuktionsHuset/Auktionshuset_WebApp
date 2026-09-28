@@ -1,6 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Lots.Images;
 
@@ -17,7 +17,7 @@ public sealed class RemoveLotImageHandler(
     /// <returns>The outcome of the removal.</returns>
     public async Task<LotImageResult> HandleAsync(Guid lotId, CancellationToken cancellationToken)
     {
-        var lot = await lotRepository.GetByIdAsync(lotId, cancellationToken);
+        Lot? lot = await lotRepository.GetByIdAsync(lotId, cancellationToken);
 
         if (lot is null)
         {
@@ -29,7 +29,7 @@ public sealed class RemoveLotImageHandler(
             return LotImageResult.Saved(lot.LotId, null);
         }
 
-        var fileName = lot.ImageFileName;
+        string fileName = lot.ImageFileName;
         lot.ImageFileName = null;
 
         await lotRepository.UpdateAsync(lot, cancellationToken);

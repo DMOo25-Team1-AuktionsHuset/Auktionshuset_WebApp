@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Auktionshuset.Api.Security;
@@ -13,7 +14,7 @@ public static class SecurityServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var enforceAuthorization = configuration.GetValue(EnforceAuthorizationKey, true);
+        bool enforceAuthorization = configuration.GetValue(EnforceAuthorizationKey, true);
 
         if (enforceAuthorization)
         {
@@ -56,7 +57,7 @@ public static class SecurityServiceExtensions
 
     private static void ConfigureDevelopmentBypass(AuthorizationOptions options)
     {
-        var allowAnonymousPolicy = new AuthorizationPolicyBuilder()
+        AuthorizationPolicy allowAnonymousPolicy = new AuthorizationPolicyBuilder()
             .RequireAssertion(_ => true)
             .Build();
 
@@ -75,7 +76,7 @@ public static class SecurityServiceExtensions
         JwtBearerOptions options,
         IConfiguration configuration)
     {
-        var signingKey = configuration["Authentication:SigningKey"]
+        string signingKey = configuration["Authentication:SigningKey"]
             ?? throw new InvalidOperationException(
                 "Missing configuration value 'Authentication:SigningKey'.");
 
@@ -94,7 +95,7 @@ public static class SecurityServiceExtensions
         {
             OnMessageReceived = context =>
             {
-                var accessToken = context.Request.Query["access_token"];
+                StringValues accessToken = context.Request.Query["access_token"];
 
                 if (!string.IsNullOrEmpty(accessToken)
                     && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))

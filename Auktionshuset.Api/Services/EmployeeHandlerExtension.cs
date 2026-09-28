@@ -1,5 +1,4 @@
 ﻿using Auktionshuset.Api.Events.Admin.Employee;
-using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;

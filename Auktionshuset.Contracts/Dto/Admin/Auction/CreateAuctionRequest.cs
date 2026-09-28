@@ -15,9 +15,9 @@ public sealed class CreateAuctionRequest : IValidatableObject
     public DateTime? EndsAt { get; init; }
 
     /// <summary>
-    /// Gets the identifier of the auctionarius, or <see langword="null"/> when no employee is
-    /// assigned to the auction.
+    /// Gets the required identifier of the auctionarius assigned to the auction.
     /// </summary>
+    [Required(ErrorMessage = "Vælg en auktionarius.")]
     public Guid? EmployeeId { get; init; }
 
     public Guid? AuctionHouseId { get; init; }

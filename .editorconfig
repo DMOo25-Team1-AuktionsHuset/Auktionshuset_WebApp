@@ -13,12 +13,17 @@ insert_final_newline = true
 
 # ============================================================
 # TYPES
-# Prefer explicit types over 'var'
+# Prefer explicit types over 'var' if type not apparent on right side
 # ============================================================
 
-csharp_style_var_for_built_in_types = false:warning
-csharp_style_var_when_type_is_apparent = false:warning
-csharp_style_var_elsewhere = false:warning
+# Built-in types: Explicit type
+csharp_style_var_for_built_in_types = false:suggestion
+
+# When type is apparent from the right side: var OK
+csharp_style_var_when_type_is_apparent = true:suggestion
+
+# Type not apparent: Use explicit type
+csharp_style_var_elsewhere = false:suggestion
 
 # Prefer C# keywords instead of CLR type names
 # int instead of Int32, string instead of String, etc.
@@ -59,7 +64,7 @@ dotnet_style_object_initializer = true:suggestion
 dotnet_style_collection_initializer = true:suggestion
 
 # Prefer target-typed new()
-csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
+csharp_style_implicit_object_creation_when_type_is_apparent = false:suggestion
 
 csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
 csharp_style_pattern_matching_over_as_with_null_check = true:suggestion

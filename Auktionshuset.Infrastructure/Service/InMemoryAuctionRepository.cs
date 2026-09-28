@@ -46,7 +46,7 @@ namespace Auktionshuset.Infrastructure.Service
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            _auctions.TryGetValue(auctionId, out var auction);
+            _auctions.TryGetValue(auctionId, out Auction? auction);
 
             return Task.FromResult(auction);
         }
@@ -57,7 +57,7 @@ namespace Auktionshuset.Infrastructure.Service
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (_auctionLots.TryGetValue(auctionId, out var auctionLots))
+            if (_auctionLots.TryGetValue(auctionId, out IReadOnlyList<AuctionLot>? auctionLots))
             {
                 return Task.FromResult(auctionLots);
             }
@@ -98,7 +98,7 @@ namespace Auktionshuset.Infrastructure.Service
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var removed = _auctions.TryRemove(auctionId, out _);
+            bool removed = _auctions.TryRemove(auctionId, out _);
             _auctionLots.TryRemove(auctionId, out _);
 
             return Task.FromResult(removed);

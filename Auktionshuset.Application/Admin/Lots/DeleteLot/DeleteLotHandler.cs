@@ -1,11 +1,10 @@
-using System.Reflection;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 
 namespace Auktionshuset.Application.Admin.Lots.DeleteLot;
 
 public sealed class DeleteLotHandler(
-    ILotRepository lotRepository, 
+    ILotRepository lotRepository,
     IIntegrationEventPublisher eventPublisher)
 {
     /// <summary>
@@ -13,13 +12,13 @@ public sealed class DeleteLotHandler(
     /// </summary>
     /// <param name="command">The command identifying the lot to delete.</param>
     /// <returns><see langword="true"/> if the lot was found and deleted; otherwise, <see langword="false"/>.</returns>
-    
+
     public async Task<bool> HandleAsync(
-        DeleteLotCommand command, 
+        DeleteLotCommand command,
         CancellationToken cancellationToken)
     {
-        var deleted = await lotRepository.DeleteAsync(
-            command.LotId, 
+        bool deleted = await lotRepository.DeleteAsync(
+            command.LotId,
             cancellationToken);
 
         if (!deleted)
@@ -27,7 +26,7 @@ public sealed class DeleteLotHandler(
             return false;
         }
 
-        LotDeletedIntegrationEvent integrationEvent = new LotDeletedIntegrationEvent(
+        var integrationEvent = new LotDeletedIntegrationEvent(
             EventId: Guid.NewGuid(),
             LotId: command.LotId,
             OccurredAt: DateTime.UtcNow);

@@ -13,7 +13,7 @@ public sealed record AuctionDetailResponse(
     string Name,
     string Status,
     DateTime StartsAt,
-    DateTime EndsAt,
+    DateTime? EndsAt,
     Guid? EmployeeId,
     string EmployeeName,
     int LotCount,

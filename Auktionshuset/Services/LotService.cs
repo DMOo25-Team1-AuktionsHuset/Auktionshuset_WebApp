@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
@@ -21,11 +20,11 @@ public sealed class LotService(HttpClient httpClient)
     public async Task<IReadOnlyList<LotListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync("api/lots", cancellationToken);
+        using HttpResponseMessage response = await httpClient.GetAsync("api/lots", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
-            var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstandene", "hentes");
+            string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstandene", "hentes");
             throw new LotApiException(message, response.StatusCode);
         }
 
@@ -54,7 +53,7 @@ public sealed class LotService(HttpClient httpClient)
         CreateLotRequest request,
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PostAsJsonAsync("api/lots", request, cancellationToken);
+        using HttpResponseMessage response = await httpClient.PostAsJsonAsync("api/lots", request, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -64,7 +63,7 @@ public sealed class LotService(HttpClient httpClient)
                 cancellationToken);
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "oprettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "oprettes");
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -84,7 +83,7 @@ public sealed class LotService(HttpClient httpClient)
         UpdateLotRequest request,
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PutAsJsonAsync($"api/lots/{lotId}", request, cancellationToken);
+        using HttpResponseMessage response = await httpClient.PutAsJsonAsync($"api/lots/{lotId}", request, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -101,7 +100,7 @@ public sealed class LotService(HttpClient httpClient)
                 cancellationToken);
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "opdateres");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "opdateres");
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -118,7 +117,7 @@ public sealed class LotService(HttpClient httpClient)
         Guid lotId,
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.DeleteAsync($"api/lots/{lotId}", cancellationToken);
+        using HttpResponseMessage response = await httpClient.DeleteAsync($"api/lots/{lotId}", cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -130,7 +129,7 @@ public sealed class LotService(HttpClient httpClient)
             throw new LotApiException("Genstanden blev ikke fundet.", response.StatusCode);
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "slettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "slettes");
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -157,7 +156,7 @@ public sealed class LotService(HttpClient httpClient)
             string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
         form.Add(fileContent, "file", string.IsNullOrWhiteSpace(fileName) ? "billede" : fileName);
 
-        using var response = await httpClient.PostAsync($"api/lots/{lotId}/image", form, cancellationToken);
+        using HttpResponseMessage response = await httpClient.PostAsync($"api/lots/{lotId}/image", form, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -167,7 +166,7 @@ public sealed class LotService(HttpClient httpClient)
                 cancellationToken);
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "gemmes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "gemmes");
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -180,14 +179,14 @@ public sealed class LotService(HttpClient httpClient)
     /// <exception cref="LotApiException">Thrown when the lot does not exist or the call fails.</exception>
     public async Task RemoveImageAsync(Guid lotId, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.DeleteAsync($"api/lots/{lotId}/image", cancellationToken);
+        using HttpResponseMessage response = await httpClient.DeleteAsync($"api/lots/{lotId}/image", cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
             return;
         }
 
-        var message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "fjernes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "fjernes");
         throw new LotApiException(message, response.StatusCode);
     }
 

@@ -51,7 +51,7 @@ namespace Auktionshuset.Infrastructure.Service
             });
 
             Add(new Employee
-        {
+            {
                 EmployeeId = Guid.Parse("c14b6f38-9e2a-4715-a8d0-5f3e2c7b9a02"),
                 AuctionHouseId = AuctionHouseId,
                 FirstName = "Louise",
@@ -95,7 +95,7 @@ namespace Auktionshuset.Infrastructure.Service
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            _employees.TryGetValue(employeeId, out var employee);
+            _employees.TryGetValue(employeeId, out Employee? employee);
 
             return Task.FromResult(employee);
         }

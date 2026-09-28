@@ -14,19 +14,19 @@ public class DeleteLotTest
     [Fact]
     public async Task Delete_RemovesOnlyRequestedLot_AndReturns404OnRepeat()
     {
-        InMemoryLotRepository repository = new InMemoryLotRepository();
-        var target = CreateLot();
-        var other = CreateLot();
+        var repository = new InMemoryLotRepository();
+        Lot target = CreateLot();
+        Lot other = CreateLot();
         await repository.AddAsync(target, CancellationToken.None);
         await repository.AddAsync(other, CancellationToken.None);
         DeleteLotHandler handler = new DeleteLotHandler(repository, new RecordingEventPublisher());
 
-        var result = await DeleteLotEndpoint.HandleAsync(target.LotId, handler, CancellationToken.None);
+        Results<NoContent, NotFound> result = await DeleteLotEndpoint.HandleAsync(target.LotId, handler, CancellationToken.None);
 
         Assert.IsType<NoContent>(result.Result);
-        var remaining = await repository.GetAllAsync(CancellationToken.None);
+        IReadOnlyList<Lot> remaining = await repository.GetAllAsync(CancellationToken.None);
         Assert.Equal(other.LotId, Assert.Single(remaining).LotId);
-        var repeated = await DeleteLotEndpoint.HandleAsync(target.LotId, handler, CancellationToken.None);
+        Results<NoContent, NotFound> repeated = await DeleteLotEndpoint.HandleAsync(target.LotId, handler, CancellationToken.None);
         Assert.IsType<NotFound>(repeated.Result);
     }
 
@@ -36,8 +36,8 @@ public class DeleteLotTest
     [Fact]
     public async Task Delete_WhenCancelled_DoesNotRemoveLot()
     {
-        InMemoryLotRepository repository = new InMemoryLotRepository();
-        var lot = CreateLot();
+        var repository = new InMemoryLotRepository();
+        Lot lot = CreateLot();
         await repository.AddAsync(lot, CancellationToken.None);
         using CancellationTokenSource cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -57,8 +57,13 @@ public class DeleteLotTest
     /// <returns>A lot with valid values and a newly generated identifier.</returns>
     private static Lot CreateLot() => new()
     {
-        LotId = Guid.NewGuid(), AuctionHouseId = Guid.NewGuid(),
-        Name = "Vase", Category = "Ceramics", Quantity = 1,
-        EstimatedValue = 100, Description = "Antique vase", Tags = []
+        LotId = Guid.NewGuid(),
+        AuctionHouseId = Guid.NewGuid(),
+        Name = "Vase",
+        Category = "Ceramics",
+        Quantity = 1,
+        EstimatedValue = 100,
+        Description = "Antique vase",
+        Tags = []
     };
 }

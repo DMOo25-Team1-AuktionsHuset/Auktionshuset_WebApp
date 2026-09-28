@@ -6,9 +6,6 @@ using Auktionshuset.Infrastructure.Messaging.Consumers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 
 namespace Auktionshuset.Infrastructure.Service
@@ -31,19 +28,19 @@ namespace Auktionshuset.Infrastructure.Service
 
             services.AddSingleton<IConnection>(_ =>
             {
-                var hostName = GetRequiredConfigurationValue(
+                string hostName = GetRequiredConfigurationValue(
                     configuration,
                     "RabbitMQ:HostName");
 
-                var userName = GetRequiredConfigurationValue(
+                string userName = GetRequiredConfigurationValue(
                     configuration,
                     "RabbitMQ:UserName");
 
-                var password = GetRequiredConfigurationValue(
+                string password = GetRequiredConfigurationValue(
                     configuration,
                     "RabbitMQ:Password");
 
-                var port = GetRequiredRabbitMqPort(configuration);
+                int port = GetRequiredRabbitMqPort(configuration);
 
                 ConnectionFactory factory = new ConnectionFactory
                 {
@@ -72,7 +69,7 @@ namespace Auktionshuset.Infrastructure.Service
             IConfiguration configuration,
             string key)
         {
-            var value = configuration[key];
+            string? value = configuration[key];
 
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -86,11 +83,11 @@ namespace Auktionshuset.Infrastructure.Service
         private static int GetRequiredRabbitMqPort(
             IConfiguration configuration)
         {
-            var value = GetRequiredConfigurationValue(
+            string value = GetRequiredConfigurationValue(
                 configuration,
                 "RabbitMQ:Port");
 
-            if (!int.TryParse(value, out var port) || port <= 0)
+            if (!int.TryParse(value, out int port) || port <= 0)
             {
                 throw new InvalidOperationException(
                     "Configuration value 'RabbitMQ:Port' must be a positive integer.");

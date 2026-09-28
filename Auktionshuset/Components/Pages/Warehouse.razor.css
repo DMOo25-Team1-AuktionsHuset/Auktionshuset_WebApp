@@ -280,12 +280,6 @@
     justify-content: center;
 }
 
-.cell-name {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
 .row-activator {
     background: none;
     border: 0;
@@ -293,6 +287,7 @@
     cursor: pointer;
     font: inherit;
     font-weight: 700;
+    display: block;
     padding: 0;
     text-align: left;
 }
@@ -308,7 +303,7 @@
 }
 
 .selected-badge {
-    align-self: flex-start;
+    margin-top: 0.25rem;
 }
 
 .cell-quantity,
