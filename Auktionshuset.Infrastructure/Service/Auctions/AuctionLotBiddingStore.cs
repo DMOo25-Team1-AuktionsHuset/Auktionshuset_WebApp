@@ -2,16 +2,15 @@
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Auction;
 using Auktionshuset.Domain.Entities;
+using Auktionshuset.Infrastructure.Data;
+using Auktionshuset.Infrastructure.Database;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using BidEntity = Auktionshuset.Domain.Entities.Bid;
-using InfrastructureDbContext =
-    Auktionshuset.Infrastructure.Data.DbContext;
-using Auktionshuset.Infrastructure.Data;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions
 {
-    public class AuctionLotBiddingStore(InfrastructureDbContext db, TimeProvider clock) : IPlaceBidStore, ICloseAuctionLotStore
+    public class AuctionLotBiddingStore(AHDBContext db, TimeProvider clock) : IPlaceBidStore, ICloseAuctionLotStore
     {
         public async Task<PlaceBidResult> PlaceBidAsync(PlaceBidCommand command, CancellationToken cancellationToken)
         {
@@ -131,7 +130,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     AuctionLot = item,
                     CustomerId = customer.CustomerId,
                     Customer = customer,
-                    DeviceSessionId = session.DeviceSessionId,
+                    DeviceSessionId = session?.DeviceSessionId,
                     DeviceSession = session
                 };
 

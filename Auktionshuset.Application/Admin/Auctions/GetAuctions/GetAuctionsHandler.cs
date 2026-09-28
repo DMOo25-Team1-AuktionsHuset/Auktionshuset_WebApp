@@ -1,6 +1,7 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Domain.Entities;
+using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions.GetAuctions;
 
@@ -15,13 +16,13 @@ public sealed class GetAuctionsHandler(
     /// <returns>A read-only list of every auction with its auctionarius and lot totals.</returns>
     public async Task<IReadOnlyList<AuctionOverview>> HandleAsync(CancellationToken cancellationToken)
     {
-        IReadOnlyList<Auction> auctions = await auctionRepository.GetAllAsync(cancellationToken);
+        IReadOnlyList<AuctionEntity> auctions = await auctionRepository.GetAllAsync(cancellationToken);
         IReadOnlyList<Employee> employees = await employeeRepository.GetAllAsync(cancellationToken);
         var employeesById = employees.ToDictionary(employee => employee.EmployeeId);
 
         List<AuctionOverview> overviews = new List<AuctionOverview>(auctions.Count);
 
-        foreach (Auction auction in auctions)
+        foreach (AuctionEntity auction in auctions)
         {
             IReadOnlyList<AuctionLot> auctionLots = await auctionRepository.GetAuctionLotsAsync(auction.AuctionId, cancellationToken);
 
@@ -48,7 +49,7 @@ public sealed class GetAuctionsHandler(
     /// <returns>The auction detail, or <see langword="null"/> when no auction has that identifier.</returns>
     public async Task<AuctionDetail?> HandleByIdAsync(Guid auctionId, CancellationToken cancellationToken)
     {
-        Auction? auction = await auctionRepository.GetByIdAsync(auctionId, cancellationToken);
+        AuctionEntity? auction = await auctionRepository.GetByIdAsync(auctionId, cancellationToken);
 
         if (auction is null)
         {
@@ -85,7 +86,7 @@ public sealed class GetAuctionsHandler(
     /// <param name="employeesById">Every stored employee, indexed by identifier.</param>
     /// <returns>The employee's full name, or a Danish fallback when none is assigned.</returns>
     private static string ResolveEmployeeName(
-        Domain.Entities.Auction auction,
+        AuctionEntity auction,
         IReadOnlyDictionary<Guid, Domain.Entities.Employee> employeesById)
     {
         if (auction.Employee?.FirstName is { Length: > 0 } firstName)

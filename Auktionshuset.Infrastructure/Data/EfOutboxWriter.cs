@@ -4,12 +4,13 @@ using System.Text;
 using System.Text.Json;
 using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Infrastructure.Database;
 
 namespace Auktionshuset.Infrastructure.Data
 {
-    internal sealed class EfOutboxWriter(DbContext dbContext) : IOutboxWriter
+    internal sealed class EfOutboxWriter(AHDBContext dbContext) : IOutboxWriter
     {
-        private readonly DbContext _dbContext = dbContext;
+        private readonly AHDBContext _dbContext = dbContext;
         public Task AddAsync(
             IIntegrationEvent integrationEvent,
             CancellationToken cancellationToken = default)
