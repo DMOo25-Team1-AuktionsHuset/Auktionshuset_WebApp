@@ -1,4 +1,5 @@
 using Auktionshuset.Domain.Entities;
+using Auktionshuset.Domain;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,8 +7,7 @@ namespace Auktionshuset.Infrastructure.Seed
 {
     internal static class AHSeeder
     {
-        internal static readonly Guid DefaultAuctionHouseId =
-            Guid.Parse("8cc2c7dc-6244-41e7-805f-a90f9279c540");
+        internal static readonly Guid DefaultAuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId;
 
         public static async Task SeedAsync(
             AHDBContext context,

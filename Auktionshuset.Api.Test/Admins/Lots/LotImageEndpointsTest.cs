@@ -12,6 +12,25 @@ namespace Auktionshuset.Api.Test.Admins.Lots;
 
 public class LotImageEndpointsTest
 {
+    [Fact]
+    public async Task Get_WithStoredImage_ReturnsBytesAndContentType()
+    {
+        byte[] bytes = PngBytes();
+        var store = new FakeLotImageStore { NextImage = new LotImageContent(bytes, "image/png") };
+        IResult result = await LotImageEndpoints.HandleGetAsync("abc123.png", store, CancellationToken.None);
+        var file = Assert.IsType<FileContentHttpResult>(result);
+        Assert.Equal("image/png", file.ContentType);
+        Assert.Equal(bytes, file.FileContents);
+    }
+
+    [Fact]
+    public async Task Get_WithoutStoredImage_ReturnsNotFound()
+    {
+        IResult result = await LotImageEndpoints.HandleGetAsync(
+            "missing.png", new FakeLotImageStore(), CancellationToken.None);
+        Assert.IsType<NotFound>(result);
+    }
+
     /// <summary>
     /// Verifies that a valid upload returns the stored image URL.
     /// </summary>
@@ -246,7 +265,11 @@ public class LotImageEndpointsTest
     private sealed class FakeLotImageStore : ILotImageStore
     {
         public string NextFileName { get; init; } = "genereret.png";
+        public LotImageContent? NextImage { get; init; }
         public List<string> Deleted { get; } = [];
+
+        public Task<LotImageContent?> GetAsync(string fileName, CancellationToken cancellationToken) =>
+            Task.FromResult(NextImage);
 
         public Task<string> SaveAsync(Stream content, string extension, CancellationToken cancellationToken) =>
             Task.FromResult(NextFileName);

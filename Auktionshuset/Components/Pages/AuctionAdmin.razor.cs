@@ -1,5 +1,8 @@
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
+using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
+using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
+using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
@@ -36,6 +39,9 @@ public partial class AuctionAdmin : IDisposable
 
     [Inject]
     private AuctionRealtimeService AuctionRealtimeService { get; set; } = default!;
+
+    [Inject]
+    private EmployeeRealtimeService EmployeeRealtimeService { get; set; } = default!;
 
     // --- Formular ---------------------------------------------------------
 
@@ -175,14 +181,18 @@ public partial class AuctionAdmin : IDisposable
         AuctionRealtimeService.AuctionCreated += OnAuctionCreatedAsync;
         AuctionRealtimeService.AuctionUpdated += OnAuctionUpdatedAsync;
         AuctionRealtimeService.AuctionDeleted += OnAuctionDeletedAsync;
+        EmployeeRealtimeService.EmployeeCreated += OnEmployeeCreatedAsync;
+        EmployeeRealtimeService.EmployeeUpdated += OnEmployeeUpdatedAsync;
+        EmployeeRealtimeService.EmployeeDeleted += OnEmployeeDeletedAsync;
 
         try
         {
             await AuctionRealtimeService.StartAsync();
+            await EmployeeRealtimeService.StartAsync();
         }
         catch (Exception)
         {
-            realtimeError = "Liveforbindelsen til auktioner kunne ikke startes. Genindlæs siden for at prøve igen.";
+            realtimeError = "Liveforbindelsen til auktioner eller medarbejdere kunne ikke startes. Siden kan stadig bruges, men listen opdateres ikke automatisk.";
             StateHasChanged();
         }
     }
@@ -194,6 +204,9 @@ public partial class AuctionAdmin : IDisposable
         AuctionRealtimeService.AuctionCreated -= OnAuctionCreatedAsync;
         AuctionRealtimeService.AuctionUpdated -= OnAuctionUpdatedAsync;
         AuctionRealtimeService.AuctionDeleted -= OnAuctionDeletedAsync;
+        EmployeeRealtimeService.EmployeeCreated -= OnEmployeeCreatedAsync;
+        EmployeeRealtimeService.EmployeeUpdated -= OnEmployeeUpdatedAsync;
+        EmployeeRealtimeService.EmployeeDeleted -= OnEmployeeDeletedAsync;
     }
 
     /// <summary>
@@ -211,6 +224,27 @@ public partial class AuctionAdmin : IDisposable
     /// <inheritdoc cref="OnAuctionCreatedAsync"/>
     private Task OnAuctionDeletedAsync(DeleteAuctionNotification notification) =>
         RefreshAuctionsAsync();
+
+    private Task OnEmployeeCreatedAsync(CreateEmployeeNotification _) => RefreshEmployeesAsync();
+
+    private Task OnEmployeeUpdatedAsync(UpdateEmployeeNotification _) => RefreshEmployeesAsync();
+
+    private Task OnEmployeeDeletedAsync(DeleteEmployeeNotification _) => RefreshEmployeesAsync();
+
+    private Task RefreshEmployeesAsync()
+    {
+        if (isDisposed)
+        {
+            return Task.CompletedTask;
+        }
+
+        return InvokeAsync(async () =>
+        {
+            if (isDisposed) return;
+            await LoadEmployeesAsync();
+            if (!isDisposed) StateHasChanged();
+        });
+    }
 
     private Task RefreshAuctionsAsync()
     {

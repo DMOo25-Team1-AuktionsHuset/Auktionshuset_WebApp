@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
+
 
 namespace Auktionshuset.Api.Security;
 
@@ -15,6 +17,19 @@ public static class SecurityServiceExtensions
         IConfiguration configuration)
     {
         bool enforceAuthorization = configuration.GetValue(EnforceAuthorizationKey, true);
+
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<
+            IPasswordHasher<AuthUser>,
+            PasswordHasher<AuthUser>>();
+        
+        services.AddSingleton<
+            IAuthUserStore,
+            ConfiguredAuthUserStore>();
+        services.AddSingleton<
+            IAccessTokenService,
+            JwtTokenService>();
+
 
         if (enforceAuthorization)
         {
@@ -42,7 +57,7 @@ public static class SecurityServiceExtensions
             options.AddPolicy(SecurityPolicies.Admin, policy =>
             {
                 policy.RequireAuthenticatedUser();
-                policy.RequireRole("Admin");
+                policy.RequireRole(SecurityRoles.Admin);
             });
 
             AddPermissionPolicy(options, SecurityPolicies.CanCreateLot, SecurityPermissions.CreateLot);

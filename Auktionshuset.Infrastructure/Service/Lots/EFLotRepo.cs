@@ -55,6 +55,12 @@ public sealed class EFLotRepo(AHDBContext dbContext)
             return false;
         }
 
+        if (lot.ImageFileName is { } fileName)
+        {
+            StoredLotImage? image = await dbContext.StoredLotImages.FindAsync([fileName], cancellationToken);
+            if (image is not null) dbContext.StoredLotImages.Remove(image);
+        }
+
         dbContext.Lot.Remove(lot);
         await dbContext.SaveChangesAsync(cancellationToken);
 

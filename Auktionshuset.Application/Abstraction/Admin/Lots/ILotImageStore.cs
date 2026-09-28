@@ -1,12 +1,12 @@
 namespace Auktionshuset.Application.Abstraction.Admin.Lots;
 
 /// <summary>
-/// Stores and removes the image files attached to lots.
+/// Stores and removes the images attached to lots.
 /// </summary>
 public interface ILotImageStore
 {
     /// <summary>
-    /// Saves an image and returns the generated file name it is stored under.
+    /// Saves an image and returns its generated storage name.
     /// </summary>
     /// <param name="content">The image bytes to store.</param>
     /// <param name="extension">The file extension, including the leading dot, derived from the verified image type.</param>
@@ -19,4 +19,9 @@ public interface ILotImageStore
     /// <param name="fileName">The file name previously returned by <see cref="SaveAsync"/>.</param>
     /// <returns><see langword="true"/> when a file was removed; otherwise, <see langword="false"/>.</returns>
     Task<bool> DeleteAsync(string fileName, CancellationToken cancellationToken);
+
+    /// <summary>Reads an image by its generated file name, or returns null if it is missing.</summary>
+    Task<LotImageContent?> GetAsync(string fileName, CancellationToken cancellationToken);
 }
+
+public sealed record LotImageContent(byte[] Bytes, string ContentType);

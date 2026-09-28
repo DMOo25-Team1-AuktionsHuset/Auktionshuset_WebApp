@@ -45,7 +45,16 @@ public sealed class UploadLotImageHandler(
         string fileName = await imageStore.SaveAsync(command.Content, extension, cancellationToken);
 
         lot.ImageFileName = fileName;
-        await lotRepository.UpdateAsync(lot, cancellationToken);
+        try
+        {
+            await lotRepository.UpdateAsync(lot, cancellationToken);
+        }
+        catch
+        {
+            lot.ImageFileName = previousFileName;
+            await imageStore.DeleteAsync(fileName, CancellationToken.None);
+            throw;
+        }
 
         if (!string.IsNullOrWhiteSpace(previousFileName))
         {

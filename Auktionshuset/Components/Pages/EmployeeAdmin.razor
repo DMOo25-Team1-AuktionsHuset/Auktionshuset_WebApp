@@ -1,0 +1,159 @@
+@page "/admin/employees"
+@rendermode InteractiveServer
+@using System.Globalization
+@using Auktionshuset.Contracts.Dto.Admin.Employee
+
+<PageTitle>Medarbejdere | Auktionshuset</PageTitle>
+
+<section class="employee-page" aria-labelledby="employee-heading">
+    <div class="page-heading">
+        <p class="eyebrow">Administration</p>
+        <h1 id="employee-heading">Medarbejdere</h1>
+    </div>
+
+    <section class="card form-card" aria-labelledby="employee-form-heading">
+        <EditForm @key="editContext" EditContext="editContext" OnValidSubmit="SubmitAsync" class="employee-form" novalidate>
+            <DataAnnotationsValidator />
+            <div class="card-heading form-heading">
+                <div class="heading-text">
+                    <h2 id="employee-form-heading">@(editingEmployeeId.HasValue ? "Rediger medarbejder" : "Opret medarbejder")</h2>
+                    <p>Udfyld medarbejderens oplysninger herunder.</p>
+                    @if (editingEmployeeId.HasValue)
+                    {
+                        <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
+                    }
+                </div>
+                <div class="form-heading-actions">
+                    <button type="submit" class="btn" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>Gemmer...</span>
+                        }
+                        else
+                        {
+                            <span>@(editingEmployeeId.HasValue ? "Gem ændringer" : "Opret medarbejder")</span>
+                        }
+                    </button>
+                    @if (editingEmployeeId.HasValue)
+                    {
+                        <button type="button" class="btn btn-secondary" disabled="@isSubmitting" @onclick="CancelEdit">Annuller redigering</button>
+                    }
+                </div>
+            </div>
+
+            <div class="employee-form-grid">
+                <div class="field">
+                    <label for="employee-first-name">Fornavn</label>
+                    <InputText id="employee-first-name" @bind-Value="model.FirstName" autocomplete="given-name" maxlength="100" />
+                    <ValidationMessage For="@(() => model.FirstName)" />
+                </div>
+                <div class="field">
+                    <label for="employee-last-name">Efternavn</label>
+                    <InputText id="employee-last-name" @bind-Value="model.LastName" autocomplete="family-name" maxlength="100" />
+                    <ValidationMessage For="@(() => model.LastName)" />
+                </div>
+                <div class="field">
+                    <label for="employee-birth-date">Fødselsdato</label>
+                    <InputDate id="employee-birth-date" @bind-Value="model.BirthDate" max="@DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
+                    <ValidationMessage For="@(() => model.BirthDate)" />
+                </div>
+                <div class="field employee-address">
+                    <label for="employee-address">Adresse</label>
+                    <InputText id="employee-address" @bind-Value="model.Address" autocomplete="street-address" maxlength="100" />
+                    <ValidationMessage For="@(() => model.Address)" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(statusMessage))
+            {
+                <div class="status-message @(submissionSucceeded ? "success" : "error")" role="@(submissionSucceeded ? "status" : "alert")" aria-live="polite">@statusMessage</div>
+            }
+        </EditForm>
+    </section>
+
+    <section class="card list-card" aria-labelledby="employee-list-heading" aria-busy="@(isLoadingEmployees ? "true" : "false")">
+        <div class="card-heading list-heading">
+            <div>
+                <h2 id="employee-list-heading">Medarbejderoversigt</h2>
+                <p>@(isLoadingEmployees ? "Henter medarbejdere..." : $"{FilteredEmployees.Count} medarbejder{(FilteredEmployees.Count == 1 ? "" : "e")} fundet")</p>
+            </div>
+        </div>
+        <div class="list-tools">
+            <div class="field search-field">
+                <label for="employee-search">Søg i medarbejdere</label>
+                <input id="employee-search" type="search" placeholder="Navn eller adresse" @bind="searchTerm" @bind:event="oninput" @bind:after="OnSearchChanged" />
+            </div>
+            <div class="field page-size-field">
+                <label for="employee-page-size">Pr. side</label>
+                <select id="employee-page-size" @bind="pageSize" @bind:after="OnPageSizeChanged">
+                    @foreach (int size in PageSizeOptions)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(realtimeError))
+        {
+            <p class="list-state realtime-warning" role="status" aria-live="polite">@realtimeError</p>
+        }
+        @if (isLoadingEmployees)
+        {
+            <p class="list-state" role="status" aria-live="polite">Henter medarbejdere...</p>
+        }
+        else if (!string.IsNullOrWhiteSpace(listError))
+        {
+            <p class="list-state list-error" role="alert">@listError</p>
+        }
+        else if (employees.Count == 0)
+        {
+            <p class="list-state">Der er endnu ingen medarbejdere. Opret den første med formularen ovenfor.</p>
+        }
+        else if (FilteredEmployees.Count == 0)
+        {
+            <p class="list-state">Ingen medarbejdere matcher søgningen.</p>
+        }
+        else
+        {
+            <div class="employee-table-wrap">
+                <table class="employee-table">
+                    <caption class="visually-hidden">Medarbejderoversigt</caption>
+                    <thead>
+                        <tr><th scope="col">Fornavn</th><th scope="col">Efternavn</th><th scope="col">Fødselsdato</th><th scope="col">Adresse</th><th scope="col">Handlinger</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (EmployeeListItemResponse employee in PagedEmployees)
+                        {
+                            <tr class="@(editingEmployeeId == employee.EmployeeId ? "selected-row" : string.Empty)" tabindex="0" aria-label="@($"Rediger {employee.FirstName} {employee.LastName}")" aria-current="@(editingEmployeeId == employee.EmployeeId ? "true" : null)" @onclick="() => BeginEdit(employee)" @onkeydown="args => OnRowKeyDown(args, employee)" @onkeydown:preventDefault="true">
+                                <td data-label="Fornavn">@employee.FirstName</td>
+                                <td data-label="Efternavn">@employee.LastName</td>
+                                <td data-label="Fødselsdato">@employee.BirthDate.ToString("d. MMMM yyyy", DanishCulture)</td>
+                                <td data-label="Adresse">@employee.Address</td>
+                                <td data-label="Handlinger" class="employee-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm" @onclick="() => BeginEdit(employee)" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">Rediger</button>
+                                    @if (pendingDeleteId == employee.EmployeeId)
+                                    {
+                                        <span class="delete-confirmation">Slet medarbejderen?</span>
+                                        <button type="button" class="btn btn-danger btn-sm" disabled="@isDeleting" @onclick="() => ConfirmDeleteAsync(employee)" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">Ja, slet</button>
+                                        <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelDelete" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">Annuller</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => RequestDelete(employee.EmployeeId)" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">Slet</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <nav class="pagination" aria-label="Sider i medarbejderoversigten">
+                <button type="button" class="btn btn-secondary btn-sm" disabled="@(page <= 1)" @onclick="PreviousPage">Forrige</button>
+                <span aria-live="polite">Side @(page) af @TotalPages</span>
+                <button type="button" class="btn btn-secondary btn-sm" disabled="@(page >= TotalPages)" @onclick="NextPage">Næste</button>
+            </nav>
+        }
+    </section>
+</section>

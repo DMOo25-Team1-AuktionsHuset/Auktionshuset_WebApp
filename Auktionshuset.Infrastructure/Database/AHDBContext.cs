@@ -16,6 +16,7 @@ namespace Auktionshuset.Infrastructure.Database
 
         public DbSet<AuctionHouse> AuctionHouse => Set<AuctionHouse>();
         public DbSet<Lot> Lot => Set<Lot>();
+        public DbSet<StoredLotImage> StoredLotImages => Set<StoredLotImage>();
         public DbSet<Auction> Auction => Set<Auction>();
         public DbSet<AuctionLot> AuctionLot => Set<AuctionLot>();
         public DbSet<Employee> Employee => Set<Employee>();

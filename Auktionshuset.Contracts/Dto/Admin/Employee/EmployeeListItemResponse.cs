@@ -5,5 +5,6 @@ namespace Auktionshuset.Contracts.Dto.Admin.Employee
         string FirstName,
         string LastName,
         DateOnly BirthDate,
-        string Address);
+        string Address,
+        Guid AuctionHouseId);
 }
