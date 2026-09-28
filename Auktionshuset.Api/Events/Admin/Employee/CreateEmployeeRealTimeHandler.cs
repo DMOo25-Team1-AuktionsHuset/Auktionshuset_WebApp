@@ -11,7 +11,7 @@ namespace Auktionshuset.Api.Events.Admin.Employee
     {
         public Task HandleAsync(EmployeeCreatedIntegrationEvent message, CancellationToken cancellationToken)
         {
-            var notication = new CreateEmployeeNotification(
+            var notification = new CreateEmployeeNotification(
                 EventId: message.EventId,
                 EmployeeId: message.EmployeeId,
                 AuctionHouseId: message.AuctionHouseId,

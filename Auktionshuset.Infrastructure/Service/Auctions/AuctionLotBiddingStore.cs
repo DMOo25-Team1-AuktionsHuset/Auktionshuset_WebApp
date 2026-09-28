@@ -5,13 +5,12 @@ using Auktionshuset.Domain.Entities;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using BidEntity = Auktionshuset.Domain.Entities.Bid;
-using InfrastructureDbContext =
-    Auktionshuset.Infrastructure.Data.DbContext;
 using Auktionshuset.Infrastructure.Data;
+using Auktionshuset.Infrastructure.Database;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions
 {
-    public class AuctionLotBiddingStore(InfrastructureDbContext db, TimeProvider clock) : IPlaceBidStore, ICloseAuctionLotStore
+    public class AuctionLotBiddingStore(AHDBContext db, TimeProvider clock) : IPlaceBidStore, ICloseAuctionLotStore
     {
         public async Task<PlaceBidResult> PlaceBidAsync(PlaceBidCommand command, CancellationToken cancellationToken)
         {
