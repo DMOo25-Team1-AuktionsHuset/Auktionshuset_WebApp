@@ -23,6 +23,7 @@ namespace Auktionshuset.Domain.Entities
 
         public Guid? CurrentHighestBidId { get; set; }
         public Bid? CurrentHighestBid { get; set; }
+        public bool OpenForBids { get; set; } = false;
 
         public ICollection<Bid> Bids { get; set; } = new List<Bid>();
         public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
