@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Infrastructure.Messaging
+﻿namespace Auktionshuset.Infrastructure.Messaging
 {
     internal static class RabbitMqTopology
     {
@@ -16,7 +12,7 @@ namespace Auktionshuset.Infrastructure.Messaging
 
         public static class RoutingKeys
         {
-            public const string LotCreated = 
+            public const string LotCreated =
                 "lot.created.v1";
 
             public const string LotUpdated =
@@ -25,7 +21,7 @@ namespace Auktionshuset.Infrastructure.Messaging
             public const string LotDeleted =
                 "lot.deleted.v1";
 
-            public const string AuctionCreated = 
+            public const string AuctionCreated =
                 "auction.created.v1";
 
             public const string AuctionUpdated =

@@ -15,7 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
         /// <returns>The same endpoint route builder so that further routes can be mapped.</returns>
         public static IEndpointRouteBuilder MapAuctionEndpoints(this IEndpointRouteBuilder endpoints)
         {
-            var group = endpoints
+            RouteGroupBuilder group = endpoints
                 .MapGroup("/api/auctions")
                 .WithTags("Auctions")
                 .RequireAuthorization(SecurityPolicies.CanCreateAuction);

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee {
+﻿namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
+{
     public sealed record UpdateEmployeeCommand(
       Guid EmployeeId,
       string FirstName,

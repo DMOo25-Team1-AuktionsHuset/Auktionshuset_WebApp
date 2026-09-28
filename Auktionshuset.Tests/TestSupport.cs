@@ -16,6 +16,19 @@ internal sealed class TestEmployeeRepository : IEmployeeRepository
 
     public void Add(Employee employee) => employees[employee.EmployeeId] = employee;
 
+    public Task AddAsync(Employee employee, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Add(employee);
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> DeleteAsync(Guid employeeId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(employees.Remove(employeeId));
+    }
+
     public Task<IReadOnlyList<Employee>> GetAllAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -32,9 +45,22 @@ internal sealed class TestEmployeeRepository : IEmployeeRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        employees.TryGetValue(employeeId, out var employee);
+        employees.TryGetValue(employeeId, out Employee? employee);
 
         return Task.FromResult(employee);
+    }
+
+    public Task UpdateAsync(Employee employee, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!employees.ContainsKey(employee.EmployeeId))
+        {
+            throw new KeyNotFoundException($"Employee {employee.EmployeeId} was not found.");
+        }
+
+        employees[employee.EmployeeId] = employee;
+        return Task.CompletedTask;
     }
 }
 
@@ -79,7 +105,8 @@ internal static class TestData
     public static Employee CreateEmployee(string firstName = "Mette", string lastName = "Jørgensen") => new()
     {
         EmployeeId = Guid.NewGuid(),
-        AuctionHouseId = CreateAuctionHouse(),
+        AuctionHouseId = TestData.AuctionHouseId,
+        AuctionHouse = CreateAuctionHouse(),
         FirstName = firstName,
         LastName = lastName,
         BirthDate = new DateOnly(1979, 4, 12),
@@ -103,7 +130,7 @@ internal static class TestData
     {
         var repository = new InMemoryLotRepository();
 
-        foreach (var lot in lots)
+        foreach (Lot lot in lots)
         {
             await repository.AddAsync(lot, CancellationToken.None);
         }
@@ -112,7 +139,7 @@ internal static class TestData
     }
 
     public static CreateAuctionCommand CreateCommand(
-        Guid employeeId,
+        Guid? employeeId,
         DateTime startsAt,
         DateTime endsAt,
         params AuctionLotSelection[] lots) => new(

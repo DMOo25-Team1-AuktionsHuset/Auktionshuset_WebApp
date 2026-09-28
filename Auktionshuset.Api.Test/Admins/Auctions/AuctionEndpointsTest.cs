@@ -22,21 +22,21 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Create_WithValidRequest_ReturnsCreatedWithLocation()
     {
-        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 4);
+        (TestContext? context, EmployeeRow? employee, Lot? lot) = await CreateContextAsync(lotQuantity: 4);
 
-        var result = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(employee.EmployeeId, [(lot.LotId, 2)]),
             CreateHandler(context),
             CancellationToken.None);
 
-        var created = Assert.IsType<Created<CreateAuctionResponse>>(result.Result);
+        Created<CreateAuctionResponse> created = Assert.IsType<Created<CreateAuctionResponse>>(result.Result);
         Assert.Equal(201, created.StatusCode);
         Assert.NotEqual(Guid.Empty, created.Value!.AuctionId);
         Assert.Equal(1, created.Value.LotCount);
         Assert.Equal(2, created.Value.ItemCount);
         Assert.Equal($"/api/auctions/{created.Value.AuctionId}", created.Location);
 
-        var published = Assert.Single(context.Publisher.OfType<AuctionCreatedIntegrationEvent>());
+        AuctionCreatedIntegrationEvent published = Assert.Single(context.Publisher.OfType<AuctionCreatedIntegrationEvent>());
         Assert.Equal(created.Value.AuctionId, published.AuctionId);
         Assert.Equal(created.Value.ItemCount, published.ItemCount);
     }
@@ -47,16 +47,16 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Create_WithPastStart_ReturnsValidationProblem()
     {
-        var (context, employee, _) = await CreateContextAsync();
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
 
-        var request = CreateValidRequest(employee.EmployeeId, [], startsAt: DateTime.Now.AddDays(-1));
+        CreateAuctionRequest request = CreateValidRequest(employee.EmployeeId, [], startsAt: DateTime.Now.AddDays(-1));
 
-        var result = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             request,
             CreateHandler(context),
             CancellationToken.None);
 
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("fremtiden"));
@@ -68,17 +68,36 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Create_WithUnknownEmployee_ReturnsValidationProblem()
     {
-        var (context, _, _) = await CreateContextAsync();
+        (TestContext? context, EmployeeRow _, Lot _) = await CreateContextAsync();
 
-        var result = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(Guid.NewGuid(), []),
+            CreateHandler(context),
+            CancellationToken.None);
+
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
+        Assert.Contains(
+            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
+            message => message.Contains("auktionarius"));
+    }
+
+    /// <summary>
+    /// Verifies that an auction cannot be created without its required auctionarius.
+    /// </summary>
+    [Fact]
+    public async Task Create_WithoutEmployee_ReturnsValidationProblem()
+    {
+        (TestContext? context, EmployeeRow _, Lot _) = await CreateContextAsync();
+
+        Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
+            CreateValidRequest(null, []),
             CreateHandler(context),
             CancellationToken.None);
 
         var problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
-            message => message.Contains("auktionarius"));
+            message => message.Contains("tilknyttet auktionarius"));
     }
 
     /// <summary>
@@ -87,14 +106,14 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Create_WithQuantityAboveStock_ReturnsValidationProblem()
     {
-        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 2);
+        (TestContext? context, EmployeeRow? employee, Lot? lot) = await CreateContextAsync(lotQuantity: 2);
 
-        var result = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(employee.EmployeeId, [(lot.LotId, 5)]),
             CreateHandler(context),
             CancellationToken.None);
 
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("kun 2 stk."));
@@ -106,10 +125,10 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Create_WithEndBeforeStart_ReturnsValidationProblem()
     {
-        var (context, employee, _) = await CreateContextAsync();
-        var startsAt = DateTime.Now.AddDays(3);
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
+        DateTime startsAt = DateTime.Now.AddDays(3);
 
-        var result = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(
                 employee.EmployeeId,
                 [],
@@ -118,7 +137,7 @@ public class AuctionEndpointsTest
             CreateHandler(context),
             CancellationToken.None);
 
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("efter starttidspunktet"));
@@ -131,14 +150,14 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Create_WithDuplicateLot_ReturnsValidationProblem()
     {
-        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 4);
+        (TestContext? context, EmployeeRow? employee, Lot? lot) = await CreateContextAsync(lotQuantity: 4);
 
-        var result = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(employee.EmployeeId, [(lot.LotId, 1), (lot.LotId, 1)]),
             CreateHandler(context),
             CancellationToken.None);
 
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("mere end én gang"));
@@ -151,22 +170,43 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task GetAuctions_ReturnsEveryAuctionWithTotals()
     {
-        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 5);
+        (TestContext? context, EmployeeRow? employee, Lot? lot) = await CreateContextAsync(lotQuantity: 5);
 
         await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(employee.EmployeeId, [(lot.LotId, 3)]),
             CreateHandler(context),
             CancellationToken.None);
 
-        var result = await GetAuctionsEndpoint.HandleGetAllAsync(
+        Ok<IReadOnlyList<AuctionListItemResponse>> result = await GetAuctionsEndpoint.HandleGetAllAsync(
             new GetAuctionsHandler(context.Auctions, context.Employees),
             CancellationToken.None);
 
-        var row = Assert.Single(result.Value!);
+        AuctionListItemResponse row = Assert.Single(result.Value!);
         Assert.Equal(1, row.LotCount);
         Assert.Equal(3, row.ItemCount);
         Assert.Equal(employee.FullName, row.EmployeeName);
         Assert.Equal(AuctionStatuses.Upcoming, row.Status);
+    }
+
+    /// <summary>
+    /// Verifies that a request without an auctionarius is rejected and is not listed.
+    /// </summary>
+    [Fact]
+    public async Task GetAuctions_WithoutEmployee_DoesNotCreateAnAuction()
+    {
+        (TestContext? context, EmployeeRow _, Lot _) = await CreateContextAsync();
+
+        var createResult = await CreateAuctionEndpoint.HandleAsync(
+            CreateValidRequest(null, []),
+            CreateHandler(context),
+            CancellationToken.None);
+        Assert.IsType<ValidationProblem>(createResult.Result);
+
+        Ok<IReadOnlyList<AuctionListItemResponse>> result = await GetAuctionsEndpoint.HandleGetAllAsync(
+            new GetAuctionsHandler(context.Auctions, context.Employees),
+            CancellationToken.None);
+
+        Assert.Empty(result.Value!);
     }
 
     /// <summary>
@@ -175,7 +215,7 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task GetAuctions_WithLotImage_ReturnsRelativeImageUrl()
     {
-        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 1);
+        (TestContext? context, EmployeeRow? employee, Lot? lot) = await CreateContextAsync(lotQuantity: 1);
         lot.ImageFileName = "billede.png";
         await context.Lots.UpdateAsync(lot, CancellationToken.None);
 
@@ -184,7 +224,7 @@ public class AuctionEndpointsTest
             CreateHandler(context),
             CancellationToken.None);
 
-        var result = await GetAuctionsEndpoint.HandleGetAllAsync(
+        Ok<IReadOnlyList<AuctionListItemResponse>> result = await GetAuctionsEndpoint.HandleGetAllAsync(
             new GetAuctionsHandler(context.Auctions, context.Employees),
             CancellationToken.None);
 
@@ -197,25 +237,25 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task GetAuction_ReturnsDetailOrNotFound()
     {
-        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 4);
+        (TestContext? context, EmployeeRow? employee, Lot? lot) = await CreateContextAsync(lotQuantity: 4);
         var handler = new GetAuctionsHandler(context.Auctions, context.Employees);
 
-        var created = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> created = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(employee.EmployeeId, [(lot.LotId, 4)]),
             CreateHandler(context),
             CancellationToken.None);
 
-        var auctionId = Assert.IsType<Created<CreateAuctionResponse>>(created.Result).Value!.AuctionId;
+        Guid auctionId = Assert.IsType<Created<CreateAuctionResponse>>(created.Result).Value!.AuctionId;
 
-        var found = await GetAuctionsEndpoint.HandleGetByIdAsync(auctionId, handler, CancellationToken.None);
-        var detail = Assert.IsType<Ok<AuctionDetailResponse>>(found.Result).Value!;
+        Results<Ok<AuctionDetailResponse>, NotFound> found = await GetAuctionsEndpoint.HandleGetByIdAsync(auctionId, handler, CancellationToken.None);
+        AuctionDetailResponse detail = Assert.IsType<Ok<AuctionDetailResponse>>(found.Result).Value!;
 
         Assert.Equal(auctionId, detail.AuctionId);
         Assert.Equal(1, detail.LotCount);
         Assert.Equal(4, detail.ItemCount);
         Assert.Equal(lot.LotId, Assert.Single(detail.Lots).LotId);
 
-        var missing = await GetAuctionsEndpoint.HandleGetByIdAsync(Guid.NewGuid(), handler, CancellationToken.None);
+        Results<Ok<AuctionDetailResponse>, NotFound> missing = await GetAuctionsEndpoint.HandleGetByIdAsync(Guid.NewGuid(), handler, CancellationToken.None);
         Assert.IsType<NotFound>(missing.Result);
     }
 
@@ -225,22 +265,47 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Update_WithValidRequest_ReturnsOk()
     {
-        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 6);
-        var auctionId = await CreateAuctionAsync(context, employee, (lot.LotId, 1));
+        (TestContext? context, EmployeeRow? employee, Lot? lot) = await CreateContextAsync(lotQuantity: 6);
+        Guid auctionId = await CreateAuctionAsync(context, employee, (lot.LotId, 1));
 
-        var result = await UpdateAuctionEndpoint.HandleAsync(
+        Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
             auctionId,
             CreateValidUpdateRequest(employee.EmployeeId, [(lot.LotId, 5)]),
             new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
             CancellationToken.None);
 
-        var ok = Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
+        Ok<UpdateAuctionResponse> ok = Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
         Assert.Equal(1, ok.Value!.LotCount);
         Assert.Equal(5, ok.Value.ItemCount);
 
-        var published = Assert.Single(context.Publisher.OfType<AuctionUpdatedIntegrationEvent>());
+        AuctionUpdatedIntegrationEvent published = Assert.Single(context.Publisher.OfType<AuctionUpdatedIntegrationEvent>());
         Assert.Equal(auctionId, published.AuctionId);
         Assert.Equal(5, published.ItemCount);
+    }
+
+    /// <summary>
+    /// Verifies that an auction cannot be updated without its required auctionarius.
+    /// </summary>
+    [Fact]
+    public async Task Update_WithoutEmployee_ReturnsValidationProblem()
+    {
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
+        Guid auctionId = await CreateAuctionAsync(context, employee);
+
+        Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
+            auctionId,
+            CreateValidUpdateRequest(null, []),
+            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
+            CancellationToken.None);
+
+        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        Assert.Contains(
+            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
+            message => message.Contains("tilknyttet auktionarius"));
+
+        Auction? stored = await context.Auctions.GetByIdAsync(auctionId, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Equal(employee.EmployeeId, stored.EmployeeId);
     }
 
     /// <summary>
@@ -249,9 +314,9 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Update_WithUnknownAuction_ReturnsNotFound()
     {
-        var (context, employee, _) = await CreateContextAsync();
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
 
-        var result = await UpdateAuctionEndpoint.HandleAsync(
+        Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
             Guid.NewGuid(),
             CreateValidUpdateRequest(employee.EmployeeId, []),
             new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
@@ -266,23 +331,23 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Update_WithEndBeforeStart_ReturnsValidationProblem()
     {
-        var (context, employee, _) = await CreateContextAsync();
-        var auctionId = await CreateAuctionAsync(context, employee);
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
+        Guid auctionId = await CreateAuctionAsync(context, employee);
 
-        var startsAt = DateTime.Now.AddDays(6);
-        var request = CreateValidUpdateRequest(
+        DateTime startsAt = DateTime.Now.AddDays(6);
+        UpdateAuctionRequest request = CreateValidUpdateRequest(
             employee.EmployeeId,
             [],
             startsAt: startsAt,
             endsAt: startsAt.AddMinutes(-30));
 
-        var result = await UpdateAuctionEndpoint.HandleAsync(
+        Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
             auctionId,
             request,
             new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
             CancellationToken.None);
 
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("efter starttidspunktet"));
@@ -294,12 +359,12 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Delete_ReturnsNoContentAndThenNotFound()
     {
-        var (context, employee, _) = await CreateContextAsync();
-        var auctionId = await CreateAuctionAsync(context, employee);
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
+        Guid auctionId = await CreateAuctionAsync(context, employee);
         var handler = new DeleteAuctionHandler(context.Auctions, context.Publisher);
 
-        var deleted = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
-        var repeated = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
+        Results<NoContent, NotFound> deleted = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
+        Results<NoContent, NotFound> repeated = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
 
         Assert.IsType<NoContent>(deleted.Result);
         Assert.IsType<NotFound>(repeated.Result);
@@ -312,15 +377,15 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task Delete_WithExistingAuction_PublishesDeletedEvent()
     {
-        var (context, employee, _) = await CreateContextAsync();
-        var auctionId = await CreateAuctionAsync(context, employee);
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
+        Guid auctionId = await CreateAuctionAsync(context, employee);
 
         await DeleteAuctionEndpoint.HandleAsync(
             auctionId,
             new DeleteAuctionHandler(context.Auctions, context.Publisher),
             CancellationToken.None);
 
-        var published = Assert.Single(context.Publisher.Published.OfType<AuctionDeletedIntegrationEvent>());
+        AuctionDeletedIntegrationEvent published = Assert.Single(context.Publisher.Published.OfType<AuctionDeletedIntegrationEvent>());
         Assert.Equal(auctionId, published.AuctionId);
     }
 
@@ -331,7 +396,7 @@ public class AuctionEndpointsTest
     [Fact]
     public async Task GetAuctions_WithStoredAuctionThatWasNotCreatedThroughEndpoint_ListsIt()
     {
-        var (context, employee, _) = await CreateContextAsync();
+        (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
 
         await context.Auctions.AddAsync(
             new Auction
@@ -339,15 +404,15 @@ public class AuctionEndpointsTest
                 AuctionId = Guid.NewGuid(),
                 Name = "Gemt i lageret",
                 StartsAt = DateTime.Now.AddDays(3),
-                EndsAt = DateTime.Now.AddDays(4),
+                EndedAt = DateTime.Now.AddDays(4),
                 EmployeeId = employee.EmployeeId,
-                AuctionHouseId = Guid.NewGuid(),
+                AuctionHouseId = employee.AuctionHouseId,
                 AuctionStatus = AuctionStatuses.Upcoming
             },
             [],
             CancellationToken.None);
 
-        var result = await GetAuctionsEndpoint.HandleGetAllAsync(
+        Ok<IReadOnlyList<AuctionListItemResponse>> result = await GetAuctionsEndpoint.HandleGetAllAsync(
             new GetAuctionsHandler(context.Auctions, context.Employees),
             CancellationToken.None);
 
@@ -362,7 +427,7 @@ public class AuctionEndpointsTest
         EmployeeRow employee,
         params (Guid LotId, int Quantity)[] lots)
     {
-        var created = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> created = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(employee.EmployeeId, lots),
             CreateHandler(context),
             CancellationToken.None);
@@ -371,30 +436,30 @@ public class AuctionEndpointsTest
     }
 
     private static CreateAuctionRequest CreateValidRequest(
-        Guid employeeId,
+        Guid? employeeId,
         (Guid LotId, int Quantity)[] lots,
         DateTime? startsAt = null,
         DateTime? endsAt = null) => new()
-    {
-        Name = "Forårsauktion",
-        StartsAt = startsAt ?? DateTime.Now.AddDays(3),
-        EndsAt = endsAt ?? DateTime.Now.AddDays(4),
-        EmployeeId = employeeId,
-        Lots = [.. lots.Select(lot => new AuctionLotRequest(lot.LotId, lot.Quantity))]
-    };
+        {
+            Name = "Forårsauktion",
+            StartsAt = startsAt ?? DateTime.Now.AddDays(3),
+            EndsAt = endsAt ?? DateTime.Now.AddDays(4),
+            EmployeeId = employeeId,
+            Lots = [.. lots.Select(lot => new AuctionLotRequest(lot.LotId, lot.Quantity))]
+        };
 
     private static UpdateAuctionRequest CreateValidUpdateRequest(
-        Guid employeeId,
+        Guid? employeeId,
         (Guid LotId, int Quantity)[] lots,
         DateTime? startsAt = null,
         DateTime? endsAt = null) => new()
-    {
-        Name = "Efterårsauktion",
-        StartsAt = startsAt ?? DateTime.Now.AddDays(6),
-        EndsAt = endsAt ?? DateTime.Now.AddDays(7),
-        EmployeeId = employeeId,
-        Lots = [.. lots.Select(lot => new AuctionLotRequest(lot.LotId, lot.Quantity))]
-    };
+        {
+            Name = "Efterårsauktion",
+            StartsAt = startsAt ?? DateTime.Now.AddDays(6),
+            EndsAt = endsAt ?? DateTime.Now.AddDays(7),
+            EmployeeId = employeeId,
+            Lots = [.. lots.Select(lot => new AuctionLotRequest(lot.LotId, lot.Quantity))]
+        };
 
     /// <summary>
     /// Builds the repositories and a seeded genstand that the endpoint tests share.
@@ -404,7 +469,10 @@ public class AuctionEndpointsTest
     {
         var employees = new InMemoryEmployeeRepository();
         var seeded = (await employees.GetAllAsync(CancellationToken.None))[0];
-        var employee = new EmployeeRow(seeded.EmployeeId, $"{seeded.FirstName} {seeded.LastName}".Trim());
+        var employee = new EmployeeRow(
+            seeded.EmployeeId,
+            seeded.AuctionHouseId,
+            $"{seeded.FirstName} {seeded.LastName}".Trim());
 
         var lots = new InMemoryLotRepository();
         var lot = new Lot
@@ -416,7 +484,7 @@ public class AuctionEndpointsTest
             EstimatedValue = 500m,
             Description = "En genstand",
             Tags = ["træ"],
-            AuctionHouseId = Guid.NewGuid()
+            AuctionHouseId = employee.AuctionHouseId
         };
 
         await lots.AddAsync(lot, CancellationToken.None);
@@ -427,7 +495,7 @@ public class AuctionEndpointsTest
             lot);
     }
 
-    private sealed record EmployeeRow(Guid EmployeeId, string FullName);
+    private sealed record EmployeeRow(Guid EmployeeId, Guid AuctionHouseId, string FullName);
 
     private sealed record TestContext(
         InMemoryAuctionRepository Auctions,

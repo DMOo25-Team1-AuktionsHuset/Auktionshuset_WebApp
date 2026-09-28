@@ -1,5 +1,6 @@
 using Xunit;
 using Auktionshuset.Infrastructure.Service;
+using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Tests;
 
@@ -11,7 +12,7 @@ public class InMemoryEmployeeRepositoryTests
     [Fact]
     public async Task GetAllAsync_IsSeededWithEmployees()
     {
-        var employees = await new InMemoryEmployeeRepository().GetAllAsync(CancellationToken.None);
+        IReadOnlyList<Employee> employees = await new InMemoryEmployeeRepository().GetAllAsync(CancellationToken.None);
 
         Assert.NotEmpty(employees);
         Assert.All(employees, employee => Assert.False(string.IsNullOrWhiteSpace(employee.FirstName)));
@@ -24,9 +25,9 @@ public class InMemoryEmployeeRepositoryTests
     [Fact]
     public async Task GetAllAsync_OrdersByFirstName()
     {
-        var employees = await new InMemoryEmployeeRepository().GetAllAsync(CancellationToken.None);
+        IReadOnlyList<Employee> employees = await new InMemoryEmployeeRepository().GetAllAsync(CancellationToken.None);
 
-        var expected = employees
+        string[] expected = employees
             .Select(employee => employee.FirstName)
             .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
@@ -41,9 +42,9 @@ public class InMemoryEmployeeRepositoryTests
     public async Task GetByIdAsync_WithSeededEmployee_ReturnsIt()
     {
         var repository = new InMemoryEmployeeRepository();
-        var seeded = (await repository.GetAllAsync(CancellationToken.None))[0];
+        Employee seeded = (await repository.GetAllAsync(CancellationToken.None))[0];
 
-        var employee = await repository.GetByIdAsync(seeded.EmployeeId, CancellationToken.None);
+        Employee? employee = await repository.GetByIdAsync(seeded.EmployeeId, CancellationToken.None);
 
         Assert.NotNull(employee);
         Assert.Equal(seeded.EmployeeId, employee.EmployeeId);
@@ -55,7 +56,7 @@ public class InMemoryEmployeeRepositoryTests
     [Fact]
     public async Task GetByIdAsync_WithUnknownId_ReturnsNull()
     {
-        var employee = await new InMemoryEmployeeRepository().GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
+        Employee? employee = await new InMemoryEmployeeRepository().GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
 
         Assert.Null(employee);
     }

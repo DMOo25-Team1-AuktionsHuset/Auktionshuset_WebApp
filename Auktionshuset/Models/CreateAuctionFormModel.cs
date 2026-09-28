@@ -4,8 +4,8 @@ using System.Globalization;
 namespace Auktionshuset.Models;
 
 /// <summary>
-/// The values captured by the auction form. Dates and times are kept apart because the browser
-/// inputs for them are separate fields.
+/// The values captured by the auction form. An auction runs on a single calendar date, so the date is
+/// kept apart from the start and end times and both moments are combined from the same date.
 /// </summary>
 public sealed class CreateAuctionFormModel : IValidatableObject
 {
@@ -25,13 +25,13 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     [RegularExpression(TimePattern, ErrorMessage = "Starttidspunktet skal angives som tt:mm.")]
     public string StartTime { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Vælg en slutdato.")]
-    public DateTime? EndDate { get; set; }
-
     [Required(ErrorMessage = "Angiv et sluttidspunkt.")]
     [RegularExpression(TimePattern, ErrorMessage = "Sluttidspunktet skal angives som tt:mm.")]
     public string EndTime { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the required identifier of the auctionarius assigned to the auction.
+    /// </summary>
     [Required(ErrorMessage = "Vælg en auktionarius.")]
     public Guid? EmployeeId { get; set; }
 
@@ -44,7 +44,7 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (RequireFutureStart
-            && TryCombine(StartDate, StartTime, out var upcomingStart)
+            && TryCombine(StartDate, StartTime, out DateTime upcomingStart)
             && upcomingStart <= DateTime.Now)
         {
             yield return new ValidationResult(
@@ -52,13 +52,14 @@ public sealed class CreateAuctionFormModel : IValidatableObject
                 [nameof(StartDate)]);
         }
 
-        if (TryCombine(StartDate, StartTime, out var start)
-            && TryCombine(EndDate, EndTime, out var end)
+        // An auction runs on one date, so the end moment is the start date plus the end time.
+        if (TryCombine(StartDate, StartTime, out DateTime start)
+            && TryCombine(StartDate, EndTime, out DateTime end)
             && end <= start)
         {
             yield return new ValidationResult(
-                "Sluttidspunktet skal ligge efter starttidspunktet.",
-                [nameof(EndDate)]);
+                "Sluttidspunktet skal ligge efter starttidspunktet på den valgte dato. Auktioner hen over midnat understøttes ikke.",
+                [nameof(EndTime)]);
         }
     }
 
@@ -66,20 +67,20 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     /// Combines the start date and start time into a single moment.
     /// </summary>
     /// <returns>The start moment, or <see langword="null"/> when the fields are not filled in yet.</returns>
-    public DateTime? GetStartsAt() => TryCombine(StartDate, StartTime, out var value) ? value : null;
+    public DateTime? GetStartsAt() => TryCombine(StartDate, StartTime, out DateTime value) ? value : null;
 
     /// <summary>
-    /// Combines the end date and end time into a single moment.
+    /// Combines the start date and end time into a single moment, since an auction lasts one date.
     /// </summary>
     /// <returns>The end moment, or <see langword="null"/> when the fields are not filled in yet.</returns>
-    public DateTime? GetEndsAt() => TryCombine(EndDate, EndTime, out var value) ? value : null;
+    public DateTime? GetEndsAt() => TryCombine(StartDate, EndTime, out DateTime value) ? value : null;
 
     private static bool TryCombine(DateTime? date, string time, out DateTime value)
     {
         value = default;
 
         if (date is null
-            || !TimeOnly.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+            || !TimeOnly.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly parsed))
         {
             return false;
         }

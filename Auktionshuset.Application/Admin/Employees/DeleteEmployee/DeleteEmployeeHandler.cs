@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 
 namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
@@ -19,7 +16,7 @@ namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
             DeleteEmployeeCommand command,
             CancellationToken cancellationToken)
         {
-            var deleted = await employeeRepository.DeleteAsync(
+            bool deleted = await employeeRepository.DeleteAsync(
                 command.EmployeeId,
                 cancellationToken);
 

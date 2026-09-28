@@ -3,9 +3,12 @@ using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee {
-    public static class UpdateEmployeeEndpoint {
-        public static RouteGroupBuilder MapUpdateEmployee(this RouteGroupBuilder group) {
+namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
+{
+    public static class UpdateEmployeeEndpoint
+    {
+        public static RouteGroupBuilder MapUpdateEmployee(this RouteGroupBuilder group)
+        {
             group.MapPut("/{employeeId:guid}", HandleAsync)
                 .WithName("UpdateEmployee")
                 .WithSummary("Updates an employee")
@@ -20,7 +23,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee {
             [FromRoute] Guid employeeId,
             [FromBody] UpdateEmployeeRequest request,
             [FromServices] UpdateEmployeeHandler handler,
-            CancellationToken cancellationToken) 
+            CancellationToken cancellationToken)
         {
             var command = new UpdateEmployeeCommand(
                 EmployeeId: employeeId,
@@ -30,7 +33,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee {
                 Address: request.Address.Trim(),
                 AuctionHouseId: request.AuctionHouseId);
 
-            var result = await handler.HandleAsync(command, cancellationToken);
+            UpdateEmployeeResult? result = await handler.HandleAsync(command, cancellationToken);
 
             return result == null ? TypedResults.NotFound() : TypedResults.Ok(new UpdateEmployeeResponse(result.EmployeeId));
         }

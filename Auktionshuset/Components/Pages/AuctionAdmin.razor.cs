@@ -84,20 +84,23 @@ public partial class AuctionAdmin : IDisposable
     {
         get
         {
-            var term = pickerSearchTerm.Trim();
+            string term = pickerSearchTerm.Trim();
 
-            if (term.Length == 0)
-            {
-                return lots;
-            }
-
-            return lots
-                .Where(lot =>
+            IEnumerable<LotListItemResponse> matching = term.Length == 0
+                ? lots.AsEnumerable()
+                : lots.Where(lot =>
                     lot.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
-                    || lot.Category.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    || lot.Category.Contains(term, StringComparison.OrdinalIgnoreCase));
+
+            // Valgte genstande står øverst, og begge grupper sorteres alfabetisk på navn.
+            return matching
+                .OrderByDescending(lot => selectedLots.ContainsKey(lot.LotId))
+                .ThenBy(lot => lot.Name, StringComparer.Create(DanishCulture, ignoreCase: true))
                 .ToArray();
         }
     }
+
+    private bool HasPickerSearch => pickerSearchTerm.Trim().Length > 0;
 
     private IReadOnlyList<SelectedLot> SelectedLotLines =>
         selectedLots.Values
@@ -113,8 +116,8 @@ public partial class AuctionAdmin : IDisposable
     {
         get
         {
-            var startsAt = model.GetStartsAt();
-            var endsAt = model.GetEndsAt();
+            DateTime? startsAt = model.GetStartsAt();
+            DateTime? endsAt = model.GetEndsAt();
 
             if (startsAt is null || endsAt is null)
             {
@@ -129,8 +132,8 @@ public partial class AuctionAdmin : IDisposable
     {
         get
         {
-            var term = auctionSearchTerm.Trim();
-            var filtered = auctions.AsEnumerable();
+            string term = auctionSearchTerm.Trim();
+            IEnumerable<AuctionListItemResponse> filtered = auctions.AsEnumerable();
 
             if (statusFilter != AllStatusesFilter)
             {
@@ -235,7 +238,7 @@ public partial class AuctionAdmin : IDisposable
             return;
         }
 
-        var quantityError = ValidateQuantities();
+        string? quantityError = ValidateQuantities();
 
         if (quantityError is not null)
         {
@@ -244,12 +247,12 @@ public partial class AuctionAdmin : IDisposable
             return;
         }
 
-        var startsAt = model.GetStartsAt();
-        var endsAt = model.GetEndsAt();
+        DateTime? startsAt = model.GetStartsAt();
+        DateTime? endsAt = model.GetEndsAt();
 
-        if (startsAt is null || endsAt is null || model.EmployeeId is null)
+        if (startsAt is null || endsAt is null)
         {
-            statusMessage = "Udfyld dato, tid og auktionarius, før auktionen gemmes.";
+            statusMessage = "Udfyld startdato, starttid og sluttid, før auktionen gemmes.";
             submissionSucceeded = false;
             return;
         }
@@ -260,7 +263,7 @@ public partial class AuctionAdmin : IDisposable
 
         try
         {
-            var requestLots = selectedLots
+            AuctionLotRequest[] requestLots = selectedLots
                 .Select(entry => new AuctionLotRequest(entry.Key, entry.Value.Quantity))
                 .ToArray();
 
@@ -281,7 +284,7 @@ public partial class AuctionAdmin : IDisposable
             }
             else
             {
-                var response = await AuctionService.CreateAsync(new CreateAuctionRequest
+                CreateAuctionResponse response = await AuctionService.CreateAsync(new CreateAuctionRequest
                 {
                     Name = model.Name.Trim(),
                     StartsAt = startsAt,
@@ -327,7 +330,7 @@ public partial class AuctionAdmin : IDisposable
     {
         try
         {
-            var detail = await AuctionService.GetByIdAsync(auction.AuctionId);
+            AuctionDetailResponse? detail = await AuctionService.GetByIdAsync(auction.AuctionId);
 
             if (detail is null)
             {
@@ -344,9 +347,8 @@ public partial class AuctionAdmin : IDisposable
                 Name = detail.Name,
                 StartDate = detail.StartsAt.Date,
                 StartTime = detail.StartsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EndDate = detail.EndsAt.Date,
-                EndTime = detail.EndsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EmployeeId = detail.EmployeeId == Guid.Empty ? null : detail.EmployeeId,
+                EndTime = detail.EndsAt?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
+                EmployeeId = detail.EmployeeId,
                 RequireFutureStart = detail.StartsAt > DateTime.Now
             };
 
@@ -354,9 +356,9 @@ public partial class AuctionAdmin : IDisposable
 
             selectedLots.Clear();
 
-            foreach (var line in detail.Lots)
+            foreach (AuctionLotResponse line in detail.Lots)
             {
-                var available = lots.FirstOrDefault(lot => lot.LotId == line.LotId)?.Quantity;
+                int? available = lots.FirstOrDefault(lot => lot.LotId == line.LotId)?.Quantity;
                 selectedLots[line.LotId] = new SelectedLot(line.Name, line.Quantity, available);
             }
 
@@ -405,28 +407,13 @@ public partial class AuctionAdmin : IDisposable
     {
         if (args.Value is true)
         {
-            selectedLots[lot.LotId] = new SelectedLot(lot.Name, 1, lot.Quantity);
+            // Hele genstandslinjen tilføjes, så antallet følger genstandens lagerantal.
+            selectedLots[lot.LotId] = new SelectedLot(lot.Name, lot.Quantity, lot.Quantity);
         }
         else
         {
             selectedLots.Remove(lot.LotId);
         }
-    }
-
-    private void SetQuantity(LotListItemResponse lot, ChangeEventArgs args)
-    {
-        if (!selectedLots.TryGetValue(lot.LotId, out var current))
-        {
-            return;
-        }
-
-        var text = Convert.ToString(args.Value, CultureInfo.InvariantCulture);
-
-        var quantity = int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
-            ? parsed
-            : 1;
-
-        selectedLots[lot.LotId] = current with { Quantity = Math.Clamp(quantity, 1, Math.Max(1, lot.Quantity)) };
     }
 
     private void ClearSelection() => selectedLots.Clear();
@@ -437,14 +424,14 @@ public partial class AuctionAdmin : IDisposable
     /// <returns>A Danish error message, or <see langword="null"/> when every quantity is valid.</returns>
     private string? ValidateQuantities()
     {
-        foreach (var (lotId, line) in selectedLots)
+        foreach ((Guid lotId, SelectedLot? line) in selectedLots)
         {
             if (line.Quantity < 1)
             {
                 return $"Antallet for \"{line.Name}\" skal være mindst 1.";
             }
 
-            var available = line.Available
+            int? available = line.Available
                 ?? lots.FirstOrDefault(lot => lot.LotId == lotId)?.Quantity;
 
             if (available is { } stock && line.Quantity > stock)
@@ -627,7 +614,7 @@ public partial class AuctionAdmin : IDisposable
 
     private static string DeriveStatus(DateTime startsAt, DateTime endsAt)
     {
-        var now = DateTime.Now;
+        DateTime now = DateTime.Now;
 
         if (now < startsAt)
         {

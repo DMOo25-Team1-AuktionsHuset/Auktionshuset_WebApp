@@ -12,26 +12,45 @@ namespace Auktionshuset.Api.Test.Admins.Lots;
 
 public class LotImageEndpointsTest
 {
+    [Fact]
+    public async Task Get_WithStoredImage_ReturnsBytesAndContentType()
+    {
+        byte[] bytes = PngBytes();
+        var store = new FakeLotImageStore { NextImage = new LotImageContent(bytes, "image/png") };
+        IResult result = await LotImageEndpoints.HandleGetAsync("abc123.png", store, CancellationToken.None);
+        var file = Assert.IsType<FileContentHttpResult>(result);
+        Assert.Equal("image/png", file.ContentType);
+        Assert.Equal(bytes, file.FileContents);
+    }
+
+    [Fact]
+    public async Task Get_WithoutStoredImage_ReturnsNotFound()
+    {
+        IResult result = await LotImageEndpoints.HandleGetAsync(
+            "missing.png", new FakeLotImageStore(), CancellationToken.None);
+        Assert.IsType<NotFound>(result);
+    }
+
     /// <summary>
     /// Verifies that a valid upload returns the stored image URL.
     /// </summary>
     [Fact]
     public async Task Upload_WithValidImage_ReturnsImageUrl()
     {
-        var lot = CreateLot();
-        var repository = await CreateRepositoryAsync(lot);
+        Lot lot = CreateLot();
+        InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var handler = new UploadLotImageHandler(
             repository,
             new FakeLotImageStore { NextFileName = "abc123.png" },
             new RecordingEventPublisher());
 
-        var result = await LotImageEndpoints.HandleUploadAsync(
+        Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
             CreateMultipartRequest(PngBytes(), "min-genstand.png", "image/png"),
             handler,
             CancellationToken.None);
 
-        var ok = Assert.IsType<Ok<LotImageResponse>>(result.Result);
+        Ok<LotImageResponse> ok = Assert.IsType<Ok<LotImageResponse>>(result.Result);
         Assert.Equal(lot.LotId, ok.Value!.LotId);
         Assert.Equal("/uploads/lots/abc123.png", ok.Value.ImageUrl);
     }
@@ -42,10 +61,10 @@ public class LotImageEndpointsTest
     [Fact]
     public async Task Upload_WithUnknownLot_ReturnsNotFound()
     {
-        var repository = await CreateRepositoryAsync();
+        InMemoryLotRepository repository = await CreateRepositoryAsync();
         var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
-        var result = await LotImageEndpoints.HandleUploadAsync(
+        Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             Guid.NewGuid(),
             CreateMultipartRequest(PngBytes(), "billede.png", "image/png"),
             handler,
@@ -60,11 +79,11 @@ public class LotImageEndpointsTest
     [Fact]
     public async Task Upload_WithoutFile_ReturnsValidationProblem()
     {
-        var lot = CreateLot();
-        var repository = await CreateRepositoryAsync(lot);
+        Lot lot = CreateLot();
+        InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
-        var result = await LotImageEndpoints.HandleUploadAsync(
+        Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
             CreateMultipartRequest(content: null, fileName: null, contentType: null),
             handler,
@@ -79,15 +98,15 @@ public class LotImageEndpointsTest
     [Fact]
     public async Task Upload_WithoutMultipartContent_ReturnsValidationProblem()
     {
-        var lot = CreateLot();
-        var repository = await CreateRepositoryAsync(lot);
+        Lot lot = CreateLot();
+        InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
         var context = new DefaultHttpContext();
         context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream("{}"u8.ToArray());
 
-        var result = await LotImageEndpoints.HandleUploadAsync(
+        Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
             context.Request,
             handler,
@@ -102,12 +121,12 @@ public class LotImageEndpointsTest
     [Fact]
     public async Task Upload_WithOversizedFile_ReturnsValidationProblem()
     {
-        var lot = CreateLot();
-        var repository = await CreateRepositoryAsync(lot);
+        Lot lot = CreateLot();
+        InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var imageStore = new FakeLotImageStore();
         var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
 
-        var result = await LotImageEndpoints.HandleUploadAsync(
+        Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
             CreateMultipartRequest(
                 new byte[checked((int)LotImageValidator.MaxSizeInBytes + 1)],
@@ -126,12 +145,12 @@ public class LotImageEndpointsTest
     [Fact]
     public async Task Upload_WithUnsupportedImageContent_ReturnsValidationProblem()
     {
-        var lot = CreateLot();
-        var repository = await CreateRepositoryAsync(lot);
+        Lot lot = CreateLot();
+        InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var imageStore = new FakeLotImageStore();
         var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
 
-        var result = await LotImageEndpoints.HandleUploadAsync(
+        Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
             CreateMultipartRequest([0x01, 0x02, 0x03, 0x04], "looks-like.png", "image/png"),
             handler,
@@ -147,13 +166,13 @@ public class LotImageEndpointsTest
     [Fact]
     public async Task Remove_WithStoredImage_ReturnsEmptyImageUrl()
     {
-        var lot = CreateLot(imageFileName: "billede.jpg");
-        var repository = await CreateRepositoryAsync(lot);
+        Lot lot = CreateLot(imageFileName: "billede.jpg");
+        InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
-        var result = await LotImageEndpoints.HandleRemoveAsync(lot.LotId, handler, CancellationToken.None);
+        Results<Ok<LotImageResponse>, NotFound> result = await LotImageEndpoints.HandleRemoveAsync(lot.LotId, handler, CancellationToken.None);
 
-        var ok = Assert.IsType<Ok<LotImageResponse>>(result.Result);
+        Ok<LotImageResponse> ok = Assert.IsType<Ok<LotImageResponse>>(result.Result);
         Assert.Null(ok.Value!.ImageUrl);
     }
 
@@ -163,10 +182,10 @@ public class LotImageEndpointsTest
     [Fact]
     public async Task Remove_WithUnknownLot_ReturnsNotFound()
     {
-        var repository = await CreateRepositoryAsync();
+        InMemoryLotRepository repository = await CreateRepositoryAsync();
         var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
 
-        var result = await LotImageEndpoints.HandleRemoveAsync(Guid.NewGuid(), handler, CancellationToken.None);
+        Results<Ok<LotImageResponse>, NotFound> result = await LotImageEndpoints.HandleRemoveAsync(Guid.NewGuid(), handler, CancellationToken.None);
 
         Assert.IsType<NotFound>(result.Result);
     }
@@ -175,7 +194,7 @@ public class LotImageEndpointsTest
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result,
         string expectedFragment)
     {
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains(expectedFragment));
@@ -199,7 +218,7 @@ public class LotImageEndpointsTest
             multipart.Add(new StringContent("tom"), "beskrivelse");
         }
 
-        var body = multipart.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+        byte[] body = multipart.ReadAsByteArrayAsync().GetAwaiter().GetResult();
 
         var context = new DefaultHttpContext();
         context.Request.ContentType = multipart.Headers.ContentType!.ToString();
@@ -232,7 +251,7 @@ public class LotImageEndpointsTest
     {
         var repository = new InMemoryLotRepository();
 
-        foreach (var lot in lots)
+        foreach (Lot lot in lots)
         {
             await repository.AddAsync(lot, CancellationToken.None);
         }
@@ -246,7 +265,11 @@ public class LotImageEndpointsTest
     private sealed class FakeLotImageStore : ILotImageStore
     {
         public string NextFileName { get; init; } = "genereret.png";
+        public LotImageContent? NextImage { get; init; }
         public List<string> Deleted { get; } = [];
+
+        public Task<LotImageContent?> GetAsync(string fileName, CancellationToken cancellationToken) =>
+            Task.FromResult(NextImage);
 
         public Task<string> SaveAsync(Stream content, string extension, CancellationToken cancellationToken) =>
             Task.FromResult(NextFileName);

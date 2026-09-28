@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 
@@ -17,11 +16,11 @@ public sealed class EmployeeService(HttpClient httpClient)
     public async Task<IReadOnlyList<EmployeeListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync("api/employee", cancellationToken);
+        using HttpResponseMessage response = await httpClient.GetAsync("api/employee", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
-            var message = await ApiProblemReader.ReadMessageAsync(
+            string message = await ApiProblemReader.ReadMessageAsync(
                 response,
                 cancellationToken,
                 "Medarbejderne",

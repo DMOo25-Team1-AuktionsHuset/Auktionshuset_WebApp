@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot {
-    public sealed class CreateLotRequest : IValidatableObject {
+namespace Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot
+{
+    public sealed class CreateLotRequest : IValidatableObject
+    {
         [Required]
         [StringLength(100, MinimumLength = 2)]
         public string Name { get; init; } = string.Empty;
@@ -31,12 +33,15 @@ namespace Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot {
         /// </summary>
         /// <param name="validationContext">The context supplied by the validation framework.</param>
         /// <returns>A sequence of <see cref="ValidationResult"/> instances describing every failure found; the sequence is empty when the request is valid.</returns>
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
-            if(AuctionHouseId == Guid.Empty) {
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (AuctionHouseId == Guid.Empty)
+            {
                 yield return new ValidationResult("Der skal være valgt et auktionshus.", [nameof(AuctionHouseId)]);
             }
 
-            if(Tags.Any(string.IsNullOrWhiteSpace)) {
+            if (Tags.Any(string.IsNullOrWhiteSpace))
+            {
                 yield return new ValidationResult("Et tag må ikke være tomt.", [nameof(Tags)]);
             }
         }
