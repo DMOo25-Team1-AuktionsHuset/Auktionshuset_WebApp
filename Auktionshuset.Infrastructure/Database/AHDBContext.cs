@@ -1,5 +1,4 @@
 ﻿using Auktionshuset.Domain.Entities;
-using Auktionshuset.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 

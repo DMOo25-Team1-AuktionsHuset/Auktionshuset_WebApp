@@ -3,7 +3,6 @@ using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
-using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 
@@ -17,7 +16,7 @@ public sealed class UpdateAuctionHandler(
         UpdateAuctionCommand command,
         CancellationToken cancellationToken)
     {
-        AuctionEntity? auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
+        Auction? auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
 
         if (auction is null)
         {

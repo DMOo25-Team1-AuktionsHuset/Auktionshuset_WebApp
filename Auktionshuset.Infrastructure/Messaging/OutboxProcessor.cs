@@ -7,8 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Auktionshuset.Infrastructure.Data;
-using Auktionshuset.Infrastructure.Database;
+using ApplicationDbContext = Auktionshuset.Infrastructure.Data.DbContext;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
@@ -39,7 +38,7 @@ namespace Auktionshuset.Infrastructure.Messaging
         {
             await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
 
-            var dbContext = scope.ServiceProvider.GetRequiredService<AHDBContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var publisher = scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
 
             var messages = await dbContext.Set<OutboxMessage>()
