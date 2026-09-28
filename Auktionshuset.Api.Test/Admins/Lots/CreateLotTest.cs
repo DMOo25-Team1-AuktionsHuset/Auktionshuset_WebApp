@@ -147,7 +147,7 @@ public class CreateLotTest
         // Arrange
         InvalidOperationException expectedException = new InvalidOperationException("The lot could not be saved.");
         RecordingLotRepository repository = new RecordingLotRepository { ExceptionToThrow = expectedException };
-        var outboxWriter = new RecordingOutboxWriter();
+        RecordingOutboxWriter outboxWriter = new RecordingOutboxWriter();
         CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter);
 
         // Act
