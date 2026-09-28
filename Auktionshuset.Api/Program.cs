@@ -1,6 +1,7 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Admin.LotImage;
 using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
@@ -10,10 +11,7 @@ using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.EventHandling;
-using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Auktionshuset.Infrastructure.Service;
-using Auktionshuset.Infrastructure.Service.Lots;
-using Microsoft.Extensions.FileProviders;
 
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -57,20 +55,11 @@ await app.MigrateAndSeedDatabaseAsync();
 
 app.UseHttpsRedirection();
 
-// Serve the uploaded lot images from the same folder the image store writes to.
-LotImageStoreOptions imageStoreOptions = app.Services.GetRequiredService<LotImageStoreOptions>();
-Directory.CreateDirectory(imageStoreOptions.RootPath);
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(imageStoreOptions.RootPath),
-    RequestPath = LotImagePaths.RequestPath
-});
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapLotEndpoints();
+app.MapStoredLotImages();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
 

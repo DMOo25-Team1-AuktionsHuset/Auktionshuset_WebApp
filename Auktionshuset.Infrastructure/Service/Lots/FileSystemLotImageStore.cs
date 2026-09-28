@@ -86,6 +86,21 @@ namespace Auktionshuset.Infrastructure.Service.Lots
             return Task.FromResult(true);
         }
 
+        public async Task<LotImageContent?> GetAsync(string fileName, CancellationToken cancellationToken)
+        {
+            string? path = ResolvePath(fileName);
+            if (path is null || !File.Exists(path)) return null;
+
+            string contentType = Path.GetExtension(fileName).ToLowerInvariant() switch
+            {
+                ".jpg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => throw new InvalidDataException("Unsupported image type.")
+            };
+            return new LotImageContent(await File.ReadAllBytesAsync(path, cancellationToken), contentType);
+        }
+
         /// <summary>
         /// Resolves a stored file name into an absolute path inside the store folder, rejecting
         /// anything that tries to leave it.

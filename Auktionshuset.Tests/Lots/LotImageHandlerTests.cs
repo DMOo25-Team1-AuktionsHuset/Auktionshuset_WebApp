@@ -229,6 +229,9 @@ public class LotImageHandlerTests
         public long SavedLength { get; private set; }
         public List<string> Deleted { get; } = [];
 
+        public Task<LotImageContent?> GetAsync(string fileName, CancellationToken cancellationToken) =>
+            Task.FromResult<LotImageContent?>(null);
+
         public async Task<string> SaveAsync(Stream content, string extension, CancellationToken cancellationToken)
         {
             using var buffer = new MemoryStream();

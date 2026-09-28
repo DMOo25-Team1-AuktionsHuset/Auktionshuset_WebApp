@@ -12,8 +12,8 @@ namespace Auktionshuset.Infrastructure.Service
     public static class InfrastructureServiceExtensions
     {
         /// <summary>
-        /// Registers the infrastructure services, including messaging, the in-memory stores and the
-        /// lot image store.
+        /// Registers the infrastructure services, including messaging, repositories, and the
+        /// PostgreSQL lot image store.
         /// </summary>
         /// <param name="services">The service collection to add the infrastructure services to.</param>
         /// <returns>The same service collection so that further calls can be chained.</returns>
@@ -36,8 +36,7 @@ namespace Auktionshuset.Infrastructure.Service
 
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 
-            services.AddSingleton<LotImageStoreOptions>();
-            services.AddSingleton<ILotImageStore, FileSystemLotImageStore>();
+            services.AddScoped<ILotImageStore, PostgresLotImageStore>();
 
             return services;
         }

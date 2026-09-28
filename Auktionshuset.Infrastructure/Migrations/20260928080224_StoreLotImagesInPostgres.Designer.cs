@@ -3,6 +3,7 @@ using System;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Auktionshuset.Infrastructure.Migrations
 {
     [DbContext(typeof(AHDBContext))]
-    partial class AHDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260928080224_StoreLotImagesInPostgres")]
+    partial class StoreLotImagesInPostgres
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
