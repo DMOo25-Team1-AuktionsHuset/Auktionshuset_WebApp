@@ -22,7 +22,6 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
 
-
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
 
