@@ -4,8 +4,8 @@ using Auktionshuset.Application.Auction;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using BidEntity = Auktionshuset.Domain.Entities.Bid;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions
@@ -164,7 +164,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 var previous = await db.BidCommandKeys
                     .AsNoTracking()
                     .SingleOrDefaultAsync(
-                        r => r.DeviceSessionId == command.DeviceSessionId
+                        r => r.CustomerId == command.CustomerId
                           && r.RequestId == command.RequestId,
                         cancellationToken);
 
@@ -245,9 +245,9 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
 
         private static bool IsUniqueConstraintViolation(DbUpdateException ex) =>
-                ex.GetBaseException() is SqlException
+                ex.GetBaseException() is PostgresException
                 {
-                    Number: 2601 or 2627
+                    SqlState: PostgresErrorCodes.UniqueViolation
                 };
 
         private static PlaceBidResult Rejected(string errorCode, decimal currentPrice) =>
