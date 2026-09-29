@@ -16,7 +16,7 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot {
         /// <param name="command">The values used to create the new lot.</param>
         /// <returns>A result containing the identifier of the newly created lot.</returns>
         public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken) {
-            Lot lot = new Domain.Entities.Lot {
+            Lot lot = new Lot {
                 LotId = Guid.NewGuid(),
                 Name = command.Name,
                 Category = command.Category,

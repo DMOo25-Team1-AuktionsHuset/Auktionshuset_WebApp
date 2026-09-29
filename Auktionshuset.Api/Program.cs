@@ -1,28 +1,15 @@
-using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
-using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Endpoints.Auth;
-using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
-using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
-using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.Abstraction.Auction;
-using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Service;
-using Auktionshuset.Infrastructure.Service.Auctions;
-using Auktionshuset.Infrastructure.Service.Lots;
-using Microsoft.Extensions.FileProviders;
-
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -36,19 +23,11 @@ builder.Services.AddSignalR();
 builder.Services.AddSecurityServices(builder.Configuration);
 
 
-
-// needs its own service class
-builder.Services.AddScoped<CreateAuctionHandler>();
-
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
 
 //API Services
 builder.Services.AddApiServices();
-
-builder.Services.AddScoped<
-    IIntegrationEventHandler<AuctionCreatedIntegrationEvent>,
-    CreateAuctionRealTimeHandler>();
 
 //Infrastructure Services
 builder.Services.AddInfrastructure(builder.Configuration);
