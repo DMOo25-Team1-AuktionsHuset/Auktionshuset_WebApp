@@ -45,7 +45,7 @@ public class CreateLotTest
     {
         // Arrange
         var repository = new RecordingLotRepository();
-        var handler = new CreateLotHandler(repository, new RecordingEventPublisher());
+        var handler = new CreateLotHandler(repository, new RecordingOutboxWriter());
         CreateLotRequest request = CreateValidRequest(
             name: "  Antique vase  ",
             category: "  Ceramics  ",
@@ -71,7 +71,7 @@ public class CreateLotTest
     {
         // Arrange
         var repository = new RecordingLotRepository();
-        var publisher = new RecordingEventPublisher();
+        var publisher = new RecordingOutboxWriter();
         var handler = new CreateLotHandler(repository, publisher);
         CreateLotCommand command = CreateValidCommand();
 
@@ -99,7 +99,7 @@ public class CreateLotTest
     {
         // Arrange
         var repository = new RecordingLotRepository();
-        var publisher = new RecordingEventPublisher();
+        var publisher = new RecordingOutboxWriter();
         var handler = new CreateLotHandler(repository, publisher);
         CreateLotCommand command = CreateValidCommand();
 
@@ -108,7 +108,7 @@ public class CreateLotTest
 
         // Assert
         Lot savedLot = Assert.IsType<Lot>(repository.AddedLot);
-        LotCreatedIntegrationEvent publishedEvent = Assert.IsType<LotCreatedIntegrationEvent>(publisher.PublishedEvent);
+        LotCreatedIntegrationEvent publishedEvent = Assert.IsType<LotCreatedIntegrationEvent>(publisher.AddedEvent);
         Assert.NotEqual(Guid.Empty, publishedEvent.EventId);
         Assert.Equal(savedLot.LotId, publishedEvent.LotId);
         Assert.Equal(savedLot.AuctionHouseId, publishedEvent.AuctionHouseId);
@@ -306,3 +306,19 @@ public class CreateLotTest
     }
 }
 
+public sealed class RecordingOutboxWriter
+    : IOutboxWriter
+{
+    public IIntegrationEvent? AddedEvent { get; private set; }
+
+    public CancellationToken CancellationToken { get; private set; }
+
+    public Task AddAsync(
+        IIntegrationEvent integrationEvent,
+        CancellationToken cancellationToken = default)
+    {
+        AddedEvent = integrationEvent;
+        CancellationToken = cancellationToken;
+        return Task.CompletedTask;
+    }
+}
