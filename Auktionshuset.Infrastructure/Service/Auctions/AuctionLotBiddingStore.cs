@@ -90,18 +90,20 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     .Select(b => new { b.BidId, b.Amount })
                     .FirstOrDefaultAsync(cancellationToken);
 
-                var currentLeaderPrice = leader?.Amount ?? 0m;
-                var minimumBid = leader == null
-                    ? item.StartingPrice
-                    : leader.Amount;
+                var currentLeaderPrice = leader?.Amount ?? item.StartingPrice;
+                bool bidIsTooLow = leader is null
+                    ? command.Amount < item.StartingPrice
+                    : command.Amount <= leader.Amount;
+                bool auctionIsLive = item.Auction.StartsAt <= now &&
+                    (item.Auction.EndedAt != null || now < item.Auction.EndedAt);
 
                 string? errorCode = null;
 
-                if (!item.OpenForBids || item.Auction.AuctionStatus != AuctionStatuses.Live)
+                if (!item.OpenForBids || !auctionIsLive)
                 {
                     errorCode = "BiddingClosed";
                 }
-                else if (command.Amount < minimumBid)
+                else if (bidIsTooLow)
                 {
                     errorCode = "BidTooLow";
                 }

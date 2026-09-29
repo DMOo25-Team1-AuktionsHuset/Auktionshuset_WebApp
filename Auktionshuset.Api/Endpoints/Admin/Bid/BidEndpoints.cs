@@ -12,6 +12,9 @@ namespace Auktionshuset.Api.Endpoints.Admin.Bid
         public static IEndpointRouteBuilder MapBidEndpoints(this IEndpointRouteBuilder group)
         {
             group.MapPost("/api/bids/{auctionLotId:guid}", HandleAsync)
+                .WithName("Bid")
+                .WithSummary("Creates a new bid")
+                .AllowAnonymous()
                 .WithTags("Bidding");
 
             return group;
@@ -26,7 +29,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Bid
         {
             if (!Guid.TryParse(
                 user.FindFirst("customer_id")?.Value,
-                out var customerId))
+                out Guid customerId))
             {
                 return Results.Unauthorized();
             }

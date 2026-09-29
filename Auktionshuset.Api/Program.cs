@@ -10,6 +10,10 @@ using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Infrastructure.Service;
+using Auktionshuset.Infrastructure.Service.Auctions;
+using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Api.Endpoints.Admin.Bid;
+using Auktionshuset.Application.Admin.Auctions.CloseAuction;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -31,13 +35,15 @@ builder.Services.AddApiServices();
 //Infrastructure Services
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
-//builder.Services.AddScoped<AuctionLotBiddingStore>();
 
-//builder.Services.AddScoped<IPlaceBidStore>(
-//    sp => sp.GetRequiredService<AuctionLotBiddingStore>());
+builder.Services.AddScoped<AuctionLotBiddingStore>();
+builder.Services.AddScoped<CloseAuctionLotHandler>();
 
-//builder.Services.AddScoped<ICloseAuctionLotStore>(
-//    sp => sp.GetRequiredService<AuctionLotBiddingStore>());
+builder.Services.AddScoped<IPlaceBidStore>(
+    sp => sp.GetRequiredService<AuctionLotBiddingStore>());
+
+builder.Services.AddScoped<ICloseAuctionLotStore>(
+    sp => sp.GetRequiredService<AuctionLotBiddingStore>());
 
 WebApplication app = builder.Build();
 
@@ -59,7 +65,7 @@ app.MapLotEndpoints();
 app.MapStoredLotImages();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
-//app.MapBidEndpoints();
+app.MapBidEndpoints();
 
 app.MapHub<AuctionHub>("/hubs/auction");
 app.MapHub<EmployeeHub>("/hubs/employee");
