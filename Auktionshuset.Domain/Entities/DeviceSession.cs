@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Auktionshuset.Domain.Entities
+﻿namespace Auktionshuset.Domain.Entities
 {
     public class DeviceSession
     {
@@ -13,7 +10,7 @@ namespace Auktionshuset.Domain.Entities
         public required Guid DeviceId { get; set; }
         public Device Device { get; set; } = null!;
         public required DateTime StartedAt { get; set; }
-        public DateTime? EndedAt { get; set; }
+        public required DateTime? EndedAt { get; set; }
 
         public ICollection<Bid> Bids { get; set; } = new List<Bid>();
     }

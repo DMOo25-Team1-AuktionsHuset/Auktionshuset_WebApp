@@ -19,6 +19,8 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         {
             entity.HasKey(al => al.AuctionLotId);
             entity.Property(al => al.Quantity).IsRequired();
+            entity.Property(al => al.OpenForBids).IsRequired();
+            entity.Property(al => al.StartingPrice).HasPrecision(18, 2);
 
             entity.HasOne(al => al.Auction)
                 .WithMany(a => a.AuctionLots)

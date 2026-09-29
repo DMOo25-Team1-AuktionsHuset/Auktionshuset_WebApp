@@ -21,6 +21,24 @@ public sealed class BidConfiguration : IEntityTypeConfiguration<Bid>
         entity.HasOne(bid => bid.DeviceSession)
             .WithMany(session => session.Bids)
             .HasForeignKey(bid => bid.DeviceSessionId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(bid => bid.Customer)
+            .WithMany()
+            .HasForeignKey(bid => bid.CustomerId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasIndex(b => new { b.AuctionLotId, b.SequenceNumber })
+            .IsUnique();
+
+        // supports finding the highest bid and tie-breaking by sequence
+        entity.HasIndex(b => new
+        {
+            b.AuctionLotId,
+            b.Amount,
+            b.SequenceNumber
+        }).IsDescending(false, true, false);
     }
 }

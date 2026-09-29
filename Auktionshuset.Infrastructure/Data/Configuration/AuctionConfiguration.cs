@@ -13,7 +13,9 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         /// <summary>
         /// Applies the configuration for <see cref="Auction"/>.
         /// </summary>
-        /// <param name="entity">The builder used to configure the <see cref="Auction"/> entity.</param>
+        /// <param name="entity">
+        /// The builder used to configure the <see cref="Auction"/> entity.
+        /// </param>
         public void Configure(EntityTypeBuilder<Auction> entity)
         {
             entity.HasKey(a => a.AuctionId);

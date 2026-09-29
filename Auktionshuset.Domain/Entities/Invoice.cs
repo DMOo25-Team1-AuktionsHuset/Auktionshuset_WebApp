@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Auktionshuset.Domain.Entities
+﻿namespace Auktionshuset.Domain.Entities
 {
     public class Invoice
     {

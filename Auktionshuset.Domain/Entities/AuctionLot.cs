@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Auktionshuset.Domain.Entities
+﻿namespace Auktionshuset.Domain.Entities
 {
     public class AuctionLot
     {
@@ -16,11 +13,13 @@ namespace Auktionshuset.Domain.Entities
         /// for stock validation and auction totals.
         /// </summary>
         public required int Quantity { get; set; }
+        public bool OpenForBids { get; set; } = false;
+
+        public decimal StartingPrice { get; set; }
+
 
         public Guid? CurrentHighestBidId { get; set; }
         public Bid? CurrentHighestBid { get; set; }
-        public bool OpenForBids { get; set; } = false;
-
         public ICollection<Bid> Bids { get; set; } = new List<Bid>();
         public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     }
