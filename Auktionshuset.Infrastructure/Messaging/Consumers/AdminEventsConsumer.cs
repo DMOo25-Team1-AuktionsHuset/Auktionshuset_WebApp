@@ -14,6 +14,7 @@ using System.Text.Json;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
+using Auktionshuset.Application.Admin.Auctions.Bids;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
 
@@ -136,6 +137,13 @@ internal sealed class AdminEventsConsumer : BackgroundService
                 case var routingKey
                     when routingKey == RabbitMqTopology.RoutingKeys.AuctionDeleted:
                     await HandleAsync<AuctionDeletedIntegrationEvent>(
+                        json,
+                        stoppingToken);
+                    break;
+
+                case var routingKey
+                    when routingKey == RabbitMqTopology.RoutingKeys.BidPlaced:
+                    await HandleAsync<BidPlacedIntegrationEvent>(
                         json,
                         stoppingToken);
                     break;

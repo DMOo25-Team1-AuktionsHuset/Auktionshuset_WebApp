@@ -1,5 +1,7 @@
-﻿using Auktionshuset.Application.Abstraction.Auction;
+﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions;
+using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.Auction;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Data;
@@ -10,7 +12,7 @@ using BidEntity = Auktionshuset.Domain.Entities.Bid;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions
 {
-    public class AuctionLotBiddingStore(AHDBContext db, TimeProvider clock) : IPlaceBidStore, ICloseAuctionLotStore
+    public class AuctionLotBiddingStore(AHDBContext db, TimeProvider clock, IOutboxWriter outboxWriter) : IPlaceBidStore, ICloseAuctionLotStore
     {
         public async Task<PlaceBidResult> PlaceBidAsync(PlaceBidCommand command, CancellationToken cancellationToken)
         {
@@ -146,11 +148,18 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 CurrentPrice: bid.Amount,
                 ErrorCode: null);
 
+                await outboxWriter.AddAsync(new BidPlacedIntegrationEvent(
+                        EventId: Guid.NewGuid(),
+                        BidId: bid.BidId,
+                        AuctionId: item.AuctionId,
+                        AuctionLotId: item.AuctionLotId,
+                        CustomerId: customer.CustomerId,
+                        Amount: bid.Amount,
+                        SequenceNumber: bid.SequenceNumber,
+                        OccurredAt: clock.GetUtcNow().UtcDateTime),
+                    cancellationToken);
+
                 await SaveKeyAsync(command, accepted, now, cancellationToken);
-
-                // for RabbiqMQ/SignalR delivery add outbox row here, before SaveChanges in same transaction
-
-                await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 return accepted;
@@ -219,6 +228,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
             return winner?.BidId;
         }
+
         private async Task SaveKeyAsync(
             PlaceBidCommand command,
             PlaceBidResult result,

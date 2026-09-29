@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Data;
@@ -8,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Auktionshuset.Application.Admin.Auctions.Bids;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
@@ -75,7 +75,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                     message.Error = exception.ToString();
 
                     _logger.LogError(exception, "Fejl ved behandling af outbox-besked {OutboxId}.", message.OutboxId);
-                    
+
                 }
             }
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -91,6 +91,9 @@ namespace Auktionshuset.Infrastructure.Messaging
             {
                 LotCreatedIntegrationEvent lotCreated =>
                     publisher.PublishAsync(lotCreated, cancellationToken),
+
+                BidPlacedIntegrationEvent bidPlaced =>
+                    publisher.PublishAsync(bidPlaced, cancellationToken),
 
                 _ => throw new NotSupportedException(
                     $"Outbox understøtter ikke {integrationEvent.GetType().Name}.")

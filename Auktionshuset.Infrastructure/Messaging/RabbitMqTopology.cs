@@ -38,6 +38,9 @@
 
             public const string EmployeeUpdated =
                 "employee.updated.v1";
+
+            public const string BidPlaced =
+                "bid.placed.v1";
         }
     }
 }

@@ -1,4 +1,7 @@
-﻿using Auktionshuset.Application.Abstraction.Auction;
+﻿using Auktionshuset.Api.Events.Admin.Auction;
+using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Application.Admin.Auctions.Bids;
+using Auktionshuset.Application.EventHandling;
 
 namespace Auktionshuset.Api.Services
 {
@@ -15,7 +18,9 @@ namespace Auktionshuset.Api.Services
             services.AddLotHandler();
             services.AddEmployeeHandler();
             services.AddAuctionHandlers();
-            //services.AddScoped<PlaceBidHandler>();
+            services.AddScoped<PlaceBidHandler>();
+            services.AddScoped<IIntegrationEventHandler<BidPlacedIntegrationEvent>, 
+                BidPlacedRealTimeHandler>();
 
             return services;
         }

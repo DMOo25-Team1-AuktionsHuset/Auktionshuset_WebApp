@@ -21,9 +21,8 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            //services.AddScoped<IOutboxWriter, EfOutboxWriter>();
-            //services.AddHostedService<OutboxProcessor>();
-            services.AddScoped<IOutboxWriter, ImmediateOutboxWriter>();
+            services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+            services.AddHostedService<OutboxProcessor>();
             services.AddSingleton<RabbitMqRoutingKeyResolver>();
 
             services.AddSingleton<IConnection>(_ =>
