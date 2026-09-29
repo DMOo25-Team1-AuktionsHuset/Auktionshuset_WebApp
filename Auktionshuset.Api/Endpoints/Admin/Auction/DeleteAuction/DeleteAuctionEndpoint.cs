@@ -1,7 +1,7 @@
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
+namespace Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
 
 public static class DeleteAuctionEndpoint
 {

@@ -1,7 +1,7 @@
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 
-namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
+namespace Auktionshuset.Api.Endpoints.Admin.Auction
 {
     /// <summary>
     /// Maps the auction contracts onto the application commands and the validation problems that

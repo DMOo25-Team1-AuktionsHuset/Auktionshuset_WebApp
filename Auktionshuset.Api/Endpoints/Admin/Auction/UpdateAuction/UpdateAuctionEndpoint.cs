@@ -1,9 +1,8 @@
-using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
+namespace Auktionshuset.Api.Endpoints.Admin.Auction.UpdateAuction;
 
 public static class UpdateAuctionEndpoint
 {

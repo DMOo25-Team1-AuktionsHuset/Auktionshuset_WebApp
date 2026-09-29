@@ -4,7 +4,7 @@ using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Auktionshuset.Api.Endpoints.Admin.GetAuctions;
+namespace Auktionshuset.Api.Endpoints.Admin.Auction.GetAuctions;
 
 public static class GetAuctionsEndpoint
 {

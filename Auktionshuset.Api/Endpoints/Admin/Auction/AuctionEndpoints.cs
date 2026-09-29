@@ -1,10 +1,11 @@
+using Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction.CreateAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction.GetAuctions;
+using Auktionshuset.Api.Endpoints.Admin.Auction.UpdateAuction;
 using Auktionshuset.Api.Security;
 
-using Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
-using Auktionshuset.Api.Endpoints.Admin.GetAuctions;
-using Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
-
-namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
+namespace Auktionshuset.Api.Endpoints.Admin.Auction
 {
     public static class AuctionEndpoints
     {
@@ -24,6 +25,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
             group.MapCreateAuction();
             group.MapUpdateAuction();
             group.MapDeleteAuction();
+            group.MapCloseAuctionLotEndpoint();
 
             return endpoints;
         }

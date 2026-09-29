@@ -1,4 +1,3 @@
-using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Endpoints.Auth;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
@@ -14,6 +13,7 @@ using Auktionshuset.Infrastructure.Service.Auctions;
 using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Application.Admin.Auctions.CloseAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +26,7 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
 
+// should eventually be removed and actual database implementation should be registered instead
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
 
@@ -38,6 +39,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddScoped<AuctionLotBiddingStore>();
 builder.Services.AddScoped<CloseAuctionLotHandler>();
+builder.Services.AddScoped<IAuctionLifeCycleStore, AuctionLifeCycleStore>();
 
 builder.Services.AddScoped<IPlaceBidStore>(
     sp => sp.GetRequiredService<AuctionLotBiddingStore>());
