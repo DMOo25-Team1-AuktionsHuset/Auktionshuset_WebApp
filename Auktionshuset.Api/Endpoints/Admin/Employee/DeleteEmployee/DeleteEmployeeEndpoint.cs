@@ -1,6 +1,7 @@
 ﻿using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee
 {
@@ -13,7 +14,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee
                 .WithSummary("Deletes an employee")
                 .Produces(StatusCodes.Status204NoContent)
                 .Produces(StatusCodes.Status404NotFound)
-                .AllowAnonymous();
+                .RequireAuthorization(SecurityPolicies.Admin);
             return group;
         }
         public static async Task<Results<NoContent, NotFound>> HandleAsync(

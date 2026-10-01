@@ -43,29 +43,42 @@ public class SecurityServiceExtensionsTest
     }
 
     [Fact]
-    public async Task AddSecurityServices_WhenAuthorizationIsDisabled_AllowsAnonymousAccess()
+    public async Task AddSecurityServices_EnforcesAuthorizationWhenConfigurationDisablesIt()
     {
         using ServiceProvider provider = CreateServiceProvider(enforceAuthorization: false);
         IAuthorizationService authorizationService = provider.GetRequiredService<IAuthorizationService>();
+        IAuthorizationPolicyProvider policyProvider = provider.GetRequiredService<IAuthorizationPolicyProvider>();
         var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
-        string[] policyNames = new[]
-        {
+        string[] policyNames =
+        [
             SecurityPolicies.Admin,
             SecurityPolicies.CanCreateLot,
             SecurityPolicies.CanUpdateLot,
             SecurityPolicies.CanDeleteLot,
             SecurityPolicies.CanViewLots,
             SecurityPolicies.CanCreateAuction
-        };
+        ];
 
-        foreach (string? policyName in policyNames)
+        AuthorizationPolicy? fallbackPolicy = await policyProvider.GetFallbackPolicyAsync();
+        Assert.NotNull(fallbackPolicy);
+        Assert.Contains(
+            fallbackPolicy.Requirements,
+            requirement => requirement is DenyAnonymousAuthorizationRequirement);
+
+        foreach (string policyName in policyNames)
         {
+            AuthorizationPolicy? policy = await policyProvider.GetPolicyAsync(policyName);
+            Assert.NotNull(policy);
+            Assert.Contains(
+                policy.Requirements,
+                requirement => requirement is DenyAnonymousAuthorizationRequirement);
+
             AuthorizationResult result = await authorizationService.AuthorizeAsync(
                 anonymousUser,
                 resource: null,
                 policyName);
 
-            Assert.True(result.Succeeded, $"Policy '{policyName}' should allow anonymous development access.");
+            Assert.False(result.Succeeded, $"Policy '{policyName}' must reject anonymous access.");
         }
     }
 

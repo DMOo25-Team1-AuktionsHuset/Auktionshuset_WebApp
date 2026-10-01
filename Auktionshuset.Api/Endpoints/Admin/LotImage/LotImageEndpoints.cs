@@ -1,3 +1,4 @@
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Lots.Images;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
@@ -45,13 +46,15 @@ public static class LotImageEndpoints
             .Produces<LotImageResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .ProducesValidationProblem()
+            .RequireAuthorization(SecurityPolicies.CanWriteLotImage)
             .DisableAntiforgery();
 
         group.MapDelete("/{lotId:guid}/image", HandleRemoveAsync)
             .WithName("RemoveLotImage")
             .WithSummary("Removes the image of a lot")
             .Produces<LotImageResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(SecurityPolicies.CanUpdateLot);
 
         return group;
     }

@@ -1,0 +1,66 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@layout Layout.LoginLayout
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IAntiforgery Antiforgery
+@inject NavigationManager Navigation
+
+<PageTitle>Log ind | Haderslev Auktionshus</PageTitle>
+
+<section class="login-card" aria-labelledby="login-heading">
+    <p class="eyebrow">Haderslev Auktionshus</p>
+    <h1 id="login-heading">Log ind</h1>
+    <p class="login-intro">Log ind for at åbne administrationen.</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="login-error" role="alert">@errorMessage</p>
+    }
+
+    <form method="post" action="/auth/login" id="login-form">
+        <input type="hidden" name="__RequestVerificationToken" value="@requestToken" />
+        <div class="field">
+            <label for="login-email">Email</label>
+            <input id="login-email" name="email" type="email" autocomplete="username" required maxlength="254" autofocus />
+        </div>
+        <div class="field">
+            <label for="login-password">Adgangskode</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <button class="btn login-submit" type="submit">Log ind</button>
+    </form>
+</section>
+
+@code {
+    private string requestToken = string.Empty;
+    private string? errorMessage;
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorCode { get; set; }
+
+    protected override void OnInitialized()
+    {
+        HttpContext? context = HttpContextAccessor.HttpContext;
+        if (context?.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/", forceLoad: true);
+            return;
+        }
+
+        if (context is not null)
+        {
+            requestToken = Antiforgery.GetAndStoreTokens(context).RequestToken ?? string.Empty;
+        }
+
+    }
+
+    protected override void OnParametersSet()
+    {
+        errorMessage = ErrorCode switch
+        {
+            "invalid" => "Email eller adgangskode er forkert.",
+            "unavailable" => "Login kunne ikke gennemføres, fordi serveren ikke er tilgængelig. Prøv igen om lidt.",
+            _ => null
+        };
+    }
+}

@@ -10,13 +10,11 @@ namespace Auktionshuset.Api.Security;
 
 public static class SecurityServiceExtensions
 {
-    private const string EnforceAuthorizationKey = "Security:EnforceAuthorization";
 
     public static IServiceCollection AddSecurityServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        bool enforceAuthorization = configuration.GetValue(EnforceAuthorizationKey, true);
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<
@@ -31,25 +29,12 @@ public static class SecurityServiceExtensions
             JwtTokenService>();
 
 
-        if (enforceAuthorization)
-        {
-            services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options => ConfigureJwtBearer(options, configuration));
-        }
-        else
-        {
-            services.AddAuthentication();
-        }
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration));
 
         services.AddAuthorization(options =>
         {
-            if (!enforceAuthorization)
-            {
-                ConfigureDevelopmentBypass(options);
-                return;
-            }
-
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
                 .Build();
@@ -65,27 +50,15 @@ public static class SecurityServiceExtensions
             AddPermissionPolicy(options, SecurityPolicies.CanDeleteLot, SecurityPermissions.DeleteLot);
             AddPermissionPolicy(options, SecurityPolicies.CanViewLots, SecurityPermissions.ViewLots);
             AddPermissionPolicy(options, SecurityPolicies.CanCreateAuction, SecurityPermissions.CreateAuction);
+            options.AddPolicy(SecurityPolicies.CanWriteLotImage, policy =>
+                policy.RequireAuthenticatedUser().RequireAssertion(context =>
+                    context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.CreateLot)
+                    || context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.UpdateLot)));
         });
 
         return services;
     }
 
-    private static void ConfigureDevelopmentBypass(AuthorizationOptions options)
-    {
-        AuthorizationPolicy allowAnonymousPolicy = new AuthorizationPolicyBuilder()
-            .RequireAssertion(_ => true)
-            .Build();
-
-        options.DefaultPolicy = allowAnonymousPolicy;
-        options.FallbackPolicy = allowAnonymousPolicy;
-
-        options.AddPolicy(SecurityPolicies.Admin, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanCreateLot, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanUpdateLot, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanDeleteLot, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanViewLots, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanCreateAuction, allowAnonymousPolicy);
-    }
 
     private static void ConfigureJwtBearer(
         JwtBearerOptions options,
@@ -94,6 +67,11 @@ public static class SecurityServiceExtensions
         string signingKey = configuration["Authentication:SigningKey"]
             ?? throw new InvalidOperationException(
                 "Missing configuration value 'Authentication:SigningKey'.");
+        if (Encoding.UTF8.GetByteCount(signingKey) < 32)
+        {
+            throw new InvalidOperationException(
+                "Configuration value 'Authentication:SigningKey' must contain at least 32 bytes.");
+        }
 
         options.TokenValidationParameters = new TokenValidationParameters
         {

@@ -8,6 +8,7 @@ public static class SecurityPolicies
     public const string CanDeleteLot = nameof(CanDeleteLot);
     public const string CanViewLots = nameof(CanViewLots);
     public const string CanCreateAuction = nameof(CanCreateAuction);
+    public const string CanWriteLotImage = nameof(CanWriteLotImage);
 }
 
 public static class SecurityPermissions

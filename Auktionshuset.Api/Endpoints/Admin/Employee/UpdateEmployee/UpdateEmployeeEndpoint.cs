@@ -2,6 +2,7 @@
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
 {
@@ -14,7 +15,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
                 .WithSummary("Updates an employee")
                 .Produces<UpdateEmployeeResponse>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status404NotFound)
-                .ProducesValidationProblem();
+                .ProducesValidationProblem()
+                .RequireAuthorization(SecurityPolicies.Admin);
 
             return group;
         }

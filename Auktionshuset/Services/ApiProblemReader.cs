@@ -29,6 +29,10 @@ internal static class ApiProblemReader
             await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
             JsonElement root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return StatusMessage(response, subject, verb);
+            }
 
             if (root.TryGetProperty("errors", out JsonElement errors) && errors.ValueKind == JsonValueKind.Object)
             {
@@ -48,12 +52,14 @@ internal static class ApiProblemReader
             }
 
             if (root.TryGetProperty("detail", out JsonElement detail)
+                && detail.ValueKind == JsonValueKind.String
                 && !string.IsNullOrWhiteSpace(detail.GetString()))
             {
                 return detail.GetString()!;
             }
 
             if (root.TryGetProperty("title", out JsonElement title)
+                && title.ValueKind == JsonValueKind.String
                 && !string.IsNullOrWhiteSpace(title.GetString()))
             {
                 return title.GetString()!;
@@ -68,10 +74,13 @@ internal static class ApiProblemReader
             // The response did not carry JSON at all.
         }
 
-        return response.StatusCode == HttpStatusCode.BadRequest
+        return StatusMessage(response, subject, verb);
+    }
+
+    private static string StatusMessage(HttpResponseMessage response, string subject, string verb) =>
+        response.StatusCode == HttpStatusCode.BadRequest
             ? "Oplysningerne blev afvist. Kontrollér felterne og prøv igen."
             : $"{subject} kunne ikke {verb} (serverfejl {(int)response.StatusCode}).";
-    }
 }
 
 /// <summary>

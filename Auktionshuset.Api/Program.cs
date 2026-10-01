@@ -4,9 +4,7 @@ using Auktionshuset.Api.Endpoints.Auth;
 using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
-using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
-using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
@@ -68,9 +66,11 @@ app.MapStoredLotImages();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
 
-app.MapHub<AuctionHub>("/hubs/auction");
-app.MapHub<EmployeeHub>("/hubs/employee");
-app.MapHub<LotHub>("/hubs/lot")
-    .RequireAuthorization(SecurityPolicies.Admin);
+app.MapHub<AuctionHub>("/hubs/auction", options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization();
+app.MapHub<EmployeeHub>("/hubs/employee", options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization();
+app.MapHub<LotHub>("/hubs/lot", options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization(SecurityPolicies.CanViewLots);
 
 app.Run();

@@ -1,4 +1,6 @@
 ﻿@page "/"
+@attribute [Authorize]
+@inject NavigationManager Navigation
 
 <PageTitle>Haderslev Auktionshus</PageTitle>
 
@@ -9,23 +11,40 @@
         <p>Registrér genstande i lageret, og sammensæt dem til auktioner med auktionarius og tidspunkt.</p>
     </div>
 
+    @if (Navigation.Uri.Contains("access=denied", StringComparison.OrdinalIgnoreCase))
+    {
+        <p class="access-notice" role="status">Du har ikke rettighed til den side eller handling.</p>
+    }
+
     <div class="home-links">
-        <a class="card home-link" href="warehouse">
-            <h2>Lager</h2>
-            <p>Opret, redigér og slet genstande, og vedhæft et billede til hver genstand.</p>
-            <span class="home-link-action">Gå til lageret</span>
-        </a>
+        <AuthorizeView Policy="@FrontendPolicies.CanViewLots">
+            <Authorized>
+                <a class="card home-link" href="warehouse">
+                    <h2>Lager</h2>
+                    <p>Se genstandene på lageret og udfør de handlinger, dine rettigheder tillader.</p>
+                    <span class="home-link-action">Gå til lageret</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
 
-        <a class="card home-link" href="admin/auctions">
-            <h2>Auktioner</h2>
-            <p>Opret og redigér auktioner, vælg genstande med antal, og følg alle auktioner.</p>
-            <span class="home-link-action">Gå til auktioner</span>
-        </a>
+        <AuthorizeView Policy="@FrontendPolicies.CanCreateAuction">
+            <Authorized>
+                <a class="card home-link" href="admin/auctions">
+                    <h2>Auktioner</h2>
+                    <p>Opret auktioner, vælg genstande med antal, og følg oversigten.</p>
+                    <span class="home-link-action">Gå til auktioner</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
 
-        <a class="card home-link" href="admin/employees">
-            <h2>@("Medarbejdere")</h2>
-            <p>@("Opret, redigér og slet medarbejdere, og administrér medarbejderoversigten.")</p>
-            <span class="home-link-action">Gå til medarbejdere</span>
-        </a>
+        <AuthorizeView Policy="@FrontendPolicies.Admin">
+            <Authorized>
+                <a class="card home-link" href="admin/employees">
+                    <h2>Medarbejdere</h2>
+                    <p>Opret, redigér og slet medarbejdere, og administrér medarbejderoversigten.</p>
+                    <span class="home-link-action">Gå til medarbejdere</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
     </div>
 </section>

@@ -1,4 +1,5 @@
 using Auktionshuset.Contracts.Dto.Admin.Auction;
+using Auktionshuset.Security;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Auktionshuset.Services;
@@ -14,9 +15,13 @@ public sealed class AuctionRealtimeService : IAsyncDisposable
     private readonly string hubUrl;
     private readonly SemaphoreSlim startGate = new(1, 1);
     private HubConnection? connection;
+    private bool sessionIsValid = true;
 
-    public AuctionRealtimeService(IConfiguration configuration)
+    private readonly BackendTokenAccessor tokenAccessor;
+
+    public AuctionRealtimeService(IConfiguration configuration, BackendTokenAccessor tokenAccessor)
     {
+        this.tokenAccessor = tokenAccessor;
         string apiBaseUrl = configuration["Api:BaseUrl"]
             ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
 
@@ -41,8 +46,9 @@ public sealed class AuctionRealtimeService : IAsyncDisposable
             }
 
             HubConnection hubConnection = new HubConnectionBuilder()
-                .WithUrl(hubUrl)
-                .WithAutomaticReconnect()
+                .WithUrl(hubUrl, options =>
+                    options.AccessTokenProvider = GetAccessTokenAsync)
+                .WithAutomaticReconnect(new SessionReconnectPolicy(() => sessionIsValid))
                 .Build();
 
             hubConnection.On<CreateAuctionNotification>(
@@ -73,6 +79,13 @@ public sealed class AuctionRealtimeService : IAsyncDisposable
         {
             startGate.Release();
         }
+    }
+
+    private async Task<string?> GetAccessTokenAsync()
+    {
+        string? accessToken = await tokenAccessor.GetAccessTokenAsync();
+        sessionIsValid = !string.IsNullOrWhiteSpace(accessToken);
+        return accessToken;
     }
 
     public async ValueTask DisposeAsync()

@@ -2,6 +2,7 @@
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Microsoft.AspNetCore.Mvc;
+using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee
 {
@@ -14,7 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee
                 .WithSummary("Creates a new employee")
                 .Produces<CreateEmployeeResponse>(StatusCodes.Status201Created)
                 .ProducesValidationProblem()
-                .AllowAnonymous();
+                .RequireAuthorization(SecurityPolicies.Admin);
             return group;
         }
 

@@ -13,8 +13,7 @@ public static class GetEmployeeByIdEndpoint
             .WithName("GetEmployeeById")
             .WithSummary("Gets an employee by identifier")
             .Produces<EmployeeResponse>()
-            .Produces(StatusCodes.Status404NotFound)
-            .AllowAnonymous();
+            .Produces(StatusCodes.Status404NotFound);
 
         return group;
     }

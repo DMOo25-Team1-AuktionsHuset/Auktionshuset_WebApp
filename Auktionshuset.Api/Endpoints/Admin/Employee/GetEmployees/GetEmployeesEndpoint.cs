@@ -16,8 +16,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
             group.MapGet("/", HandleAsync)
                 .WithName("GetEmployees")
                 .WithSummary("Gets every employee")
-                .Produces<IReadOnlyList<EmployeeListItemResponse>>()
-                .AllowAnonymous();
+                .Produces<IReadOnlyList<EmployeeListItemResponse>>();
 
             return group;
         }

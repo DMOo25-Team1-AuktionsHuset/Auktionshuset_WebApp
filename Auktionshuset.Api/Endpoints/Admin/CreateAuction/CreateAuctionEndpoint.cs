@@ -1,3 +1,4 @@
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -18,7 +19,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
                 .WithName("CreateAuction")
                 .WithSummary("Creates a new auction")
                 .Produces<CreateAuctionResponse>(StatusCodes.Status201Created)
-                .ProducesValidationProblem();
+                .ProducesValidationProblem()
+                .RequireAuthorization(SecurityPolicies.CanCreateAuction);
 
             return group;
         }

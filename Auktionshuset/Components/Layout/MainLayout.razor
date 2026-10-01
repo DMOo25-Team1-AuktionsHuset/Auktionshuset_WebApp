@@ -12,10 +12,28 @@
             </NavLink>
 
             <nav class="primary-nav" aria-label="Primær navigation">
-                <NavLink href="warehouse" Match="NavLinkMatch.Prefix">Lager</NavLink>
-                <NavLink href="admin/auctions" Match="NavLinkMatch.Prefix">Auktioner</NavLink>
-                <NavLink href="admin/employees" Match="NavLinkMatch.Prefix">Medarbejdere</NavLink>
+                <AuthorizeView Policy="@FrontendPolicies.CanViewLots">
+                    <Authorized><NavLink href="warehouse" Match="NavLinkMatch.Prefix">Lager</NavLink></Authorized>
+                </AuthorizeView>
+                <AuthorizeView Policy="@FrontendPolicies.CanCreateAuction">
+                    <Authorized><NavLink href="admin/auctions" Match="NavLinkMatch.Prefix">Auktioner</NavLink></Authorized>
+                </AuthorizeView>
+                <AuthorizeView Policy="@FrontendPolicies.Admin">
+                    <Authorized><NavLink href="admin/employees" Match="NavLinkMatch.Prefix">Medarbejdere</NavLink></Authorized>
+                </AuthorizeView>
             </nav>
+
+            <AuthorizeView>
+                <Authorized Context="authState">
+                    <div class="account-actions">
+                        <span class="account-email">@authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</span>
+                        <form method="post" action="/auth/logout">
+                            <AntiforgeryToken />
+                            <button type="submit" class="btn btn-secondary btn-sm">Log ud</button>
+                        </form>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </header>
 

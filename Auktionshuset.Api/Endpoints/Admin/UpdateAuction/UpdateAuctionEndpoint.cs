@@ -1,4 +1,5 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -19,7 +20,8 @@ public static class UpdateAuctionEndpoint
             .WithSummary("Updates an existing auction")
             .Produces<UpdateAuctionResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization(SecurityPolicies.Admin);
 
         return group;
     }

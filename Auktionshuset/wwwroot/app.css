@@ -387,6 +387,120 @@ a {
     content: "Der er opstået en fejl.";
 }
 
+.login-shell {
+    align-items: center;
+    background: var(--page-background);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+}
+
+.login-brand {
+    display: inline-flex;
+    margin-bottom: 1.25rem;
+}
+
+.login-brand img {
+    height: 4rem;
+    object-fit: contain;
+    width: 4rem;
+}
+
+.login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    box-sizing: border-box;
+    max-width: 27rem;
+    padding: clamp(1.5rem, 5vw, 2.5rem);
+    width: 100%;
+}
+
+.login-card .eyebrow {
+    color: var(--camel-dark);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin: 0 0 0.4rem;
+    text-transform: uppercase;
+}
+
+.login-card h1 {
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.login-intro {
+    color: var(--text-muted);
+    margin: 0.5rem 0 1.5rem;
+}
+
+.login-card form {
+    display: grid;
+    gap: 1.1rem;
+}
+
+.login-submit {
+    margin-top: 0.25rem;
+    width: 100%;
+}
+
+.login-submit:disabled {
+    cursor: wait;
+    opacity: 0.75;
+}
+
+.login-error,
+.access-notice {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius-sm);
+    color: var(--warning-text);
+    padding: 0.75rem 0.9rem;
+}
+
+.account-actions {
+    align-items: center;
+    display: flex;
+    gap: 0.85rem;
+    margin-left: auto;
+}
+
+.account-actions form {
+    margin: 0;
+}
+
+.account-email {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.route-loading {
+    color: var(--text-muted);
+    margin: 2rem auto;
+    max-width: 70rem;
+    padding: 0 1rem;
+}
+
+@media (max-width: 760px) {
+    .header-content {
+        flex-wrap: wrap;
+    }
+
+    .account-actions {
+        margin-left: 0;
+    }
+
+    .account-email {
+        max-width: 14rem;
+        overflow-wrap: anywhere;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

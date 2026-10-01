@@ -1,5 +1,6 @@
 @page "/admin/auctions"
 @page "/admin/auctions/create"
+@attribute [Authorize(Policy = FrontendPolicies.CanCreateAuction)]
 @rendermode InteractiveServer
 @using System.Globalization
 @using Auktionshuset.Contracts.Dto.Admin.Auction
@@ -388,13 +389,20 @@
                                 </td>
 
                                 <td class="cell-name" data-label="Navn">
-                                    <button type="button"
-                                            class="row-activator"
-                                            aria-pressed="@isSelected"
-                                            @onclick:stopPropagation="true"
-                                            @onclick="() => BeginEditAsync(auction)">
-                                        @auction.Name
-                                    </button>
+                                    @if (canManageAuctions)
+                                    {
+                                        <button type="button"
+                                                class="row-activator"
+                                                aria-pressed="@isSelected"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="() => BeginEditAsync(auction)">
+                                            @auction.Name
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span>@auction.Name</span>
+                                    }
                                     @if (isSelected)
                                     {
                                         <span class="badge badge-live selected-badge">Redigeres</span>
@@ -417,7 +425,7 @@
                                 <td class="cell-date" data-label="Slut">@(auction.EndsAt?.ToString("g", DanishCulture) ?? "Ikke fastsat")</td>
 
                                 <td class="cell-actions" data-label="Handlinger">
-                                    @if (pendingDeleteId == auction.AuctionId)
+                                    @if (canManageAuctions && pendingDeleteId == auction.AuctionId)
                                     {
                                         <div class="row-confirm" role="group" aria-label="@($"Bekræft sletning af {auction.Name}")">
                                             <span class="row-confirm-text">Slet auktionen?</span>
@@ -436,7 +444,7 @@
                                             </button>
                                         </div>
                                     }
-                                    else
+                                    else if (canManageAuctions)
                                     {
                                         <div class="row-actions">
                                             <button type="button"
@@ -452,6 +460,10 @@
                                                 Slet
                                             </button>
                                         </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">Ingen handlinger</span>
                                     }
                                 </td>
                             </tr>

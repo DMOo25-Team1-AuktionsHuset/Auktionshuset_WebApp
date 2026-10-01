@@ -5,10 +5,13 @@ using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Models;
 using Auktionshuset.Domain;
 using Auktionshuset.Services;
+using Auktionshuset.Security;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Globalization;
+using System.Security.Claims;
 
 namespace Auktionshuset.Components.Pages;
 
@@ -30,10 +33,18 @@ public partial class Warehouse : IAsyncDisposable
     private readonly HashSet<Guid> expandedLotIds = [];
 
     [Inject] private IConfiguration Configuration { get; set; } = default!;
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+    [Inject] private BackendTokenAccessor TokenAccessor { get; set; } = default!;
 
     [Inject] private LotService LotService { get; set; } = default!;
 
+    private bool canCreateLots;
+    private bool canUpdateLots;
+    private bool canDeleteLots;
+    private bool CanEditCurrentLot => editingLotId.HasValue ? canUpdateLots : canCreateLots;
+
     private HubConnection? hubConnection;
+    private bool sessionIsValid = true;
 
     private LotFormModel model = new();
     private EditContext editContext = default!;
@@ -103,6 +114,10 @@ public partial class Warehouse : IAsyncDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        canCreateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission);
+        canUpdateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission);
+        canDeleteLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission);
         ResetForm();
         await LoadLotsAsync();
     }
@@ -221,6 +236,11 @@ public partial class Warehouse : IAsyncDisposable
     /// <param name="lot">The genstand whose values are loaded into the form.</param>
     private void BeginEdit(LotListItemResponse lot)
     {
+        if (!canUpdateLots)
+        {
+            return;
+        }
+
         editingLotId = lot.LotId;
 
         model = new LotFormModel
@@ -511,8 +531,9 @@ public partial class Warehouse : IAsyncDisposable
                              "Configuration Value 'Api:BaseUrl' is required.");
 
         hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/hubs/lot")
-            .WithAutomaticReconnect()
+            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/hubs/lot", options =>
+                options.AccessTokenProvider = GetAccessTokenAsync)
+            .WithAutomaticReconnect(new SessionReconnectPolicy(() => sessionIsValid))
             .Build();
 
         hubConnection.On<CreateLotNotification>(
@@ -544,6 +565,13 @@ public partial class Warehouse : IAsyncDisposable
 
             StateHasChanged();
         }
+    }
+
+    private async Task<string?> GetAccessTokenAsync()
+    {
+        string? accessToken = await TokenAccessor.GetAccessTokenAsync();
+        sessionIsValid = !string.IsNullOrWhiteSpace(accessToken);
+        return accessToken;
     }
 
     /// <summary>

@@ -4,6 +4,7 @@ using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployeeById;
 using Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee;
 
+
 namespace Auktionshuset.Api.Endpoints.Admin.Employee
 {
     public static class EmployeeEndpoints
@@ -17,7 +18,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee
         {
             RouteGroupBuilder group = endpoints
                 .MapGroup("/api/employee")
-                .WithTags("Employee");
+                .WithTags("Employee")
+                .RequireAuthorization();
 
             group.MapCreateEmployee();
             group.MapUpdateEmployee();

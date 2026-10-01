@@ -6,9 +6,12 @@ using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
+using Auktionshuset.Security;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Authorization;
 using System.Globalization;
+using System.Security.Claims;
 
 namespace Auktionshuset.Components.Pages;
 
@@ -27,6 +30,9 @@ public partial class AuctionAdmin : IDisposable
     private static readonly int[] PageSizeOptions = [10, 25, 50];
 
     private static readonly CultureInfo DanishCulture = CultureInfo.GetCultureInfo("da-DK");
+
+    [Inject]
+    private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
 
     [Inject]
     private LotService LotService { get; set; } = default!;
@@ -80,6 +86,8 @@ public partial class AuctionAdmin : IDisposable
     private Guid? pendingDeleteId;
     private bool isDeleting;
     private bool isDisposed;
+    private bool canViewLots;
+    private bool canManageAuctions;
 
     /// <summary>
     /// One genstand chosen for the auction, with the number of units the auction includes.
@@ -166,6 +174,9 @@ public partial class AuctionAdmin : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        canViewLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission);
+        canManageAuctions = user.IsInRole("Admin");
         ResetForm();
 
         await Task.WhenAll(LoadLotsAsync(), LoadEmployeesAsync(), LoadAuctionsAsync());
@@ -362,6 +373,11 @@ public partial class AuctionAdmin : IDisposable
     /// <param name="auction">The dashboard row that was activated.</param>
     private async Task BeginEditAsync(AuctionListItemResponse auction)
     {
+        if (!canManageAuctions)
+        {
+            return;
+        }
+
         try
         {
             AuctionDetailResponse? detail = await AuctionService.GetByIdAsync(auction.AuctionId);
@@ -590,6 +606,14 @@ public partial class AuctionAdmin : IDisposable
 
     private async Task LoadLotsAsync()
     {
+        if (!canViewLots)
+        {
+            lots = [];
+            isLoadingLots = false;
+            lotListError = "Du har ikke rettighed til at se lageret. Auktionen kan stadig oprettes uden genstande.";
+            return;
+        }
+
         isLoadingLots = true;
         lotListError = null;
 

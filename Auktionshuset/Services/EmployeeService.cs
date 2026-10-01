@@ -7,7 +7,7 @@ using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 
 namespace Auktionshuset.Services;
 
-public sealed class EmployeeService(HttpClient httpClient)
+public sealed class EmployeeService(BackendApiClient httpClient)
 {
     public async Task<IReadOnlyList<EmployeeListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
