@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Cryptography;
+using System.Text;
 using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Security
@@ -28,11 +30,17 @@ namespace Auktionshuset.Api.Security
 
             var user = new AuthUser
             {
-                UserId = Guid.NewGuid(),
+                UserId = new Guid(SHA256.HashData(Encoding.UTF8.GetBytes("bootstrap:" + email.ToUpperInvariant())).AsSpan(0, 16)),
                 Email = email,
                 PasswordHash = string.Empty,
-                Roles = [SecurityRoles.Admin],
-                Permissions = SecurityPermissions.All
+                Roles = [SecurityRoles.SuperAdmin],
+                Permissions = SecurityPermissions.All,
+                // Stable across restarts, invalidated by a password or signing-key change.
+                // Keyed hashing avoids making the token DB an offline password verifier.
+                CredentialVersion = Convert.ToHexString(HMACSHA256.HashData(
+                    Encoding.UTF8.GetBytes(configuration["Authentication:SigningKey"]
+                        ?? throw new InvalidOperationException("Authentication:SigningKey must be configured.")),
+                    Encoding.UTF8.GetBytes(password)))
             };
 
             user.PasswordHash = passwordHasher.HashPassword(user, password);
@@ -47,6 +55,12 @@ namespace Auktionshuset.Api.Security
             cancellationToken.ThrowIfCancellationRequested();
             users.TryGetValue(email.Trim(), out var user);
             return Task.FromResult(user);
+        }
+
+        public Task<AuthUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(users.Values.SingleOrDefault(user => user.UserId == userId));
         }
     }
 }

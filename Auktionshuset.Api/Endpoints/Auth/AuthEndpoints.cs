@@ -18,10 +18,32 @@ namespace Auktionshuset.Api.Endpoints.Auth
                 .AllowAnonymous();
 
             group.MapPost("/login", HandleLoginAsync)
+                .RequireRateLimiting(AuthRateLimitingExtensions.Login)
                 .WithName("Login")
                 .Produces<LoginResponse>()
                 .Produces(StatusCodes.Status401Unauthorized)
+                .Produces(StatusCodes.Status429TooManyRequests)
                 .ProducesValidationProblem();
+
+            group.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenService tokens,
+                HttpContext context, CancellationToken cancellationToken) =>
+            {
+                DisableCaching(context);
+                var response = await tokens.RotateAsync(request.RefreshToken, cancellationToken);
+                return response is null ? Results.Unauthorized() : Results.Ok(response);
+            }).RequireRateLimiting(AuthRateLimitingExtensions.Refresh)
+                .Produces<LoginResponse>().Produces(StatusCodes.Status401Unauthorized)
+                .Produces(StatusCodes.Status429TooManyRequests);
+
+            // Possession of the refresh token identifies the session, even if the JWT has expired.
+            group.MapPost("/logout", async (RefreshTokenRequest request, RefreshTokenService tokens,
+                HttpContext context, CancellationToken cancellationToken) =>
+            {
+                DisableCaching(context);
+                await tokens.RevokeAsync(request.RefreshToken, cancellationToken);
+                return Results.NoContent();
+            }).RequireRateLimiting(AuthRateLimitingExtensions.Logout)
+                .Produces(StatusCodes.Status204NoContent);
 
             return endpoints;
         }
@@ -32,23 +54,18 @@ namespace Auktionshuset.Api.Endpoints.Auth
             LoginRequest request, 
             IAuthUserStore userStore,
             IPasswordHasher<AuthUser> passwordHasher,
-            IAccessTokenService tokenService,
+            RefreshTokenService refreshTokens,
+            LoginPasswordVerifier passwordVerifier,
+            HttpContext context,
             CancellationToken cancellationToken)
         {
             var user = await userStore.FindByEmailAsync(
                 request.Email, cancellationToken);
 
-            if(user is null)
-            {
-                return TypedResults.Unauthorized();
-            }
+            DisableCaching(context);
+            var verificationResult = passwordVerifier.Verify(user, request.Password);
 
-            var verificationResult = passwordHasher.VerifyHashedPassword(
-                user,
-                user.PasswordHash,
-                request.Password);
-
-            if (verificationResult == PasswordVerificationResult.Failed)
+            if (user is null || verificationResult == PasswordVerificationResult.Failed)
             {
                 return TypedResults.Unauthorized();
             }
@@ -60,19 +77,15 @@ namespace Auktionshuset.Api.Endpoints.Auth
                     request.Password);
             }
 
-            var token = tokenService.Issue(user);
-
-            var response = new LoginResponse(
-                token.Value,
-                "Bearer",
-                token.ExpiresAtUtc,
-                new AuthenticatedUserResponse(
-                    user.UserId,
-                    user.Email,
-                    user.Roles,
-                    user.Permissions));
+            var response = await refreshTokens.CreateSessionAsync(user, cancellationToken);
 
             return TypedResults.Ok(response);
+        }
+
+        private static void DisableCaching(HttpContext context)
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            context.Response.Headers.Pragma = "no-cache";
         }
     }
 }

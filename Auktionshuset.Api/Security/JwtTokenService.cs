@@ -14,7 +14,7 @@ public interface IAccessTokenService
 public sealed class JwtTokenService(IConfiguration configuration, TimeProvider timeProvider) : IAccessTokenService
 
 {
-    private const int DefaultLifetimeMinutes = 60;
+    private const int DefaultLifetimeMinutes = 15;
 
     public IssuedAccessToken Issue(AuthUser user)
     {
@@ -32,10 +32,10 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
         "Authentication:AccessTokenLifetimeMinutes",
             DefaultLifetimeMinutes);
 
-        if (lifetimeMinutes <= 0)
+        if (lifetimeMinutes is < 1 or > 30)
         {
             throw new InvalidOperationException(
-                "Configuration value 'Authentication:AccessTokenLifetimeMinutes' must be greater than zero");
+                "Configuration value 'Authentication:AccessTokenLifetimeMinutes' must be between 1 and 30.");
         }
 
         var issuedAt = timeProvider.GetUtcNow();
