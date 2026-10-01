@@ -55,7 +55,10 @@ if (app.Environment.IsDevelopment())
 
 await app.MigrateAndSeedDatabaseAsync();
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -67,9 +70,9 @@ app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
 
 app.MapHub<AuctionHub>("/hubs/auction", options => options.CloseOnAuthenticationExpiration = true)
-    .RequireAuthorization();
+    .RequireAuthorization(SecurityPolicies.CanCreateAuction);
 app.MapHub<EmployeeHub>("/hubs/employee", options => options.CloseOnAuthenticationExpiration = true)
-    .RequireAuthorization();
+    .RequireAuthorization(SecurityPolicies.CanReadEmployees);
 app.MapHub<LotHub>("/hubs/lot", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.CanViewLots);
 
