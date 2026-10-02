@@ -7,5 +7,6 @@
         public required string PasswordHash { get; set; }
         public required IReadOnlyCollection<string> Roles { get; init; }
         public required IReadOnlyCollection<string> Permissions { get; init; } = new List<string>();
+        public string CredentialVersion { get; init; } = string.Empty;
     }
 }
