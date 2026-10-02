@@ -9,7 +9,9 @@ namespace Auktionshuset.Contracts.Dto.Auth
         string AccessToken,
         string TokenType,
         DateTimeOffset ExpiresAtUtc,
-        AuthenticatedUserResponse User
+        AuthenticatedUserResponse User,
+        string? RefreshToken = null,
+        DateTimeOffset? RefreshTokenExpiresAtUtc = null
         );
 
     public sealed record AuthenticatedUserResponse(

@@ -13,8 +13,10 @@ namespace Auktionshuset.Contracts.Dto.Auth
         
         [Required]
         [EmailAddress]
+        [StringLength(254)]
         public string Email { get; init; } = string.Empty;
         [Required]
+        [StringLength(1024)]
         public string Password { get; init; } = string.Empty;
     }
 }
