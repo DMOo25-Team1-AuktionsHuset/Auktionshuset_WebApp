@@ -34,13 +34,7 @@ namespace Auktionshuset.Api.Security
                 Email = email,
                 PasswordHash = string.Empty,
                 Roles = [SecurityRoles.SuperAdmin],
-                Permissions = SecurityPermissions.All,
-                // Stable across restarts, invalidated by a password or signing-key change.
-                // Keyed hashing avoids making the token DB an offline password verifier.
-                CredentialVersion = Convert.ToHexString(HMACSHA256.HashData(
-                    Encoding.UTF8.GetBytes(configuration["Authentication:SigningKey"]
-                        ?? throw new InvalidOperationException("Authentication:SigningKey must be configured.")),
-                    Encoding.UTF8.GetBytes(password)))
+                Permissions = SecurityPermissions.All
             };
 
             user.PasswordHash = passwordHasher.HashPassword(user, password);

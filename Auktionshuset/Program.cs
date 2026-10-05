@@ -1,3 +1,4 @@
+using Auktionshuset.Contracts.Security;
 using Auktionshuset.Components;
 using Auktionshuset.Security;
 using Auktionshuset.Services;
@@ -49,17 +50,17 @@ builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDef
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(FrontendPolicies.Admin, policy =>
-        policy.RequireAuthenticatedUser().RequireRole("Admin"));
+        policy.RequireAuthenticatedUser().RequireRole(AdminRoles.SuperAdmin));
     options.AddPolicy(FrontendPolicies.CanViewLots, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission));
+        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanReadLots(context.User)));
     options.AddPolicy(FrontendPolicies.CanCreateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission));
+        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
     options.AddPolicy(FrontendPolicies.CanUpdateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission));
+        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
     options.AddPolicy(FrontendPolicies.CanDeleteLot, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission));
+        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
     options.AddPolicy(FrontendPolicies.CanCreateAuction, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateAuctionPermission));
+        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageAuctions(context.User)));
 });
 
 string apiBaseUrl = builder.Configuration["Api:BaseUrl"]

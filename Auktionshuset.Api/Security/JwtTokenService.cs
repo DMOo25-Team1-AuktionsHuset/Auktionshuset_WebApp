@@ -14,7 +14,7 @@ public interface IAccessTokenService
 public sealed class JwtTokenService(IConfiguration configuration, TimeProvider timeProvider) : IAccessTokenService
 
 {
-    private const int DefaultLifetimeMinutes = 15;
+    private const int DefaultLifetimeMinutes = 30;
 
     public IssuedAccessToken Issue(AuthUser user)
     {

@@ -56,6 +56,11 @@ public static class LocalAuthEndpoints
                 new LoginRequest { Email = email, Password = password },
                 cancellationToken);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                return Results.Redirect("/login?error=rate-limited");
+            }
+
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 return Results.Redirect("/login?error=invalid");

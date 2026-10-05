@@ -1,3 +1,4 @@
+using Auktionshuset.Contracts.Security;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -27,6 +28,8 @@ public static class SecurityServiceExtensions
         services.AddSingleton<
             IAccessTokenService,
             JwtTokenService>();
+        services.AddScoped<RefreshTokenService>();
+        services.AddAuthRateLimiting(configuration);
 
 
         services
@@ -42,9 +45,11 @@ public static class SecurityServiceExtensions
             options.AddPolicy(SecurityPolicies.Admin, policy =>
             {
                 policy.RequireAuthenticatedUser();
-                policy.RequireRole(SecurityRoles.Admin);
+                policy.RequireRole(SecurityRoles.SuperAdmin);
             });
 
+            options.AddPolicy(SecurityPolicies.CanReadEmployees, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(SecurityRoles.AuctionAdmin, SecurityRoles.SuperAdmin));
             AddPermissionPolicy(options, SecurityPolicies.CanCreateLot, SecurityPermissions.CreateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanUpdateLot, SecurityPermissions.UpdateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanDeleteLot, SecurityPermissions.DeleteLot);
@@ -52,8 +57,7 @@ public static class SecurityServiceExtensions
             AddPermissionPolicy(options, SecurityPolicies.CanCreateAuction, SecurityPermissions.CreateAuction);
             options.AddPolicy(SecurityPolicies.CanWriteLotImage, policy =>
                 policy.RequireAuthenticatedUser().RequireAssertion(context =>
-                    context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.CreateLot)
-                    || context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.UpdateLot)));
+                    AdminRoles.CanManageLots(context.User)));
         });
 
         return services;
@@ -81,7 +85,8 @@ public static class SecurityServiceExtensions
             ValidAudience = configuration["Authentication:Audience"],
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
-            ValidateLifetime = true
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
 
         options.Events = new JwtBearerEvents
@@ -109,7 +114,12 @@ public static class SecurityServiceExtensions
         options.AddPolicy(policyName, policy =>
         {
             policy.RequireAuthenticatedUser();
-            policy.RequireClaim(SecurityPermissions.ClaimType, permission);
+            policy.RequireAssertion(context => permission switch
+            {
+                SecurityPermissions.CreateAuction => AdminRoles.CanManageAuctions(context.User),
+                SecurityPermissions.ViewLots => AdminRoles.CanReadLots(context.User),
+                _ => AdminRoles.CanManageLots(context.User)
+            });
         });
     }
 }

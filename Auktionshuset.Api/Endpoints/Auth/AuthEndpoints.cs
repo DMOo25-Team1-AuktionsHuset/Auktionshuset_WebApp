@@ -55,7 +55,6 @@ namespace Auktionshuset.Api.Endpoints.Auth
             IAuthUserStore userStore,
             IPasswordHasher<AuthUser> passwordHasher,
             RefreshTokenService refreshTokens,
-            LoginPasswordVerifier passwordVerifier,
             HttpContext context,
             CancellationToken cancellationToken)
         {
@@ -63,9 +62,14 @@ namespace Auktionshuset.Api.Endpoints.Auth
                 request.Email, cancellationToken);
 
             DisableCaching(context);
-            var verificationResult = passwordVerifier.Verify(user, request.Password);
+            if (user is null)
+            {
+                return TypedResults.Unauthorized();
+            }
 
-            if (user is null || verificationResult == PasswordVerificationResult.Failed)
+            var verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+
+            if (verificationResult == PasswordVerificationResult.Failed)
             {
                 return TypedResults.Unauthorized();
             }

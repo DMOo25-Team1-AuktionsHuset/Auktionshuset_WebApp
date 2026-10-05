@@ -65,5 +65,7 @@ public sealed class ServerTicketStore(TimeProvider timeProvider) : ITicketStore
     public void Invalidate(string sessionId) => tickets.TryRemove(sessionId, out _);
 
     private static AuthenticationTicket Clone(AuthenticationTicket ticket) =>
-        new(ticket.Principal, ticket.Properties, ticket.AuthenticationScheme);
+        new(ticket.Principal.Clone(), new AuthenticationProperties(
+            new Dictionary<string, string?>(ticket.Properties.Items),
+            new Dictionary<string, object?>(ticket.Properties.Parameters)), ticket.AuthenticationScheme);
 }
