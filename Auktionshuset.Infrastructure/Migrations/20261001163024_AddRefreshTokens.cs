@@ -19,7 +19,6 @@ namespace Auktionshuset.Infrastructure.Migrations
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     FamilyId = table.Column<Guid>(type: "uuid", nullable: false),
                     TokenHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    CredentialVersion = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RevokedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
