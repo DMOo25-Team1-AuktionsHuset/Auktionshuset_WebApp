@@ -38,7 +38,7 @@ public sealed class PostgresLotImageStore(AHDBContext dbContext) : ILotImageStor
             Content = bytes,
             ContentType = contentType
         });
-        await dbContext.SaveChangesAsync(cancellationToken);
+
         return fileName;
     }
 
@@ -55,12 +55,17 @@ public sealed class PostgresLotImageStore(AHDBContext dbContext) : ILotImageStor
 
     public async Task<bool> DeleteAsync(string fileName, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (!IsSafeFileName(fileName)) return false;
 
-        int deleted = await dbContext.StoredLotImages
-            .Where(image => image.FileName == fileName)
-            .ExecuteDeleteAsync(cancellationToken);
-        return deleted > 0;
+        StoredLotImage? image = await dbContext.StoredLotImages.FindAsync([fileName], cancellationToken);
+
+        if(image == null) return false;
+
+        dbContext.StoredLotImages.Remove(image);
+
+        return true;
     }
 
     private static bool IsSafeFileName(string fileName)

@@ -1,10 +1,11 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Admin.Lots.Images;
 using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Lots.UpdateLot
 {
-    public class UpdateLotHandler(ILotRepository lotRepository, IIntegrationEventPublisher eventPublisher)
+    public class UpdateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork)
     {
         /// <summary>
         /// Applies the command's values to an already stored lot and publishes an integration event
@@ -30,19 +31,9 @@ namespace Auktionshuset.Application.Admin.Lots.UpdateLot
 
             await lotRepository.UpdateAsync(lot, cancellationToken);
 
-            await eventPublisher.PublishAsync(new LotUpdatedIntegrationEvent(
-                EventId: Guid.NewGuid(),
-                LotId: lot.LotId,
-                AuctionHouseId: lot.AuctionHouseId,
-                Name: lot.Name,
-                Category: lot.Category,
-                Quantity: lot.Quantity,
-                EstimatedValue: lot.EstimatedValue,
-                Description: lot.Description,
-                Tags: lot.Tags,
-                OccurredAt: DateTime.Now,
-                ImageFileName: lot.ImageFileName),
-                cancellationToken);
+            await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, cancellationToken);
+
+            await unitOfWork.CommitBatchAsync(cancellationToken);
 
             return new UpdateLotResult(lot.LotId);
         }

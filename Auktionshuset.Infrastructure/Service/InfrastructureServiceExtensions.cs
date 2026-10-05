@@ -1,8 +1,10 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Lots;
+using Auktionshuset.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,12 +33,13 @@ namespace Auktionshuset.Infrastructure.Service
                 options.UseNpgsql(connectionString));
 
             // Add infrastructure services here
+            services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+
             services.AddRabbitMq(configuration);
             services.AddScoped<ILotRepository, EFLotRepo>();
+            services.AddScoped<ILotImageStore, PostgresLotImageStore>();
 
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
-
-            services.AddScoped<ILotImageStore, PostgresLotImageStore>();
 
             return services;
         }

@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Admin.Lots.UpdateLot;
+using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
@@ -91,6 +93,12 @@ namespace Auktionshuset.Infrastructure.Messaging
             {
                 LotCreatedIntegrationEvent lotCreated =>
                     publisher.PublishAsync(lotCreated, cancellationToken),
+
+                LotUpdatedIntegrationEvent lotUpdated =>
+                    publisher.PublishAsync(lotUpdated, cancellationToken),
+
+                LotDeletedIntegrationEvent lotDeleted =>
+                    publisher.PublishAsync(lotDeleted, cancellationToken),
 
                 BidPlacedIntegrationEvent bidPlaced =>
                     publisher.PublishAsync(bidPlaced, cancellationToken),

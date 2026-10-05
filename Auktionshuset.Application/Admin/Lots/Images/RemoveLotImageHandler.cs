@@ -1,3 +1,4 @@
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
@@ -7,7 +8,8 @@ namespace Auktionshuset.Application.Admin.Lots.Images;
 public sealed class RemoveLotImageHandler(
     ILotRepository lotRepository,
     ILotImageStore imageStore,
-    IIntegrationEventPublisher eventPublisher)
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork)
 {
     /// <summary>
     /// Removes the image of a lot. Removing a lot that has no image is not an error.
@@ -35,7 +37,9 @@ public sealed class RemoveLotImageHandler(
         await lotRepository.UpdateAsync(lot, cancellationToken);
         await imageStore.DeleteAsync(fileName, cancellationToken);
 
-        await LotNotificationPublisher.PublishUpdatedAsync(lot, eventPublisher, cancellationToken);
+        await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, cancellationToken);
+
+        await unitOfWork.CommitBatchAsync(cancellationToken);
 
         return LotImageResult.Saved(lot.LotId, null);
     }

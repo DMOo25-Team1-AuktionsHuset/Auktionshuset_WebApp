@@ -7,7 +7,7 @@ using System.Text;
 using Auktionshuset.Application.Abstraction;
 
 namespace Auktionshuset.Application.Admin.Lots.CreateLot {
-    public class CreateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter) 
+    public class CreateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork) 
     {
         /// <summary>
         /// Creates a lot from the specified command, adds it to the repository, and publishes a
@@ -40,6 +40,8 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot {
                 OccurredAt: DateTime.Now);
 
             await outboxWriter.AddAsync(integrationEvent, cancellationToken);
+
+            await unitOfWork.CommitBatchAsync(cancellationToken);
 
             return new CreateLotResult(lot.LotId);
         }

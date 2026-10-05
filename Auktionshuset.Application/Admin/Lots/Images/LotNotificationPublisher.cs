@@ -1,3 +1,4 @@
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
@@ -10,12 +11,12 @@ namespace Auktionshuset.Application.Admin.Lots.Images;
 /// </summary>
 internal static class LotNotificationPublisher
 {
-    internal static Task PublishUpdatedAsync(
+    internal static Task AddUpdatedAsync(
         Lot lot,
-        IIntegrationEventPublisher eventPublisher,
-        CancellationToken cancellationToken) =>
-        eventPublisher.PublishAsync(
-            new LotUpdatedIntegrationEvent(
+        IOutboxWriter outboxWriter,
+        CancellationToken cancellationToken)
+    {
+        var integrationEvent = new LotUpdatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 LotId: lot.LotId,
                 AuctionHouseId: lot.AuctionHouseId,
@@ -26,6 +27,8 @@ internal static class LotNotificationPublisher
                 Description: lot.Description,
                 Tags: lot.Tags,
                 ImageFileName: lot.ImageFileName,
-                OccurredAt: DateTime.Now),
-            cancellationToken);
+                OccurredAt: DateTime.Now);
+
+        return outboxWriter.AddAsync(integrationEvent, cancellationToken);
+    }
 }

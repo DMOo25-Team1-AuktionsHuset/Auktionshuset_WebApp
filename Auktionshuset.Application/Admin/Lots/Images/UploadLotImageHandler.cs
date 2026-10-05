@@ -1,3 +1,4 @@
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
@@ -7,7 +8,8 @@ namespace Auktionshuset.Application.Admin.Lots.Images;
 public sealed class UploadLotImageHandler(
     ILotRepository lotRepository,
     ILotImageStore imageStore,
-    IIntegrationEventPublisher eventPublisher)
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork)
 {
     /// <summary>
     /// Validates and stores an uploaded image for a lot, replacing any image it already had.
@@ -45,23 +47,17 @@ public sealed class UploadLotImageHandler(
         string fileName = await imageStore.SaveAsync(command.Content, extension, cancellationToken);
 
         lot.ImageFileName = fileName;
-        try
-        {
-            await lotRepository.UpdateAsync(lot, cancellationToken);
-        }
-        catch
-        {
-            lot.ImageFileName = previousFileName;
-            await imageStore.DeleteAsync(fileName, CancellationToken.None);
-            throw;
-        }
 
-        if (!string.IsNullOrWhiteSpace(previousFileName))
+        await lotRepository.UpdateAsync(lot, cancellationToken);
+
+        if(!string.IsNullOrWhiteSpace(previousFileName))
         {
             await imageStore.DeleteAsync(previousFileName, cancellationToken);
         }
 
-        await LotNotificationPublisher.PublishUpdatedAsync(lot, eventPublisher, cancellationToken);
+        await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, cancellationToken);
+
+        await unitOfWork.CommitBatchAsync(cancellationToken);
 
         return LotImageResult.Saved(lot.LotId, fileName);
     }
