@@ -1,5 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Lots;
@@ -33,6 +34,7 @@ namespace Auktionshuset.Infrastructure.Service
             // Add infrastructure services here
             services.AddRabbitMq(configuration);
             services.AddScoped<ILotRepository, EFLotRepo>();
+            services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
 
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 

@@ -23,6 +23,7 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
         public DbSet<Bid> Bids => Set<Bid>();
         public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
         /// <summary>
         /// Applies every <c>IEntityTypeConfiguration</c> declared in the infrastructure assembly.
