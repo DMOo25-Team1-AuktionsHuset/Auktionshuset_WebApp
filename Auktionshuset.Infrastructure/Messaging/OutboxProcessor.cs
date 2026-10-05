@@ -10,6 +10,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Auktionshuset.Application.Admin.Auctions.Bids;
+using Auktionshuset.Application.Admin.Auctions.CreateAuction;
+using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
+using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
+using Auktionshuset.Application.Admin.Employees.CreateEmployee;
+using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
+using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
@@ -102,6 +108,24 @@ namespace Auktionshuset.Infrastructure.Messaging
 
                 BidPlacedIntegrationEvent bidPlaced =>
                     publisher.PublishAsync(bidPlaced, cancellationToken),
+
+                AuctionCreatedIntegrationEvent auctionCreated =>
+                    publisher.PublishAsync(auctionCreated, cancellationToken),
+
+                AuctionUpdatedIntegrationEvent auctionUpdated =>
+                    publisher.PublishAsync(auctionUpdated, cancellationToken),
+
+                AuctionDeletedIntegrationEvent auctionDeleted =>
+                    publisher.PublishAsync(auctionDeleted, cancellationToken),
+
+                EmployeeCreatedIntegrationEvent employeeCreated =>
+                    publisher.PublishAsync(employeeCreated, cancellationToken),
+
+                EmployeeUpdatedIntegrationEvent employeeUpdated =>
+                    publisher.PublishAsync(employeeUpdated, cancellationToken),
+
+                EmployeeDeletedIntegrationEvent employeeDeleted =>
+                    publisher.PublishAsync(employeeDeleted, cancellationToken),
 
                 _ => throw new NotSupportedException(
                     $"Outbox understøtter ikke {integrationEvent.GetType().Name}.")

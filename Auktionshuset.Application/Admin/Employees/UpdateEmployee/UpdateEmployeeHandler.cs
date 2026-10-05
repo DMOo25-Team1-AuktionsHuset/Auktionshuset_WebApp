@@ -1,10 +1,11 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Employees;
+﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
 {
-    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IIntegrationEventPublisher eventPublisher)
+    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork)
     {
         public async Task<UpdateEmployeeResult?> HandleAsync(UpdateEmployeeCommand command, CancellationToken cancellationToken)
         {
@@ -33,7 +34,9 @@ namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
                 Address: employee.Address,
                 OccurredAt: DateTime.Now);
 
-            await eventPublisher.PublishAsync(integrationEvent, cancellationToken);
+            await outboxWriter.AddAsync(integrationEvent, cancellationToken);
+
+            await unitOfWork.CommitBatchAsync(cancellationToken);
 
             return new UpdateEmployeeResult(employee.EmployeeId);
         }
