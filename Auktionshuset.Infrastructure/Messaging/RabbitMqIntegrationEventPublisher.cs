@@ -1,55 +1,25 @@
 ﻿using Auktionshuset.Application.EventHandling;
 using RabbitMQ.Client;
-using System.Text;
 using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
-    internal sealed class RabbitMqIntegrationEventPublisher(IConnection connection, RabbitMqRoutingKeyResolver routingKeyResolver) : IIntegrationEventPublisher
+    internal sealed class RabbitMqIntegrationEventPublisher(IConnection connection, EventContractRegistry registry) : IIntegrationEventPublisher
     {
-        /// <summary>
-        /// Serializes the event and publishes it to the event exchange using the routing key
-        /// resolved for its type.
-        /// </summary>
-        /// <typeparam name="TEvent">The type of integration event being published.</typeparam>
-        /// <param name="message">The integration event to serialize and publish.</param>
-        /// <returns>A task that completes once the message has been published to the channel.</returns>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown when no routing key is defined for <typeparamref name="TEvent"/>.
-        /// </exception>
-        /// <seealso cref="RabbitMqRoutingKeyResolver"/>
+
         public async Task PublishAsync<TEvent>(
             TEvent message,
             CancellationToken cancellationToken)
             where TEvent : IIntegrationEvent
 
         {
-            //string routingKey = routingKeyResolver.Resolve<TEvent>();
-            //await using IChannel channel = await connection.CreateChannelAsync(
-            //    cancellationToken: cancellationToken);
-
-            //const string exchangeName = "auktionshuset.events";
-
-            //await channel.ExchangeDeclareAsync(
-            //    exchange: exchangeName,
-            //    type: ExchangeType.Topic,
-            //    durable: true,
-            //    autoDelete: false,
-            //    cancellationToken: cancellationToken);
-
-            //string json = JsonSerializer.Serialize(message);
-            //byte[] body = Encoding.UTF8.GetBytes(json);
-
-            //await channel.BasicPublishAsync(
-            //    exchange: exchangeName,
-            //    routingKey: routingKey,
-            //    body: body,
-            //    cancellationToken: cancellationToken);
-
             cancellationToken.ThrowIfCancellationRequested();
 
-            string routingKey =
-                routingKeyResolver.Resolve<TEvent>();
+            EventContractRegistry.EventContractRecord contract = registry.ByType(message.GetType());
+
+            string routingKey = contract.EventContractName;
+            string json = registry.Serialize(message);
+            string exchangeName = RabbitMqTopology.EventExchange;
 
             var channelOptions = new CreateChannelOptions(
                 publisherConfirmationsEnabled: true,
@@ -67,7 +37,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                 autoDelete: false,
                 cancellationToken: cancellationToken);
 
-            byte[] body = JsonSerializer.SerializeToUtf8Bytes(
+            byte[] body = JsonSerializer.SerializeToUtf8Bytes(          //Fix det her? Med encoding utf8?
                 message,
                 message.GetType());
 

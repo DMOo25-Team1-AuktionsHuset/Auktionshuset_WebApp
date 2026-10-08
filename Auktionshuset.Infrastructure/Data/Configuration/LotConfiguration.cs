@@ -21,7 +21,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.Property(l => l.Quantity).IsRequired();
             entity.Property(l => l.EstimatedValue).IsRequired();
             entity.Property(l => l.Description).IsRequired();
-            var tags = entity.Property(l => l.Tags)
+            PropertyBuilder<List<string>> tags = entity.Property(l => l.Tags)
                 .IsRequired()
                 .HasColumnType("jsonb")
                 .HasConversion(

@@ -1,43 +1,24 @@
-using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
-using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
-using Auktionshuset.Application.Admin.Lots.CreateLot;
-using Auktionshuset.Application.Admin.Lots.DeleteLot;
-using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
-using System.Text.Json;
-using Auktionshuset.Application.Admin.Employees.CreateEmployee;
-using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
-using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
-using Auktionshuset.Application.Admin.Auctions.Bids;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
 
-internal sealed class AdminEventsConsumer : BackgroundService
+internal sealed class AdminEventsConsumer(
+    IConnection connection,
+    IServiceScopeFactory scopeFactory,
+    EventContractRegistry registry) : BackgroundService
 {
     private const string QueueName = RabbitMqTopology.Queues.Admin;
-
-    private readonly IConnection _connection;
-    private readonly IServiceScopeFactory _scopeFactory;
-
-    public AdminEventsConsumer(
-        IConnection connection,
-        IServiceScopeFactory scopeFactory)
-    {
-        _connection = connection;
-        _scopeFactory = scopeFactory;
-    }
 
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
         await using IChannel channel =
-            await _connection.CreateChannelAsync(
+            await connection.CreateChannelAsync(
                 cancellationToken: stoppingToken);
 
         string exchangeName = RabbitMqTopology.EventExchange;
@@ -56,22 +37,7 @@ internal sealed class AdminEventsConsumer : BackgroundService
             autoDelete: false,
             cancellationToken: stoppingToken);
 
-        foreach (string? routingKey in new[]
-        {
-            RabbitMqTopology.RoutingKeys.LotCreated,
-            RabbitMqTopology.RoutingKeys.LotUpdated,
-            RabbitMqTopology.RoutingKeys.LotDeleted,
-
-            RabbitMqTopology.RoutingKeys.EmployeeCreated,
-            RabbitMqTopology.RoutingKeys.EmployeeUpdated,
-            RabbitMqTopology.RoutingKeys.EmployeeDeleted,
-
-            RabbitMqTopology.RoutingKeys.AuctionCreated,
-            RabbitMqTopology.RoutingKeys.AuctionUpdated,
-            RabbitMqTopology.RoutingKeys.AuctionDeleted,
-
-            RabbitMqTopology.RoutingKeys.BidPlaced
-        })
+        foreach (string routingKey in registry.EventContractNames)
         {
             await channel.QueueBindAsync(
                 queue: QueueName,
@@ -80,81 +46,24 @@ internal sealed class AdminEventsConsumer : BackgroundService
                 cancellationToken: stoppingToken);
         }
 
-        AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(channel);
+        var consumer = new AsyncEventingBasicConsumer(channel);
 
         consumer.ReceivedAsync += async (_, eventArgs) =>
         {
-            string json = Encoding.UTF8.GetString(eventArgs.Body.ToArray());
+            string json = Encoding.UTF8.GetString(
+                eventArgs.Body.ToArray());
 
-            switch (eventArgs.RoutingKey)
-            {
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.LotCreated:
-                    await HandleAsync<LotCreatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
+           EventContractRegistry.EventContractRecord contract = registry.ByName(eventArgs.RoutingKey);
 
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.LotUpdated:
-                    await HandleAsync<LotUpdatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
+           IIntegrationEvent message = registry.Deserialize(contract, json);
+        
+           await using AsyncServiceScope scope =
+               scopeFactory.CreateAsyncScope();
 
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.LotDeleted:
-                    await HandleAsync<LotDeletedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionCreated:
-                    await HandleAsync<AuctionCreatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeCreated:
-                    await HandleAsync<EmployeeCreatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeDeleted:
-                    await HandleAsync<EmployeeDeletedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeUpdated:
-                    await HandleAsync<EmployeeUpdatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionUpdated:
-                    await HandleAsync<AuctionUpdatedIntegrationEvent>(
-                        json,
-                        stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionDeleted:
-                    await HandleAsync<AuctionDeletedIntegrationEvent>(
-                        json,
-                        stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.BidPlaced:
-                    await HandleAsync<BidPlacedIntegrationEvent>(
-                        json,
-                        stoppingToken);
-                    break;
-
-                default:
-                    throw new InvalidOperationException(
-                        $"No handler mapping exists for routing key '{eventArgs.RoutingKey}'.");
-            }
+           await contract.Dispatch(
+                scope.ServiceProvider,
+                message,
+                stoppingToken);
 
             await channel.BasicAckAsync(
                 deliveryTag: eventArgs.DeliveryTag,
@@ -173,20 +82,4 @@ internal sealed class AdminEventsConsumer : BackgroundService
             stoppingToken);
     }
 
-    private async Task HandleAsync<TEvent>(
-        string json,
-        CancellationToken cancellationToken)
-        where TEvent : IIntegrationEvent
-    {
-        TEvent message = JsonSerializer.Deserialize<TEvent>(json)
-            ?? throw new InvalidOperationException(
-                $"Failed to deserialize {typeof(TEvent).Name}");
-
-        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
-
-        IIntegrationEventHandler<TEvent> handler = scope.ServiceProvider
-            .GetRequiredService<IIntegrationEventHandler<TEvent>>();
-
-        await handler.HandleAsync(message, cancellationToken);
-    }
 }

@@ -1,11 +1,9 @@
 @page "/admin/auctions"
 @page "/admin/auctions/create"
 @rendermode InteractiveServer
-@using System.Globalization
 @using Auktionshuset.Contracts.Dto.Admin.Auction
 @using Auktionshuset.Contracts.Dto.Admin.Employee
 @using Auktionshuset.Contracts.Dto.Admin.Lot
-@using Auktionshuset.Models
 
 <PageTitle>Auktioner | Auktionshuset</PageTitle>
 
@@ -90,7 +88,7 @@
                         {
                             <InputSelect id="auction-employee" @bind-Value="model.EmployeeId">
                                 <option value="">Vælg auktionarius</option>
-                                @foreach (var employee in employees)
+                                @foreach (EmployeeListItemResponse employee in employees)
                                 {
                                     <option value="@employee.EmployeeId">@employee.FirstName @employee.LastName</option>
                                 }
@@ -124,7 +122,7 @@
                             <button type="button" class="btn btn-secondary btn-sm" @onclick="ClearSelection">Ryd valg</button>
                         </div>
                         <ul class="selection-list">
-                            @foreach (var line in SelectedLotLines)
+                            @foreach (SelectedLot line in SelectedLotLines)
                             {
                                 <li>@line.Name &mdash; @line.Quantity stk.</li>
                             }
@@ -214,10 +212,10 @@
             {
                 @* En afkrydset genstand tilføjes med hele sit lagerantal. *@
                 <ul class="lot-options" aria-label="Genstande i lageret">
-                    @foreach (var lot in FilteredPickerLots)
+                    @foreach (LotListItemResponse lot in FilteredPickerLots)
                     {
-                        var isPicked = selectedLots.ContainsKey(lot.LotId);
-                        var thumbnailUrl = LotService.ResolveImageUrl(lot.ImageUrl);
+                        bool isPicked = selectedLots.ContainsKey(lot.LotId);
+                        string? thumbnailUrl = LotService.ResolveImageUrl(lot.ImageUrl);
 
                         <li class="lot-option @(isPicked ? "is-selected" : null)" @key="lot.LotId">
                             <input id="@($"pick-{lot.LotId}")"
@@ -296,7 +294,7 @@
                 <div class="field">
                     <label for="auction-page-size">Pr. side</label>
                     <select id="auction-page-size" @bind="auctionPageSize" @bind:after="OnAuctionPageSizeChanged">
-                        @foreach (var size in PageSizeOptions)
+                        @foreach (int size in PageSizeOptions)
                         {
                             <option value="@size">@size</option>
                         }
@@ -354,10 +352,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var auction in PagedAuctions)
+                        @foreach (AuctionListItemResponse auction in PagedAuctions)
                         {
-                            var isSelected = editingAuctionId == auction.AuctionId;
-                            var imageUrls = auction.ImageUrls
+                            bool isSelected = editingAuctionId == auction.AuctionId;
+                            string[] imageUrls = auction.ImageUrls
                                 .Select(LotService.ResolveImageUrl)
                                 .OfType<string>()
                                 .ToArray();
@@ -371,7 +369,7 @@
                                     else
                                     {
                                         <span class="thumb-strip">
-                                            @foreach (var url in imageUrls.Take(3))
+                                            @foreach (string url in imageUrls.Take(3))
                                             {
                                                 <img class="dash-thumb" src="@url" alt="" loading="lazy" />
                                             }

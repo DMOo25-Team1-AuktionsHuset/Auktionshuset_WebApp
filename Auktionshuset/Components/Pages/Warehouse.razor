@@ -1,6 +1,5 @@
 @page "/warehouse"
 @rendermode InteractiveServer
-@using System.Globalization
 @using Auktionshuset.Contracts.Dto.Admin.Lot
 
 <PageTitle>Lager | Auktionshuset</PageTitle>
@@ -175,7 +174,7 @@
             <div class="field page-size-field">
                 <label for="lot-page-size">Pr. side</label>
                 <select id="lot-page-size" @bind="pageSize" @bind:after="OnPageSizeChanged">
-                    @foreach (var size in PageSizeOptions)
+                    @foreach (int size in PageSizeOptions)
                     {
                         <option value="@size">@size</option>
                     }
@@ -227,10 +226,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var lot in PagedLots)
+                        @foreach (LotListItemResponse lot in PagedLots)
                         {
-                            var isSelected = editingLotId == lot.LotId;
-                            var isExpanded = expandedLotIds.Contains(lot.LotId);
+                            bool isSelected = editingLotId == lot.LotId;
+                            bool isExpanded = expandedLotIds.Contains(lot.LotId);
 
                             <tr class="@(isSelected ? "is-selected" : null)" @onclick="() => BeginEdit(lot)">
                                 <td class="cell-thumb" data-label="Billede">
@@ -283,7 +282,7 @@
                                     else
                                     {
                                         <span class="clamp-tags" id="@($"lot-tags-{lot.LotId}")">
-                                            @foreach (var tag in lot.Tags)
+                                            @foreach (string tag in lot.Tags)
                                             {
                                                 <span class="tag">@tag</span>
                                             }

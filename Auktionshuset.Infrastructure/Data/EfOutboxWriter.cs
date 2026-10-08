@@ -1,34 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json;
-using Auktionshuset.Application.Abstraction;
+﻿using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Messaging;
+
 
 namespace Auktionshuset.Infrastructure.Data
 {
-    internal sealed class EfOutboxWriter(AHDBContext dbContext) : IOutboxWriter
+    internal sealed class EfOutboxWriter(
+        AHDBContext dbContext,
+        EventContractRegistry eventContracts) : IOutboxWriter
     {
-        private readonly AHDBContext _dbContext = dbContext;
         public Task AddAsync(
             IIntegrationEvent integrationEvent,
             CancellationToken cancellationToken = default)
         {
-            OutboxMessage outboxMessage = new OutboxMessage
+            EventContractRegistry.EventContractRecord contract = eventContracts.ByType(integrationEvent.GetType());
+            string payload = eventContracts.Serialize(integrationEvent);
+
+            var outboxMessage = new OutboxMessage
             {
                 OutboxId = integrationEvent.EventId,
-                EventType = integrationEvent.GetType().AssemblyQualifiedName !,
-                Payload = JsonSerializer.Serialize(
-                    integrationEvent,
-                    integrationEvent.GetType()),
+                EventType = contract.EventContractName,
+                Payload = payload,
                 OccuredAtTime = integrationEvent.OccurredAt.ToUniversalTime()
             };
 
-             _dbContext.Set<OutboxMessage>().Add(outboxMessage);
+            dbContext.OutboxMessages.Add(outboxMessage);
             
              // Ingen savechanges her da den skal deles med ændringen af Lot. 
-             return Task.CompletedTask;
+            return Task.CompletedTask;
         }
     }
 }

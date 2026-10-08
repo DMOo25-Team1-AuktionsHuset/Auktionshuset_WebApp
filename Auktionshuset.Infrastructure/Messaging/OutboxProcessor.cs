@@ -1,25 +1,16 @@
 ﻿using System.Text.Json;
-using Auktionshuset.Application.Admin.Auctions.Bids;
-using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
-using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
-using Auktionshuset.Application.Admin.Employees.CreateEmployee;
-using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
-using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
-using Auktionshuset.Application.Admin.Lots.CreateLot;
-using Auktionshuset.Application.Admin.Lots.UpdateLot;
-using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Data;
-using Auktionshuset.Infrastructure.Database;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
-    internal sealed class OutboxProcessor(IServiceScopeFactory scopeFactory, ILogger<OutboxProcessor> logger) : BackgroundService
+    internal sealed class OutboxProcessor(
+        IServiceScopeFactory scopeFactory, 
+        ILogger<OutboxProcessor> logger,
+        EventContractRegistry registry) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -53,7 +44,7 @@ namespace Auktionshuset.Infrastructure.Messaging
         {
             await using (AsyncServiceScope scope = scopeFactory.CreateAsyncScope())
             {
-                var store = scope.ServiceProvider.GetRequiredService<DbOutboxStore>();
+                DbOutboxStore store = scope.ServiceProvider.GetRequiredService<DbOutboxStore>();
                 await store.QuarantineExhaustedAsync(cancellationToken);
             }
 
@@ -64,7 +55,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                 await using AsyncServiceScope scope =
                     scopeFactory.CreateAsyncScope();
 
-                var store = scope.ServiceProvider
+                DbOutboxStore store = scope.ServiceProvider
                     .GetRequiredService<DbOutboxStore>();
 
                 OutboxMessage? message =
@@ -95,10 +86,20 @@ namespace Auktionshuset.Infrastructure.Messaging
 
             try
             {
-                IIntegrationEvent integrationEvent =
-                    Deserialize(message);
+                EventContractRegistry.EventContractRecord contract = registry.ByName(message.EventType);
 
-                var publisher = services
+                IIntegrationEvent integrationEvent =
+                    registry.Deserialize(
+                        contract,
+                        message.Payload);
+
+                if (integrationEvent.EventId != message.OutboxId)
+                {
+                    throw new JsonException(
+                        "EventId in payload does not match OutboxId");
+                }
+
+                IIntegrationEventPublisher publisher = services
                     .GetRequiredService<IIntegrationEventPublisher>();
 
                 using var timeout =
@@ -109,8 +110,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                     TimeSpan.FromSeconds(
                         OutboxPolicy.PublishTimeoutSeconds));
 
-                await PublishAsync(
-                    publisher,
+                await publisher.PublishAsync(
                     integrationEvent,
                     timeout.Token);
             }
@@ -156,77 +156,9 @@ namespace Auktionshuset.Infrastructure.Messaging
             if (!completed)
             {
                 logger.LogWarning(
-                    $"Outbox {message.OutboxId}: publishing confirmed, " +
-                    "but lease was no longer valid. " +
-                    "Message can be sent again.");
+                    $"Outbox {message.OutboxId}: publishing confirmed, but lease was no longer valid. Message can be sent again.");
             }
         }
 
-        private static IIntegrationEvent Deserialize(OutboxMessage message)
-        {
-            Type? eventType = Type.GetType(message.EventType);
-
-            if (eventType == null || !typeof(IIntegrationEvent).IsAssignableFrom(eventType)) {
-                throw new NotSupportedException(
-                    $"Unknown integration event type: {message.EventType}");
-            }
-
-            if (JsonSerializer.Deserialize(message.Payload, eventType) is not IIntegrationEvent integrationEvent)
-            {
-                throw new JsonException(
-                    "Payload could not be read as a integration event");
-            }
-
-            if (integrationEvent.EventId != message.OutboxId)
-            {
-                throw new JsonException(
-                    "EventId in payload does not match OutboxId");
-            }
-
-            return integrationEvent;
-        }
-
-        private static Task PublishAsync(
-            IIntegrationEventPublisher publisher,
-            IIntegrationEvent integrationEvent,
-            CancellationToken cancellationToken)
-        {
-            //håndter kun Lotcreated som test
-            return integrationEvent switch
-            {
-                LotCreatedIntegrationEvent lotCreated =>
-                    publisher.PublishAsync(lotCreated, cancellationToken),
-
-                LotUpdatedIntegrationEvent lotUpdated =>
-                    publisher.PublishAsync(lotUpdated, cancellationToken),
-
-                LotDeletedIntegrationEvent lotDeleted =>
-                    publisher.PublishAsync(lotDeleted, cancellationToken),
-
-                AuctionCreatedIntegrationEvent auctionCreated =>
-                    publisher.PublishAsync(auctionCreated, cancellationToken),
-
-                AuctionUpdatedIntegrationEvent auctionUpdated =>
-                    publisher.PublishAsync(auctionUpdated, cancellationToken),
-
-                AuctionDeletedIntegrationEvent auctionDeleted =>
-                    publisher.PublishAsync(auctionDeleted, cancellationToken),
-
-                EmployeeCreatedIntegrationEvent employeeCreated =>
-                    publisher.PublishAsync(employeeCreated, cancellationToken),
-
-                EmployeeUpdatedIntegrationEvent employeeUpdated =>
-                    publisher.PublishAsync(employeeUpdated, cancellationToken),
-
-                EmployeeDeletedIntegrationEvent employeeDeleted =>
-                    publisher.PublishAsync(employeeDeleted, cancellationToken),
-
-                BidPlacedIntegrationEvent bidPlaced =>
-                    publisher.PublishAsync(bidPlaced, cancellationToken),
-
-                _ => throw new NotSupportedException(
-                    $"Outbox understøtter ikke {integrationEvent.GetType().Name}.")
-            };
-        }
     }
 }

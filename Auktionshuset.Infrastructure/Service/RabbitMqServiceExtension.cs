@@ -24,7 +24,7 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddScoped<IOutboxWriter, EfOutboxWriter>();
             services.AddScoped<DbOutboxStore>();
             services.AddHostedService<OutboxProcessor>();
-            services.AddSingleton<RabbitMqRoutingKeyResolver>();
+            services.AddSingleton<EventContractRegistry>();
 
             services.AddSingleton<IConnection>(_ =>
             {

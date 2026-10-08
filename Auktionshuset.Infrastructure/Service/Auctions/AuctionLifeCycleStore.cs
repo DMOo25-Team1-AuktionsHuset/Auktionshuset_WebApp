@@ -2,9 +2,8 @@
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Auktionshuset.Domain.Entities;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions
 {
@@ -12,9 +11,9 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
     {
         public async Task<bool> StartAsync(Guid auctionId, CancellationToken cancellationToken)
         {
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            var auction = await db.Auction
+            Auction? auction = await db.Auction
                 .Include(a => a.AuctionLots)
                 .SingleOrDefaultAsync(a => a.AuctionId == auctionId, cancellationToken);
 
@@ -25,7 +24,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
             auction.AuctionStatus = AuctionStatuses.Live;
 
-            foreach (var auctionLot in auction.AuctionLots)
+            foreach (AuctionLot auctionLot in auction.AuctionLots)
             {
                 auctionLot.OpenForBids = true;
             }
@@ -38,9 +37,9 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
         public async Task<bool> CloseAsync(Guid auctionId, CancellationToken cancellationToken)
         {
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            var auction = await db.Auction
+            Auction? auction = await db.Auction
                 .Include(a => a.AuctionLots)
                 .SingleOrDefaultAsync(
                     a => a.AuctionId == auctionId,
@@ -51,7 +50,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 return false;
             }
 
-            foreach (var auctionLot in auction.AuctionLots)
+            foreach (AuctionLot auctionLot in auction.AuctionLots)
             {
                 auctionLot.OpenForBids = false;
             }

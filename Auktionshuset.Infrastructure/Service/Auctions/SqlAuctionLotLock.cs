@@ -1,8 +1,5 @@
-﻿using System.Data;
-using System.Globalization;
-using Auktionshuset.Infrastructure.Database;
+﻿using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions
 {

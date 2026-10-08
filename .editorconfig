@@ -31,22 +31,25 @@ dotnet_style_predefined_type_for_locals_parameters_members = true:warning
 dotnet_style_predefined_type_for_member_access = true:warning
 
 # ============================================================
-# BRACES
-# Microsoft / Allman style for multiline control blocks.
-# Single-line guard clauses may omit braces.
+# BRACES & CONTROL FLOW
 # ============================================================
 
-# Allow:
-# if (auction is null) return;
-#
-# Prefer braces when the control statement spans multiple lines.
+# Allow single-line if statements without braces.
+# Prefer braces for multiline statements.
 csharp_prefer_braces = when_multiline:suggestion
 
-# Allman style when braces are used
+# Allman style
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
+
+# Place control-flow statements on separate lines
+csharp_preserve_single_line_statements = true
+csharp_preserve_single_line_blocks = true
+
+# Spacing
+csharp_space_after_keywords_in_control_flow_statements = true
 
 # ============================================================
 # EXPRESSION-BODIED MEMBERS

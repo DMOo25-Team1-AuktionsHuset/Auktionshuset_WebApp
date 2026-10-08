@@ -94,7 +94,7 @@ public class AuctionEndpointsTest
             CreateHandler(context),
             CancellationToken.None);
 
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("tilknyttet auktionarius"));
@@ -196,7 +196,7 @@ public class AuctionEndpointsTest
     {
         (TestContext? context, EmployeeRow _, Lot _) = await CreateContextAsync();
 
-        var createResult = await CreateAuctionEndpoint.HandleAsync(
+        Results<Created<CreateAuctionResponse>, ValidationProblem> createResult = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(null, []),
             CreateHandler(context),
             CancellationToken.None);
@@ -298,7 +298,7 @@ public class AuctionEndpointsTest
             new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
             CancellationToken.None);
 
-        var problem = Assert.IsType<ValidationProblem>(result.Result);
+        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
         Assert.Contains(
             problem.ProblemDetails.Errors.SelectMany(error => error.Value),
             message => message.Contains("tilknyttet auktionarius"));
@@ -468,7 +468,7 @@ public class AuctionEndpointsTest
         int lotQuantity = 1)
     {
         InMemoryEmployeeRepository employees = new InMemoryEmployeeRepository();
-        var seeded = (await employees.GetAllAsync(CancellationToken.None))[0];
+        Employee seeded = (await employees.GetAllAsync(CancellationToken.None))[0];
         var employee = new EmployeeRow(
             seeded.EmployeeId,
             seeded.AuctionHouseId,

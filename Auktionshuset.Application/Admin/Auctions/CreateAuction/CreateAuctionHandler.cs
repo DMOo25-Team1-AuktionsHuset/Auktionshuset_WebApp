@@ -2,7 +2,6 @@ using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
@@ -46,7 +45,7 @@ public sealed class CreateAuctionHandler(
             return CreateAuctionResult.Invalid(errors);
         }
 
-        var assignedEmployee = employee!;
+        Employee assignedEmployee = employee!;
         var auction = new AuctionEntity
         {
             AuctionId = Guid.NewGuid(),

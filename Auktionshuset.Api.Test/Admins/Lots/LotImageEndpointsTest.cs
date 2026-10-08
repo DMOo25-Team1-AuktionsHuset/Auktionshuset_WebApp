@@ -18,7 +18,7 @@ public class LotImageEndpointsTest
         byte[] bytes = PngBytes();
         var store = new FakeLotImageStore { NextImage = new LotImageContent(bytes, "image/png") };
         IResult result = await LotImageEndpoints.HandleGetAsync("abc123.png", store, CancellationToken.None);
-        var file = Assert.IsType<FileContentHttpResult>(result);
+        FileContentHttpResult file = Assert.IsType<FileContentHttpResult>(result);
         Assert.Equal("image/png", file.ContentType);
         Assert.Equal(bytes, file.FileContents);
     }

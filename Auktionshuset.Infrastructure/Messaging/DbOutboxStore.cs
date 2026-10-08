@@ -1,9 +1,6 @@
 ﻿using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {

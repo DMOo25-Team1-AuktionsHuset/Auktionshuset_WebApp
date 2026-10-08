@@ -1,7 +1,6 @@
 ﻿using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Auction;
 using Auktionshuset.Contracts.Dto.Auction;
-using Auktionshuset.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -36,7 +35,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Bid
 
             Guid? deviceSessionId = null;
 
-            var result = await handler.HandleAsync(
+            PlaceBidResult result = await handler.HandleAsync(
                 new PlaceBidCommand(
                     AuctionLotId: auctionLotId,
                     CustomerId: customerId,

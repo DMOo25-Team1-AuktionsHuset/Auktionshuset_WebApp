@@ -14,8 +14,8 @@ public static class DBStartExtensionHelper
     /// <returns>A task representing the asynchronous operation.</returns>
     public static async Task MigrateAndSeedDatabaseAsync(this WebApplication app)
     {
-        await using var scope = app.Services.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<AHDBContext>();
+        await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+        AHDBContext context = scope.ServiceProvider.GetRequiredService<AHDBContext>();
 
         await context.Database.MigrateAsync();
         await DBSeeder.SeedAsync(context);

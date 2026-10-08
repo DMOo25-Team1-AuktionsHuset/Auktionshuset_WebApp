@@ -2,7 +2,6 @@
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
-using Auktionshuset.Contracts.Dto.Auction;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Auktionshuset.Api.Events.Admin.Auction

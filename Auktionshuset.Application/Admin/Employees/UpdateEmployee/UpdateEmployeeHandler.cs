@@ -1,6 +1,5 @@
 ﻿using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee

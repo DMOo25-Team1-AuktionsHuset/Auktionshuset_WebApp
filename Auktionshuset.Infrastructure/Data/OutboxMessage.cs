@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Auktionshuset.Infrastructure.Data
+﻿namespace Auktionshuset.Infrastructure.Data
 {
     public sealed class OutboxMessage
     {

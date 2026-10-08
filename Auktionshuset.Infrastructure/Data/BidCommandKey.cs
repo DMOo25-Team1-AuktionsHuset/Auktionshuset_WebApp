@@ -1,8 +1,4 @@
 ﻿using Auktionshuset.Application.Auction;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Auktionshuset.Infrastructure.Data {
     public class BidCommandKey {

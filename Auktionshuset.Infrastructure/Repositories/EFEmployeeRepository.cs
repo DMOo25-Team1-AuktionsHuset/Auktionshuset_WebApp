@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Auktionshuset.Application.Abstraction.Admin.Employees;
+﻿using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;

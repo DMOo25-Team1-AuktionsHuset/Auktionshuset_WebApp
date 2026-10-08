@@ -1,12 +1,12 @@
 ﻿using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Auction;
-using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.Auction;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using BidEntity = Auktionshuset.Domain.Entities.Bid;
 
@@ -21,7 +21,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 return Rejected("InvalidBidRequest", 0m);
             }
 
-            await using var transaction =
+            await using IDbContextTransaction transaction =
                 await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
@@ -30,7 +30,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
                 // check idempotency before checking whether the session is still active,
                 // retry of already-processed request should return the original result
-                var previous = await db.BidCommandKeys.SingleOrDefaultAsync(
+                BidCommandKey? previous = await db.BidCommandKeys.SingleOrDefaultAsync(
                     r => r.CustomerId == command.CustomerId
                     && r.RequestId == command.RequestId,
                     cancellationToken);
@@ -44,7 +44,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                         : Rejected("RequestIdReuseWithDifferentPayload", previous.CurrentPrice);
                 }
 
-                var customer = await db.Customers.SingleOrDefaultAsync(
+                Customer? customer = await db.Customers.SingleOrDefaultAsync(
                     c => c.CustomerId == command.CustomerId,
                     cancellationToken);
 
@@ -54,7 +54,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     return Rejected("InvalidCustomer", 0m);
                 }
 
-                var item = await db.AuctionLot
+                AuctionLot? item = await db.AuctionLot
                     .Include(al => al.Auction)
                     .SingleOrDefaultAsync(al => al.AuctionLotId == command.AuctionLotId, cancellationToken);
 
@@ -64,7 +64,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     return Rejected("AuctionItemNotFound", 0m);
                 }
 
-                var now = clock.GetLocalNow().DateTime;
+                DateTime now = clock.GetLocalNow().DateTime;
 
                 DeviceSession? session = null;
 
@@ -92,7 +92,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     .Select(b => new { b.BidId, b.Amount })
                     .FirstOrDefaultAsync(cancellationToken);
 
-                var currentLeaderPrice = leader?.Amount ?? item.StartingPrice;
+                decimal currentLeaderPrice = leader?.Amount ?? item.StartingPrice;
                 bool bidIsTooLow = leader is null
                     ? command.Amount < item.StartingPrice
                     : command.Amount <= leader.Amount;
@@ -112,17 +112,17 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
                 if (errorCode != null)
                 {
-                    var rejected = Rejected(errorCode, currentLeaderPrice);
+                    PlaceBidResult rejected = Rejected(errorCode, currentLeaderPrice);
                     await SaveKeyAsync(command, rejected, now, cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return rejected;
                 }
 
                 // the item lock makes MAX + 1 safe for this AuctionLot
-                var lastSequence = await db.Bids
-                    .Where(b => b.AuctionLotId == item.AuctionLotId)
-                    .MaxAsync(b => (int?)b.SequenceNumber, cancellationToken)
-                    ?? 0;
+                int lastSequence = await db.Bids
+                                       .Where(b => b.AuctionLotId == item.AuctionLotId)
+                                       .MaxAsync(b => (int?)b.SequenceNumber, cancellationToken)
+                                   ?? 0;
 
                 var bid = new BidEntity
                 {
@@ -172,7 +172,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 // Handles two concurrent copies of one RequestId. If another
                 // constraint caused the exception, no matching receipt exists
                 // and the exception is rethrown.
-                var previous = await db.BidCommandKeys
+                BidCommandKey? previous = await db.BidCommandKeys
                     .AsNoTracking()
                     .SingleOrDefaultAsync(
                         r => r.CustomerId == command.CustomerId
@@ -194,11 +194,11 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
         public async Task<Guid?> CloseAuctionLotAsync(Guid auctionLotId, CancellationToken cancellationToken)
         {
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             await SqlAuctionLotLock.AcquireAsync(db, auctionLotId, cancellationToken);
 
-            var item = await db.AuctionLot.SingleOrDefaultAsync(
+            AuctionLot? item = await db.AuctionLot.SingleOrDefaultAsync(
                 al => al.AuctionLotId == auctionLotId,
                 cancellationToken);
 

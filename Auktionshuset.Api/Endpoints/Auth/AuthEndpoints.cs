@@ -12,7 +12,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
         public static IEndpointRouteBuilder MapAuthEndpoints(
             this IEndpointRouteBuilder endpoints)
         {
-            var group = endpoints
+            RouteGroupBuilder group = endpoints
                 .MapGroup("/api/auth")
                 .WithTags("Authentication")
                 .AllowAnonymous();
@@ -35,7 +35,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
             IAccessTokenService tokenService,
             CancellationToken cancellationToken)
         {
-            var user = await userStore.FindByEmailAsync(
+            AuthUser? user = await userStore.FindByEmailAsync(
                 request.Email, cancellationToken);
 
             if(user is null)
@@ -43,7 +43,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
                 return TypedResults.Unauthorized();
             }
 
-            var verificationResult = passwordHasher.VerifyHashedPassword(
+            PasswordVerificationResult verificationResult = passwordHasher.VerifyHashedPassword(
                 user,
                 user.PasswordHash,
                 request.Password);
@@ -60,7 +60,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
                     request.Password);
             }
 
-            var token = tokenService.Issue(user);
+            IssuedAccessToken token = tokenService.Issue(user);
 
             var response = new LoginResponse(
                 token.Value,

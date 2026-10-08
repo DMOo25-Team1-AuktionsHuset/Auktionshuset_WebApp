@@ -1,6 +1,5 @@
 using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
 
 namespace Auktionshuset.Application.Admin.Lots.DeleteLot;
 

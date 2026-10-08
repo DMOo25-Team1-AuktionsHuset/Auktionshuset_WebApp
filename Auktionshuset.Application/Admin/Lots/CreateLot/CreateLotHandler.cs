@@ -1,9 +1,5 @@
 ﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Auktionshuset.Application.Abstraction;
 
 namespace Auktionshuset.Application.Admin.Lots.CreateLot {

@@ -1,5 +1,4 @@
 ﻿using Auktionshuset.Application.Admin.Auctions.CloseAuction;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction

@@ -6,8 +6,6 @@ using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
-using Auktionshuset.Application.Abstraction.Admin.Auctions;
-using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Infrastructure.Service;
 using Auktionshuset.Infrastructure.Service.Auctions;
 using Auktionshuset.Application.Abstraction.Auction;

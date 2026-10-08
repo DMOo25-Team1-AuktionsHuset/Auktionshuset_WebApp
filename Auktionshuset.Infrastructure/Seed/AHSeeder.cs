@@ -13,7 +13,7 @@ namespace Auktionshuset.Infrastructure.Seed
             AHDBContext context,
             CancellationToken cancellationToken = default)
         {
-            var exists = await context.AuctionHouse
+            bool exists = await context.AuctionHouse
                 .AnyAsync(auctionHouse => auctionHouse.AuctionHouseId == DefaultAuctionHouseId,
                     cancellationToken);
 

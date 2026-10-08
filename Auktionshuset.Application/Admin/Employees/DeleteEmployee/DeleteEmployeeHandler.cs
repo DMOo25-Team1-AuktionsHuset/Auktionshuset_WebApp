@@ -1,5 +1,4 @@
 ﻿using Auktionshuset.Application.Abstraction;
-using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 
 namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee

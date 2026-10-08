@@ -25,7 +25,7 @@ namespace Auktionshuset.Infrastructure.Service
             IConfiguration configuration)
         {
 
-            var connectionString =
+            string connectionString =
                 configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
                     "Connection string 'DefaultConnection' blev ikke fundet.");

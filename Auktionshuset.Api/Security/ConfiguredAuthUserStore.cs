@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Security
 {
@@ -11,8 +10,8 @@ namespace Auktionshuset.Api.Security
 
         public ConfiguredAuthUserStore(IConfiguration configuration, IPasswordHasher<AuthUser> passwordHasher)
         {
-            var email = configuration[$"{BootstrapAdminSection}:Email"]?.Trim();
-            var password = configuration[$"{BootstrapAdminSection}:Password"];
+            string? email = configuration[$"{BootstrapAdminSection}:Email"]?.Trim();
+            string? password = configuration[$"{BootstrapAdminSection}:Password"];
 
             if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(password))
             {
@@ -45,7 +44,7 @@ namespace Auktionshuset.Api.Security
         public Task <AuthUser?> FindByEmailAsync(string email, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            users.TryGetValue(email.Trim(), out var user);
+            users.TryGetValue(email.Trim(), out AuthUser? user);
             return Task.FromResult(user);
         }
     }
