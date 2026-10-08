@@ -1,11 +1,11 @@
-﻿using Auktionshuset.Application.EventHandling;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Auktionshuset.Application.Admin.Lots.CreateLot;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
-using RabbitMQ.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
-using Auktionshuset.Application.Admin.Lots.CreateLot;
 
 namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {

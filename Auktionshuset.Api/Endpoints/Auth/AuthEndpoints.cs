@@ -29,7 +29,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
         public static async Task<Results<
             Ok<LoginResponse>,
             UnauthorizedHttpResult>> HandleLoginAsync(
-            LoginRequest request, 
+            LoginRequest request,
             IAuthUserStore userStore,
             IPasswordHasher<AuthUser> passwordHasher,
             IAccessTokenService tokenService,
@@ -38,7 +38,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
             AuthUser? user = await userStore.FindByEmailAsync(
                 request.Email, cancellationToken);
 
-            if(user is null)
+            if (user is null)
             {
                 return TypedResults.Unauthorized();
             }
@@ -56,7 +56,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
             if (verificationResult == PasswordVerificationResult.SuccessRehashNeeded)
             {
                 user.PasswordHash = passwordHasher.HashPassword(
-                    user, 
+                    user,
                     request.Password);
             }
 

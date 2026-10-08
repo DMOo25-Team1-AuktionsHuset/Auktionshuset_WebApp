@@ -1,9 +1,8 @@
-using System.Net;
-using System.Text.Json;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
-
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
+using System.Net;
+using System.Text.Json;
 
 namespace Auktionshuset.Services;
 

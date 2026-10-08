@@ -49,7 +49,7 @@ public sealed class UploadLotImageHandler(
 
         await lotRepository.UpdateAsync(lot, cancellationToken);
 
-        if(!string.IsNullOrWhiteSpace(previousFileName))
+        if (!string.IsNullOrWhiteSpace(previousFileName))
         {
             await imageStore.DeleteAsync(previousFileName, cancellationToken);
         }

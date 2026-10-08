@@ -1,7 +1,9 @@
 ﻿using Auktionshuset.Application.Auction;
 
-namespace Auktionshuset.Infrastructure.Data {
-    public class BidCommandKey {
+namespace Auktionshuset.Infrastructure.Data
+{
+    public class BidCommandKey
+    {
         public Guid BidCommandKeyId { get; set; }
 
         public required Guid CustomerId { get; set; }
@@ -18,7 +20,7 @@ namespace Auktionshuset.Infrastructure.Data {
         public string? ErrorCode { get; set; }
         public required DateTime ProcessedAt { get; set; }
 
-        public bool Matches(Guid auctionLotId, decimal amount) => 
+        public bool Matches(Guid auctionLotId, decimal amount) =>
             AuctionLotId == auctionLotId && RequestedAmount == amount;
 
         public PlaceBidResult ToResult(bool duplicate) =>

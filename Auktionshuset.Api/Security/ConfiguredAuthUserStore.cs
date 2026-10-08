@@ -41,7 +41,7 @@ namespace Auktionshuset.Api.Security
             };
         }
 
-        public Task <AuthUser?> FindByEmailAsync(string email, CancellationToken cancellationToken)
+        public Task<AuthUser?> FindByEmailAsync(string email, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             users.TryGetValue(email.Trim(), out AuthUser? user);

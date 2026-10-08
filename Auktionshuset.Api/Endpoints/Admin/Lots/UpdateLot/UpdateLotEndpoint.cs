@@ -1,7 +1,7 @@
 ﻿using Auktionshuset.Api.Security;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot

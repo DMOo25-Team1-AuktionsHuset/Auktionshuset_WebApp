@@ -1,8 +1,8 @@
 ﻿using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions;
+using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
-using Auktionshuset.Domain.Entities;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions

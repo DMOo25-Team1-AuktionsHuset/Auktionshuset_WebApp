@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Auktionshuset.Application.Admin.Auctions.Bids;
+﻿using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
@@ -11,6 +10,7 @@ using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Application.EventHandling;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {

@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
-using Auktionshuset.Application.Admin.Employees.CreateEmployee;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee

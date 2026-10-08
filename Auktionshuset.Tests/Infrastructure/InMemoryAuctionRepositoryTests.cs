@@ -1,7 +1,7 @@
-using Xunit;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 

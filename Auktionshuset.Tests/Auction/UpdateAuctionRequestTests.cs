@@ -1,6 +1,6 @@
-using Xunit;
-using System.ComponentModel.DataAnnotations;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
+using System.ComponentModel.DataAnnotations;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 

@@ -1,11 +1,11 @@
-using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Lots;
-using Auktionshuset.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

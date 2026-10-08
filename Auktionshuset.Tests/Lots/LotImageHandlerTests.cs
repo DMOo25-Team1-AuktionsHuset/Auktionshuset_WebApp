@@ -1,9 +1,9 @@
-using Xunit;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.Images;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 

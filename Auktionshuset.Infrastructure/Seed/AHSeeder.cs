@@ -1,5 +1,5 @@
-using Auktionshuset.Domain.Entities;
 using Auktionshuset.Domain;
+using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,9 +1,9 @@
-using Xunit;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.GetAuctions;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 

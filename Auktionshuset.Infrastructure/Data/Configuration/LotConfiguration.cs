@@ -1,8 +1,8 @@
-﻿using System.Text.Json;
-using Auktionshuset.Domain.Entities;
+﻿using Auktionshuset.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Data.Configuration
 {

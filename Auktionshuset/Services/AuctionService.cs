@@ -1,6 +1,6 @@
+using Auktionshuset.Contracts.Dto.Admin.Auction;
 using System.Net;
 using System.Text.Json;
-using Auktionshuset.Contracts.Dto.Admin.Auction;
 
 namespace Auktionshuset.Services;
 

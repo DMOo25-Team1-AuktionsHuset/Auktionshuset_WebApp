@@ -21,7 +21,7 @@ namespace Auktionshuset.Infrastructure.Repositories
             {
                 context.AuctionLot.Add(CreateRow(selectedLots));
             }
-            
+
             return Task.CompletedTask;
         }
 
@@ -60,7 +60,7 @@ namespace Auktionshuset.Infrastructure.Repositories
         {
             Auction? storedAuction = await context.Auction.FindAsync([auction.AuctionId], cancellationToken);
             if (storedAuction == null) return false;
-            
+
 
             // Update the auction properties
             context.Entry(storedAuction).CurrentValues.SetValues(auction);

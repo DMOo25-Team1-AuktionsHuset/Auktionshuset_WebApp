@@ -1,7 +1,7 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Auktionshuset.Api.Security;
 
@@ -54,9 +54,9 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
             credentials);
 
         return new IssuedAccessToken(
-        new JwtSecurityTokenHandler().WriteToken(token),expiresAt);
+        new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
     }
-    
+
     private static IEnumerable<Claim> CreateClaims(AuthUser user)
     {
         yield return new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString());

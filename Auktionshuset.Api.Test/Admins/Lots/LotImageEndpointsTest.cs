@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.Images;
@@ -7,6 +6,7 @@ using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Net.Http.Headers;
 
 namespace Auktionshuset.Api.Test.Admins.Lots;
 

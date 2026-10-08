@@ -1,4 +1,5 @@
-﻿namespace Auktionshuset.Application.Auction {
+﻿namespace Auktionshuset.Application.Auction
+{
     public sealed record PlaceBidCommand(
         Guid AuctionLotId,
         Guid CustomerId,

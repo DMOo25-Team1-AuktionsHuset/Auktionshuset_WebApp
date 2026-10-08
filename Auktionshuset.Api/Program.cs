@@ -1,17 +1,17 @@
-using Auktionshuset.Api.Endpoints.Auth;
-using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Admin.Auction;
+using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
+using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Auth;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
+using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Application.Admin.Auctions.CloseAuction;
 using Auktionshuset.Infrastructure.Service;
 using Auktionshuset.Infrastructure.Service.Auctions;
-using Auktionshuset.Application.Abstraction.Auction;
-using Auktionshuset.Api.Endpoints.Admin.Bid;
-using Auktionshuset.Application.Admin.Auctions.CloseAuction;
-using Auktionshuset.Api.Endpoints.Admin.Auction;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 

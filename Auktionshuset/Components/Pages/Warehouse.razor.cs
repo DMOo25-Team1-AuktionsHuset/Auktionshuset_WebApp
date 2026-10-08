@@ -1,9 +1,9 @@
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
-using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
-using Auktionshuset.Models;
 using Auktionshuset.Domain;
+using Auktionshuset.Models;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;

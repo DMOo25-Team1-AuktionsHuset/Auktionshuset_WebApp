@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Auktionshuset.Infrastructure.Repositories
 {
     public sealed class EFEmployeeRepository(AHDBContext context)
-        :IEmployeeRepository
+        : IEmployeeRepository
     {
         public Task AddAsync(Employee employee, CancellationToken cancellationToken)
         {

@@ -1,5 +1,5 @@
-using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Auktionshuset.Api.Security;
+using Auktionshuset.Application.Admin.Lots.DeleteLot;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 

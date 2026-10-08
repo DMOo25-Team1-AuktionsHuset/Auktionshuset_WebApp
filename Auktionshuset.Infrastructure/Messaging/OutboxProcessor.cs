@@ -1,9 +1,9 @@
-﻿using System.Text.Json;
-using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {

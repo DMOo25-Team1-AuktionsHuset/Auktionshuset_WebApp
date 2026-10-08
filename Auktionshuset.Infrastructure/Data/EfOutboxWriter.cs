@@ -26,8 +26,8 @@ namespace Auktionshuset.Infrastructure.Data
             };
 
             dbContext.OutboxMessages.Add(outboxMessage);
-            
-             // Ingen savechanges her da den skal deles med ændringen af Lot. 
+
+            // Ingen savechanges her da den skal deles med ændringen af Lot. 
             return Task.CompletedTask;
         }
     }

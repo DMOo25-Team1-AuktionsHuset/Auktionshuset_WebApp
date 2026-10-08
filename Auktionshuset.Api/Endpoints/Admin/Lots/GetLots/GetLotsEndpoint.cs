@@ -1,5 +1,5 @@
-using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Api.Security;
+using Auktionshuset.Application.Admin.Lots;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Microsoft.AspNetCore.Http.HttpResults;

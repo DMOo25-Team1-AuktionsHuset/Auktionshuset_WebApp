@@ -1,9 +1,9 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Identity;
+using System.Text;
 
 
 namespace Auktionshuset.Api.Security;
@@ -22,7 +22,7 @@ public static class SecurityServiceExtensions
         services.AddSingleton<
             IPasswordHasher<AuthUser>,
             PasswordHasher<AuthUser>>();
-        
+
         services.AddSingleton<
             IAuthUserStore,
             ConfiguredAuthUserStore>();

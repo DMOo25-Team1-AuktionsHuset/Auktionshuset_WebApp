@@ -61,7 +61,7 @@ public sealed class PostgresLotImageStore(AHDBContext dbContext) : ILotImageStor
 
         StoredLotImage? image = await dbContext.StoredLotImages.FindAsync([fileName], cancellationToken);
 
-        if(image == null) return false;
+        if (image == null) return false;
 
         dbContext.StoredLotImages.Remove(image);
 

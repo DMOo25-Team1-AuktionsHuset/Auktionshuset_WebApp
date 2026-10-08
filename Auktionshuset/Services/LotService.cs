@@ -1,10 +1,10 @@
+using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
+using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Auktionshuset.Contracts.Dto.Admin.Lot;
-using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
-using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
-using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 
 namespace Auktionshuset.Services;
 

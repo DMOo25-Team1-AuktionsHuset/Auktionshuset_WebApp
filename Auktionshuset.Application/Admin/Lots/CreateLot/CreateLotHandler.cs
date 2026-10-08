@@ -1,9 +1,10 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
+﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Domain.Entities;
-using Auktionshuset.Application.Abstraction;
 
-namespace Auktionshuset.Application.Admin.Lots.CreateLot {
-    public class CreateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork) 
+namespace Auktionshuset.Application.Admin.Lots.CreateLot
+{
+    public class CreateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork)
     {
         /// <summary>
         /// Creates a lot from the specified command, adds it to the repository, and publishes a
@@ -11,8 +12,10 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot {
         /// </summary>
         /// <param name="command">The values used to create the new lot.</param>
         /// <returns>A result containing the identifier of the newly created lot.</returns>
-        public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken) {
-            Lot lot = new Lot {
+        public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken)
+        {
+            Lot lot = new Lot
+            {
                 LotId = Guid.NewGuid(),
                 Name = command.Name,
                 Category = command.Category,

@@ -1,6 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Domain.Entities;
 using Auktionshuset.Domain;
+using Auktionshuset.Domain.Entities;
 using System.Collections.Concurrent;
 
 namespace Auktionshuset.Infrastructure.Service

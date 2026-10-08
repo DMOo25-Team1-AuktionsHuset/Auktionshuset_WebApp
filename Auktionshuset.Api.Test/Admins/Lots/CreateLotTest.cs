@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Auktionshuset.Api.Endpoints.Admin.Lots.CreateLot;
 using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
@@ -7,6 +6,7 @@ using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Domain.Entities;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.ComponentModel.DataAnnotations;
 
 namespace Auktionshuset.Api.Test.Admins.Lots;
 

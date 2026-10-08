@@ -9,6 +9,6 @@
             public const string Admin =
                 "auktionshuset.admin";
         }
-       
+
     }
 }

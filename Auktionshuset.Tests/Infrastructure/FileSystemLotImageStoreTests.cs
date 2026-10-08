@@ -1,5 +1,5 @@
-using Xunit;
 using Auktionshuset.Infrastructure.Service.Lots;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 
