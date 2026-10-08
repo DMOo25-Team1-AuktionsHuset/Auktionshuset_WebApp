@@ -5,24 +5,8 @@ using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
-    internal sealed class RabbitMqIntegrationEventPublisher : IIntegrationEventPublisher
+    internal sealed class RabbitMqIntegrationEventPublisher(IConnection connection, RabbitMqRoutingKeyResolver routingKeyResolver) : IIntegrationEventPublisher
     {
-        private readonly IConnection _connection;
-        private readonly RabbitMqRoutingKeyResolver _routingKeyResolver;
-
-        /// <summary>
-        /// Initializes a publisher that writes integration events to RabbitMQ.
-        /// </summary>
-        /// <param name="connection">The open RabbitMQ connection used to create publishing channels.</param>
-        /// <param name="routingKeyResolver">The resolver that maps event types to routing keys.</param>
-        public RabbitMqIntegrationEventPublisher(
-            IConnection connection,
-            RabbitMqRoutingKeyResolver routingKeyResolver)
-        {
-            _connection = connection;
-            _routingKeyResolver = routingKeyResolver;
-        }
-
         /// <summary>
         /// Serializes the event and publishes it to the event exchange using the routing key
         /// resolved for its type.
@@ -40,25 +24,67 @@ namespace Auktionshuset.Infrastructure.Messaging
             where TEvent : IIntegrationEvent
 
         {
-            string routingKey = _routingKeyResolver.Resolve<TEvent>();
-            await using IChannel channel = await _connection.CreateChannelAsync(
-                cancellationToken: cancellationToken);
+            //string routingKey = routingKeyResolver.Resolve<TEvent>();
+            //await using IChannel channel = await connection.CreateChannelAsync(
+            //    cancellationToken: cancellationToken);
 
-            const string exchangeName = "auktionshuset.events";
+            //const string exchangeName = "auktionshuset.events";
+
+            //await channel.ExchangeDeclareAsync(
+            //    exchange: exchangeName,
+            //    type: ExchangeType.Topic,
+            //    durable: true,
+            //    autoDelete: false,
+            //    cancellationToken: cancellationToken);
+
+            //string json = JsonSerializer.Serialize(message);
+            //byte[] body = Encoding.UTF8.GetBytes(json);
+
+            //await channel.BasicPublishAsync(
+            //    exchange: exchangeName,
+            //    routingKey: routingKey,
+            //    body: body,
+            //    cancellationToken: cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string routingKey =
+                routingKeyResolver.Resolve<TEvent>();
+
+            var channelOptions = new CreateChannelOptions(
+                publisherConfirmationsEnabled: true,
+                publisherConfirmationTrackingEnabled: true);
+
+            await using IChannel channel =
+                await connection.CreateChannelAsync(
+                    channelOptions,
+                    cancellationToken);
 
             await channel.ExchangeDeclareAsync(
-                exchange: exchangeName,
+                exchange: RabbitMqTopology.EventExchange,
                 type: ExchangeType.Topic,
                 durable: true,
                 autoDelete: false,
                 cancellationToken: cancellationToken);
 
-            string json = JsonSerializer.Serialize(message);
-            byte[] body = Encoding.UTF8.GetBytes(json);
+            byte[] body = JsonSerializer.SerializeToUtf8Bytes(
+                message,
+                message.GetType());
+
+            var properties = new BasicProperties
+            {
+                Persistent = true,
+                ContentType = "application/json",
+                ContentEncoding = "utf-8",
+                MessageId = message.EventId.ToString("D"),
+                Type = routingKey
+            };
 
             await channel.BasicPublishAsync(
-                exchange: exchangeName,
+                exchange: RabbitMqTopology.EventExchange,
                 routingKey: routingKey,
+                mandatory: true,
+                basicProperties: properties,
                 body: body,
                 cancellationToken: cancellationToken);
         }

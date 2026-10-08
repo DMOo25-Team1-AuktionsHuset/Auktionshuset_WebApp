@@ -61,13 +61,16 @@ internal sealed class AdminEventsConsumer : BackgroundService
             RabbitMqTopology.RoutingKeys.LotCreated,
             RabbitMqTopology.RoutingKeys.LotUpdated,
             RabbitMqTopology.RoutingKeys.LotDeleted,
-            RabbitMqTopology.RoutingKeys.AuctionCreated,
+
             RabbitMqTopology.RoutingKeys.EmployeeCreated,
             RabbitMqTopology.RoutingKeys.EmployeeUpdated,
             RabbitMqTopology.RoutingKeys.EmployeeDeleted,
+
             RabbitMqTopology.RoutingKeys.AuctionCreated,
             RabbitMqTopology.RoutingKeys.AuctionUpdated,
-            RabbitMqTopology.RoutingKeys.AuctionDeleted
+            RabbitMqTopology.RoutingKeys.AuctionDeleted,
+
+            RabbitMqTopology.RoutingKeys.BidPlaced
         })
         {
             await channel.QueueBindAsync(
