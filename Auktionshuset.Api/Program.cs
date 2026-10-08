@@ -26,10 +26,6 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
 
-// should eventually be removed and actual database implementation should be registered instead
-builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
-builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
-
 //API Services
 builder.Services.AddApiServices();
 

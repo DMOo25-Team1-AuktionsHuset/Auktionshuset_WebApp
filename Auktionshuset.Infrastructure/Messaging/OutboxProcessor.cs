@@ -224,6 +224,24 @@ namespace Auktionshuset.Infrastructure.Messaging
                 BidPlacedIntegrationEvent bidPlaced =>
                     publisher.PublishAsync(bidPlaced, cancellationToken),
 
+                AuctionCreatedIntegrationEvent auctionCreated =>
+                    publisher.PublishAsync(auctionCreated, cancellationToken),
+
+                AuctionUpdatedIntegrationEvent auctionUpdated =>
+                    publisher.PublishAsync(auctionUpdated, cancellationToken),
+
+                AuctionDeletedIntegrationEvent auctionDeleted =>
+                    publisher.PublishAsync(auctionDeleted, cancellationToken),
+
+                EmployeeCreatedIntegrationEvent employeeCreated =>
+                    publisher.PublishAsync(employeeCreated, cancellationToken),
+
+                EmployeeUpdatedIntegrationEvent employeeUpdated =>
+                    publisher.PublishAsync(employeeUpdated, cancellationToken),
+
+                EmployeeDeletedIntegrationEvent employeeDeleted =>
+                    publisher.PublishAsync(employeeDeleted, cancellationToken),
+
                 _ => throw new NotSupportedException(
                     $"Outbox understøtter ikke {integrationEvent.GetType().Name}.")
             };

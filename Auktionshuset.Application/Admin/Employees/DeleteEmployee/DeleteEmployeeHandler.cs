@@ -1,11 +1,13 @@
-﻿using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 
 namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
 {
     public sealed class DeleteEmployeeHandler(
         IEmployeeRepository employeeRepository,
-        IIntegrationEventPublisher eventPublisher)
+        IOutboxWriter outboxWriter,
+        IUnitOfWork unitOfWork)
     {
         /// <summary>
         /// Deletes the employee referenced by the specified command.
@@ -30,9 +32,11 @@ namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
                 EmployeeId: command.EmployeeId,
                 OccurredAt: DateTime.UtcNow);
 
-            await eventPublisher.PublishAsync(
+            await outboxWriter.AddAsync(
                 integrationEvent,
                 cancellationToken);
+
+            await unitOfWork.CommitBatchAsync(cancellationToken);
 
             return true;
         }

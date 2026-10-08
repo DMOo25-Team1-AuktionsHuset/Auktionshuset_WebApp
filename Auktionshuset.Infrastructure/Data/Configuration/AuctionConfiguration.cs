@@ -16,10 +16,11 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         /// <param name="entity">The builder used to configure the <see cref="Auction"/> entity.</param>
         public void Configure(EntityTypeBuilder<Auction> entity)
         {
+            var dateTimeConverter = new AuctionDateTimeConverter();
             entity.HasKey(a => a.AuctionId);
             entity.Property(a => a.Name).IsRequired().HasMaxLength(120);
-            entity.Property(a => a.StartsAt).IsRequired();
-            entity.Property(a => a.EndedAt);
+            entity.Property(a => a.StartsAt).HasConversion(dateTimeConverter).IsRequired();
+            entity.Property(a => a.EndedAt).HasConversion(dateTimeConverter);
             entity.Property(a => a.AuctionStatus).IsRequired().HasMaxLength(32);
 
             entity.HasOne(a => a.AuctionHouse)

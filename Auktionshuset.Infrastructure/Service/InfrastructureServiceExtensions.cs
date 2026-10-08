@@ -1,6 +1,7 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Lots;
@@ -29,17 +30,20 @@ namespace Auktionshuset.Infrastructure.Service
                 ?? throw new InvalidOperationException(
                     "Connection string 'DefaultConnection' blev ikke fundet.");
 
+            //DBContext
             services.AddDbContext<AHDBContext>(options =>
                 options.UseNpgsql(connectionString));
 
             // Add infrastructure services here
+            services.AddRabbitMq(configuration);
+
+            // Add repositories here
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
-            services.AddRabbitMq(configuration);
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<ILotImageStore, PostgresLotImageStore>();
-
-            services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
+            services.AddScoped<IEmployeeRepository, EFEmployeeRepository>();
+            services.AddScoped<IAuctionRepository, EFAuctionRepository>();
 
             return services;
         }

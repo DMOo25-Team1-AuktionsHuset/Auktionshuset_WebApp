@@ -1,3 +1,4 @@
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.EventHandling;
 
@@ -5,7 +6,8 @@ namespace Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 
 public sealed class DeleteAuctionHandler(
     IAuctionRepository auctionRepository,
-    IIntegrationEventPublisher eventPublisher)
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork)
 {
     /// <summary>
     /// Deletes the auction referenced by the command and tells connected clients about it.
@@ -22,12 +24,14 @@ public sealed class DeleteAuctionHandler(
             return false;
         }
 
-        await eventPublisher.PublishAsync(
+        await outboxWriter.AddAsync(
             new AuctionDeletedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 AuctionId: command.AuctionId,
                 OccurredAt: DateTime.Now),
             cancellationToken);
+
+        await unitOfWork.CommitBatchAsync(cancellationToken);
 
         return true;
     }
