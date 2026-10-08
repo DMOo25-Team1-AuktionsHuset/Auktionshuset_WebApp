@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Auktionshuset.Infrastructure.Messaging
 {
     internal sealed class OutboxProcessor(
-        IServiceScopeFactory scopeFactory, 
+        IServiceScopeFactory scopeFactory,
         ILogger<OutboxProcessor> logger,
         EventContractRegistry registry) : BackgroundService
     {
@@ -24,7 +24,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                 {
                     break;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     logger.LogError(ex, "Outbox batch failed, worker retries");
                 }

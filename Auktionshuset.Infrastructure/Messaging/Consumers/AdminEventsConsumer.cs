@@ -53,22 +53,22 @@ internal sealed class AdminEventsConsumer(
             string json = Encoding.UTF8.GetString(
                 eventArgs.Body.ToArray());
 
-           EventContractRegistry.EventContractRecord contract = registry.ByName(eventArgs.RoutingKey);
+            EventContractRegistry.EventContractRecord contract = registry.ByName(eventArgs.RoutingKey);
 
-           IIntegrationEvent message = registry.Deserialize(contract, json);
-        
-           await using AsyncServiceScope scope =
-               scopeFactory.CreateAsyncScope();
+            IIntegrationEvent message = registry.Deserialize(contract, json);
 
-           await contract.Dispatch(
-                scope.ServiceProvider,
-                message,
-                stoppingToken);
+            await using AsyncServiceScope scope =
+                scopeFactory.CreateAsyncScope();
+
+            await contract.Dispatch(
+                 scope.ServiceProvider,
+                 message,
+                 stoppingToken);
 
             await channel.BasicAckAsync(
-                deliveryTag: eventArgs.DeliveryTag,
-                multiple: false,
-                cancellationToken: stoppingToken);
+                 deliveryTag: eventArgs.DeliveryTag,
+                 multiple: false,
+                 cancellationToken: stoppingToken);
         };
 
         await channel.BasicConsumeAsync(
