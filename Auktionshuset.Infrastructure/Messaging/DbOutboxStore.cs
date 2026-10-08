@@ -88,7 +88,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                     "ProcessedAtTime" = CURRENT_TIMESTAMP,
                     "Error" = NULL,
                     "LeaseToken" = NULL,
-                    "LeaseTokenExpiresAtTime" = NULL
+                    "LeaseExpiresAtTime" = NULL
                 WHERE "OutboxId" = {outboxId}
                     AND "LeaseToken" = {leaseToken}
                     AND "LeaseExpiresAtTime" > CURRENT_TIMESTAMP
