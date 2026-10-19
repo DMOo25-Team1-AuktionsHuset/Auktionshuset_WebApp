@@ -2,6 +2,7 @@ using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Auktionshuset.Infrastructure.Repositories;
 
@@ -19,12 +20,12 @@ public sealed class PostgresRefreshTokenStore(AHDBContext db) : IRefreshTokenSto
     public async Task<RefreshRotationResult> RotateAsync(string tokenHash, RefreshToken replacement,
         DateTimeOffset now, CancellationToken cancellationToken)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var token = await FindAsync(tokenHash, cancellationToken);
+        await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        RefreshToken? token = await FindAsync(tokenHash, cancellationToken);
         if (token is null) return RefreshRotationResult.Invalid;
 
         // Lock the root, not just the presented token: refresh and logout must share one lock.
-        var root = await LockFamilyAsync(token.FamilyId, cancellationToken);
+        RefreshToken? root = await LockFamilyAsync(token.FamilyId, cancellationToken);
         token = await FindAsync(tokenHash, cancellationToken);
         if (root is null || token is null || root.FamilyRevokedAt is not null || token.ExpiresAt <= now)
             return RefreshRotationResult.Invalid;
@@ -51,8 +52,8 @@ public sealed class PostgresRefreshTokenStore(AHDBContext db) : IRefreshTokenSto
 
     public async Task RevokeFamilyAsync(string tokenHash, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var token = await FindAsync(tokenHash, cancellationToken);
+        await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        RefreshToken? token = await FindAsync(tokenHash, cancellationToken);
         if (token is null) return;
         if (await LockFamilyAsync(token.FamilyId, cancellationToken) is null) return;
         await RevokeLockedFamilyAsync(token.FamilyId, now, cancellationToken);
@@ -61,7 +62,7 @@ public sealed class PostgresRefreshTokenStore(AHDBContext db) : IRefreshTokenSto
 
     private async Task<RefreshToken?> LockFamilyAsync(Guid familyId, CancellationToken cancellationToken)
     {
-        var rows = await db.RefreshTokens.FromSqlInterpolated(
+        List<RefreshToken> rows = await db.RefreshTokens.FromSqlInterpolated(
             $"SELECT * FROM \"RefreshTokens\" WHERE \"Id\" = {familyId} FOR UPDATE")
             .AsNoTracking().ToListAsync(cancellationToken);
         return rows.SingleOrDefault();

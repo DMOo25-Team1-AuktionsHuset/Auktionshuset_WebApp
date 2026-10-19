@@ -46,7 +46,7 @@ public sealed class EFLotRepo(AHDBContext dbContext)
         Guid lotId,
         CancellationToken cancellationToken)
     {
-        var lot = await dbContext.Lot.FindAsync(
+        Lot? lot = await dbContext.Lot.FindAsync(
             [lotId],
             cancellationToken);
 

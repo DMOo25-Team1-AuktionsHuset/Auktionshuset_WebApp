@@ -1,4 +1,3 @@
-using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
 using Auktionshuset.Api.Endpoints.Admin.GetAuctions;
 using Auktionshuset.Api.Endpoints.Admin.UpdateAuction;

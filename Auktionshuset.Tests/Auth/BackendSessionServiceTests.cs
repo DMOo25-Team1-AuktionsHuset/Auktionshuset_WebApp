@@ -16,7 +16,7 @@ public sealed class BackendSessionServiceTests
     [Fact]
     public async Task ConcurrentCallersRotateOnceAndKeepAbsoluteExpiryAndNewRoles()
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Clock.Advance(TimeSpan.FromMinutes(2));
         fixture.Backend.BlockRefresh = true;
         Task<string?> first = fixture.Sessions.GetAccessTokenAsync(fixture.Id);
@@ -39,7 +39,7 @@ public sealed class BackendSessionServiceTests
     [Fact]
     public async Task LogoutDuringRefreshRevokesTheReplacementAndCannotResurrectTheSession()
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Clock.Advance(TimeSpan.FromMinutes(2));
         fixture.Backend.BlockRefresh = true;
         Task<string?> refresh = fixture.Sessions.GetAccessTokenAsync(fixture.Id);
@@ -57,7 +57,7 @@ public sealed class BackendSessionServiceTests
     [Fact]
     public async Task CallerCancellationDoesNotAbandonAnInFlightSingleUseToken()
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Clock.Advance(TimeSpan.FromMinutes(2));
         fixture.Backend.BlockRefresh = true;
         using var cancellation = new CancellationTokenSource();
@@ -76,7 +76,7 @@ public sealed class BackendSessionServiceTests
     [InlineData(HttpStatusCode.ServiceUnavailable)]
     public async Task FailedRefreshInvalidatesSession(HttpStatusCode status)
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Backend.RefreshStatus = status;
         fixture.Clock.Advance(TimeSpan.FromMinutes(2));
         Assert.Null(await fixture.Sessions.GetAccessTokenAsync(fixture.Id));
@@ -88,7 +88,7 @@ public sealed class BackendSessionServiceTests
     [InlineData(false, true)]
     public async Task RefreshCannotChangeUserOrExtendAbsoluteExpiry(bool changeUser, bool extendExpiry)
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Backend.ChangeUser = changeUser;
         fixture.Backend.ExtendExpiry = extendExpiry;
         fixture.Clock.Advance(TimeSpan.FromMinutes(2));
@@ -99,7 +99,7 @@ public sealed class BackendSessionServiceTests
     [Fact]
     public async Task RefreshAcceptsPostgresMicrosecondPrecisionWithoutExtendingSession()
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Backend.TruncateTimestamp = true;
         fixture.Clock.Advance(TimeSpan.FromMinutes(2));
         Assert.Equal("new-access", await fixture.Sessions.GetAccessTokenAsync(fixture.Id));
@@ -109,7 +109,7 @@ public sealed class BackendSessionServiceTests
     [Fact]
     public async Task TransportFailureInvalidatesSessionWithoutRetryingRefresh()
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Backend.Offline = true;
         fixture.Clock.Advance(TimeSpan.FromMinutes(2));
         Assert.Null(await fixture.Sessions.GetAccessTokenAsync(fixture.Id));
@@ -121,7 +121,7 @@ public sealed class BackendSessionServiceTests
     [Fact]
     public async Task ExpiredAbsoluteSessionNeverCallsRefresh()
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Clock.Advance(TimeSpan.FromDays(8));
         Assert.Null(await fixture.Sessions.GetAccessTokenAsync(fixture.Id));
         Assert.Equal(0, fixture.Backend.RefreshCalls);
@@ -130,7 +130,7 @@ public sealed class BackendSessionServiceTests
     [Fact]
     public async Task LogoutClearsLocalSessionWhenBackendIsUnavailable()
     {
-        var fixture = await Fixture.CreateAsync();
+        Fixture fixture = await Fixture.CreateAsync();
         fixture.Backend.Offline = true;
         await fixture.Sessions.LogoutAsync(fixture.Id);
         Assert.False(fixture.Tickets.IsValid(fixture.Id));
@@ -188,7 +188,7 @@ public sealed class BackendSessionServiceTests
         {
             if (Offline) throw new HttpRequestException("offline");
             ForwardedIp = request.Headers.GetValues("X-Forwarded-For").Single();
-            var body = await request.Content!.ReadFromJsonAsync<RefreshTokenRequest>(ct);
+            RefreshTokenRequest? body = await request.Content!.ReadFromJsonAsync<RefreshTokenRequest>(ct);
             if (request.RequestUri!.AbsolutePath.EndsWith("logout"))
             {
                 LoggedOutToken = body!.RefreshToken;

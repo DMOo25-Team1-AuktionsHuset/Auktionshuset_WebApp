@@ -12,7 +12,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
         public static IEndpointRouteBuilder MapAuthEndpoints(
             this IEndpointRouteBuilder endpoints)
         {
-            var group = endpoints
+            RouteGroupBuilder group = endpoints
                 .MapGroup("/api/auth")
                 .WithTags("Authentication")
                 .AllowAnonymous();
@@ -29,7 +29,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
                 HttpContext context, CancellationToken cancellationToken) =>
             {
                 DisableCaching(context);
-                var response = await tokens.RotateAsync(request.RefreshToken, cancellationToken);
+                LoginResponse? response = await tokens.RotateAsync(request.RefreshToken, cancellationToken);
                 return response is null ? Results.Unauthorized() : Results.Ok(response);
             }).RequireRateLimiting(AuthRateLimitingExtensions.Refresh)
                 .Produces<LoginResponse>().Produces(StatusCodes.Status401Unauthorized)
@@ -58,7 +58,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
             HttpContext context,
             CancellationToken cancellationToken)
         {
-            var user = await userStore.FindByEmailAsync(
+            AuthUser? user = await userStore.FindByEmailAsync(
                 request.Email, cancellationToken);
 
             DisableCaching(context);
@@ -67,7 +67,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
                 return TypedResults.Unauthorized();
             }
 
-            var verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+            PasswordVerificationResult verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
 
             if (verificationResult == PasswordVerificationResult.Failed)
             {
@@ -81,7 +81,7 @@ namespace Auktionshuset.Api.Endpoints.Auth
                     request.Password);
             }
 
-            var response = await refreshTokens.CreateSessionAsync(user, cancellationToken);
+            LoginResponse response = await refreshTokens.CreateSessionAsync(user, cancellationToken);
 
             return TypedResults.Ok(response);
         }

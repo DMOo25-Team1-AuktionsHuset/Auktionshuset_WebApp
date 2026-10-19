@@ -68,7 +68,7 @@ public class InMemoryEmployeeRepositoryTests
     public async Task AddAsync_AddsEmployee()
     {
         var repository = new InMemoryEmployeeRepository();
-        var employee = NewEmployee();
+        Employee employee = NewEmployee();
 
         await repository.AddAsync(employee, CancellationToken.None);
 

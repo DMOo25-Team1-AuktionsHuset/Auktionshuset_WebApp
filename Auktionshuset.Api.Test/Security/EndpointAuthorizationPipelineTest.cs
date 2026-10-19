@@ -75,25 +75,25 @@ public class EndpointAuthorizationPipelineTest
     {
         using IHost host = await StartServerAsync();
         using HttpClient client = host.GetTestClient();
-        var token = host.Services.GetRequiredService<IAccessTokenService>().Issue(new AuthUser
+        IssuedAccessToken token = host.Services.GetRequiredService<IAccessTokenService>().Issue(new AuthUser
         {
             UserId = Guid.NewGuid(), Email = "role-test@example.test", PasswordHash = string.Empty,
             Roles = [role], Permissions = []
         });
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Value);
-        using var list = await client.GetAsync("/api/employee/");
+        using HttpResponseMessage list = await client.GetAsync("/api/employee/");
         Assert.Equal(allowed ? HttpStatusCode.OK : HttpStatusCode.Forbidden, list.StatusCode);
-        using var detail = await client.GetAsync("/api/employee/8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60");
+        using HttpResponseMessage detail = await client.GetAsync("/api/employee/8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60");
         Assert.Equal(allowed ? HttpStatusCode.OK : HttpStatusCode.Forbidden, detail.StatusCode);
         Guid missingAuction = Guid.NewGuid();
-        using var update = await client.PutAsJsonAsync($"/api/auctions/{missingAuction}", new
+        using HttpResponseMessage update = await client.PutAsJsonAsync($"/api/auctions/{missingAuction}", new
         {
             Name = "Role test", StartsAt = DateTime.Now.AddDays(1), EndsAt = DateTime.Now.AddDays(2),
             EmployeeId = Guid.Parse("8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60"),
             AuctionHouseId = Guid.NewGuid(), Lots = Array.Empty<object>()
         });
         Assert.Equal(allowed ? HttpStatusCode.NotFound : HttpStatusCode.Forbidden, update.StatusCode);
-        using var delete = await client.DeleteAsync($"/api/auctions/{missingAuction}");
+        using HttpResponseMessage delete = await client.DeleteAsync($"/api/auctions/{missingAuction}");
         Assert.Equal(allowed ? HttpStatusCode.NotFound : HttpStatusCode.Forbidden, delete.StatusCode);
     }
 

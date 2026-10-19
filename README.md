@@ -75,26 +75,11 @@ AuktionsHuset
 ---
 ## Kør projektet lokalt med Visual Studio
 
-```bash
+Følg [trin-for-trin-vejledningen til teamets Windows-pc'er](docs/team-setup.md).
+Den dækker VPN, certifikat, personlig Vault-adgang, de resterende lokale
+indstillinger og opstart af **Auktionshuset.Api** og **Auktionshuset**.
 
-git clone [repository-url]
-
-Åben projekt i Visual Studio
-
-Tilføj user secret i package manager console med dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=my-server;Database=my-db;User Id=user;Password=password;"
-
-Launch-projektet skal være AuktionsHuset.API
-
-Default-projektet i package manager console skal være AuktionsHuset.Infrastructure
-
-I package manager console kør `Update-Database`
-
-Kør multilaunch på AuktionsHuset og AuktionsHuset.API
-
-```
-
-Brugere i systemet:
-- Brugernavn: Test      - Password: 
+Den projektansvarlige bruger [vejledningen til sikker udlevering af Vault-adgang](docs/vault-admin-onboarding.md).
 
 ---
 ## Kør med Docker
@@ -117,7 +102,9 @@ https://localhost:[7201]
 
 ---
 ## Database
-Connection string ligger i secrets eller Docker environment variables.
+Ved lokal API-opstart hentes databasebrugernavn og adgangskode fra Vault.
+Host, port og databasenavn læses fra `Database`-sektionen i API'ens konfiguration.
+API'en kører migrationer og seeding ved opstart mod den konfigurerede database.
 ### Migrations
 
 ```bash

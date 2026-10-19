@@ -30,7 +30,7 @@ public sealed class ServerTicketStoreTests
 
     private static AuthenticationTicket CreateTicket(string email, string jwt, DateTimeOffset expiresAt)
     {
-        var claims = new[] { new Claim(ClaimTypes.Email, email) };
+        Claim[] claims = new[] { new Claim(ClaimTypes.Email, email) };
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
         var properties = new AuthenticationProperties { ExpiresUtc = expiresAt };
         properties.Items[ServerTicketStore.BackendTokenProperty] = jwt;

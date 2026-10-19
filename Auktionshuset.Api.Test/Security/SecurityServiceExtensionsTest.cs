@@ -36,11 +36,11 @@ public class SecurityServiceExtensionsTest
             policy.Requirements,
             requirement => requirement is DenyAnonymousAuthorizationRequirement);
 
-        var authorization = provider.GetRequiredService<IAuthorizationService>();
+        IAuthorizationService authorization = provider.GetRequiredService<IAuthorizationService>();
         foreach (string role in new[] { SecurityRoles.AuctionAdmin, SecurityRoles.SuperAdmin, SecurityRoles.LotAdmin, SecurityRoles.Customer })
         {
             var user = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Role, role)], "test"));
-            var result = await authorization.AuthorizeAsync(user, null, policy);
+            AuthorizationResult result = await authorization.AuthorizeAsync(user, null, policy);
             Assert.Equal(role is SecurityRoles.AuctionAdmin or SecurityRoles.SuperAdmin, result.Succeeded);
         }
     }

@@ -50,8 +50,8 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Invalid(errors);
         }
 
-        var lots = await lotRepository.GetAllAsync(cancellationToken);
-        var auctionLots = AuctionValidation.BuildAuctionLots(
+        IReadOnlyList<Lot> lots = await lotRepository.GetAllAsync(cancellationToken);
+        IReadOnlyCollection<AuctionLot> auctionLots = AuctionValidation.BuildAuctionLots(
             command.Lots,
             lots.ToDictionary(lot => lot.LotId),
             auction,
@@ -62,7 +62,7 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Invalid(errors);
         }
 
-        var assignedEmployee = employee!;
+        Employee assignedEmployee = employee!;
         auction.Name = command.Name.Trim();
         auction.StartsAt = command.StartsAt;
         auction.EndedAt = command.EndsAt;

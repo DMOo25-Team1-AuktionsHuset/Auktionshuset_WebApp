@@ -15,15 +15,15 @@ public sealed class AuthRateLimitingTests
     [Fact]
     public async Task TrustedFrontendGetsSeparateLimitForEachRealClient()
     {
-        using var host = await StartAsync(trustFrontend: true);
-        using var client = host.GetTestClient();
+        using IHost host = await StartAsync(trustFrontend: true);
+        using HttpClient client = host.GetTestClient();
         for (int i = 0; i < 6; i++)
         {
-            using var response = await LoginAsync(client, "192.0.2.10");
+            using HttpResponseMessage response = await LoginAsync(client, "192.0.2.10");
             Assert.Equal(i < 5 ? HttpStatusCode.NoContent : HttpStatusCode.TooManyRequests, response.StatusCode);
             if (i == 5) Assert.NotNull(response.Headers.RetryAfter);
         }
-        using var otherClient = await LoginAsync(client, "192.0.2.20");
+        using HttpResponseMessage otherClient = await LoginAsync(client, "192.0.2.20");
         Assert.Equal(HttpStatusCode.NoContent, otherClient.StatusCode);
     }
 
@@ -32,11 +32,11 @@ public sealed class AuthRateLimitingTests
     [InlineData(true, "203.0.113.50")]
     public async Task UntrustedCallerCannotBypassLimitByChangingForwardedHeader(bool trustFrontend, string remoteAddress)
     {
-        using var host = await StartAsync(trustFrontend);
-        using var client = host.GetTestClient();
+        using IHost host = await StartAsync(trustFrontend);
+        using HttpClient client = host.GetTestClient();
         for (int i = 0; i < 6; i++)
         {
-            using var response = await LoginAsync(client, $"192.0.2.{i + 1}", remoteAddress);
+            using HttpResponseMessage response = await LoginAsync(client, $"192.0.2.{i + 1}", remoteAddress);
             Assert.Equal(i < 5 ? HttpStatusCode.NoContent : HttpStatusCode.TooManyRequests, response.StatusCode);
         }
     }
@@ -53,7 +53,7 @@ public sealed class AuthRateLimitingTests
     {
         var values = new Dictionary<string, string?>();
         if (trustFrontend) values["Authentication:KnownProxies:0"] = "127.0.0.1";
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         return new HostBuilder().ConfigureWebHost(web =>
         {
             web.UseTestServer();

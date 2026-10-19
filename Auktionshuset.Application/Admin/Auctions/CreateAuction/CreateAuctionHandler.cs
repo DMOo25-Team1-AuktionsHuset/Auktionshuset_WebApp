@@ -44,7 +44,7 @@ public sealed class CreateAuctionHandler(
             return CreateAuctionResult.Invalid(errors);
         }
 
-        var assignedEmployee = employee!;
+        Employee assignedEmployee = employee!;
         var auction = new AuctionEntity
         {
             AuctionId = Guid.NewGuid(),

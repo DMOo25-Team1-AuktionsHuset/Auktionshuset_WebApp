@@ -8,6 +8,7 @@ using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
+using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Domain;
@@ -27,7 +28,7 @@ public class EmployeeEndpointsTest
         Results<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>, NotFound> result =
             await GetEmployeeByIdEndpoint.HandleAsync(employee.EmployeeId, handler, CancellationToken.None);
 
-        var response = Assert.IsType<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>>(result.Result).Value!;
+        EmployeeResponse response = Assert.IsType<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>>(result.Result).Value!;
         Assert.Equal(employee.EmployeeId, response.EmployeeId);
         Assert.Equal(employee.AuctionHouseId, response.AuctionHouseId);
     }

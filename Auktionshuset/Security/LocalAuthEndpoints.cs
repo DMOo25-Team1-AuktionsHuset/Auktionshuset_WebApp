@@ -46,7 +46,7 @@ public static class LocalAuthEndpoints
 
         string apiBaseUrl = configuration["Api:BaseUrl"]
             ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
-        using var client = httpClientFactory.CreateClient("BackendAuthentication");
+        using HttpClient client = httpClientFactory.CreateClient("BackendAuthentication");
         client.BaseAddress = new Uri(apiBaseUrl);
         string? clientIp = context.Connection.RemoteIpAddress?.ToString();
         BackendSessionService.ForwardClientIp(client, clientIp);
@@ -101,7 +101,7 @@ public static class LocalAuthEndpoints
             return Results.Redirect("/login?error=unavailable");
         }
 
-        var principal = BackendSessionService.CreatePrincipal(login.User, CookieAuthenticationDefaults.AuthenticationScheme);
+        ClaimsPrincipal principal = BackendSessionService.CreatePrincipal(login.User, CookieAuthenticationDefaults.AuthenticationScheme);
         var properties = new AuthenticationProperties
         {
             IsPersistent = true,

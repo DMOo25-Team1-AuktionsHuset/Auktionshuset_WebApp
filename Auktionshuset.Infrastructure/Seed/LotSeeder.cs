@@ -34,14 +34,14 @@ namespace Auktionshuset.Infrastructure.Seed
             AHDBContext context,
             CancellationToken cancellationToken = default)
         {
-            var lotIds = Lots.Select(lot => lot.LotId).ToArray();
-            var existingIds = await context.Lot
+            Guid[] lotIds = Lots.Select(lot => lot.LotId).ToArray();
+            List<Guid> existingIds = await context.Lot
                 .Where(lot => lotIds.Contains(lot.LotId))
                 .Select(lot => lot.LotId)
                 .ToListAsync(cancellationToken);
 
             var existingIdSet = existingIds.ToHashSet();
-            var missingLots = Lots
+            Lot[] missingLots = Lots
                 .Where(lot => !existingIdSet.Contains(lot.LotId))
                 .ToArray();
 
