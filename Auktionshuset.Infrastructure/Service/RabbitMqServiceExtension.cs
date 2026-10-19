@@ -21,45 +21,39 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddSingleton<EventContractRegistry>();
+            services.AddSingleton<RabbitMqTopologyInitializer>();
+
+            services.AddSingleton(_ => new ConnectionFactory
+            {
+                HostName = GetRequiredConfigurationValue(
+                    configuration, "RabbitMQ:HostName"),
+                UserName = GetRequiredConfigurationValue(
+                    configuration, "RabbitMQ:UserName"),
+                Password = GetRequiredConfigurationValue(
+                    configuration, "RabbitMQ:Password"),
+                Port = GetRequiredRabbitMqPort(configuration),
+                VirtualHost = configuration["RabbitMQ:VirtualHost"] ?? "/",
+                ClientProvidedName = "auktionshuset-api",
+
+                // Provider and worker loop owns reconnect
+                AutomaticRecoveryEnabled = false,
+                TopologyRecoveryEnabled = false,
+
+                RequestedConnectionTimeout = TimeSpan.FromSeconds(5),
+                HandshakeContinuationTimeout = TimeSpan.FromSeconds(5),
+                ContinuationTimeout = TimeSpan.FromSeconds(5),
+
+                RequestedHeartbeat = TimeSpan.FromSeconds(15),
+
+                ConsumerDispatchConcurrency = 1
+            });
+
+            services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
+            services.AddSingleton<IIntegrationEventPublisher, RabbitMqIntegrationEventPublisher>();
             services.AddScoped<IOutboxWriter, EfOutboxWriter>();
             services.AddScoped<DbOutboxStore>();
             services.AddHostedService<OutboxProcessor>();
-            services.AddSingleton<EventContractRegistry>();
-
-            services.AddSingleton<IConnection>(_ =>
-            {
-                string hostName = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:HostName");
-
-                string userName = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:UserName");
-
-                string password = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:Password");
-
-                int port = GetRequiredRabbitMqPort(configuration);
-
-                ConnectionFactory factory = new ConnectionFactory
-                {
-                    HostName = hostName,
-                    Port = port,
-                    UserName = userName,
-                    Password = password
-                };
-
-                return factory
-                    .CreateConnectionAsync()
-                    .GetAwaiter()
-                    .GetResult();
-            });
-
-            services.AddSingleton<
-                IIntegrationEventPublisher,
-                RabbitMqIntegrationEventPublisher>();
-
             services.AddHostedService<AdminEventsConsumer>();
 
             return services;
@@ -87,10 +81,10 @@ namespace Auktionshuset.Infrastructure.Service
                 configuration,
                 "RabbitMQ:Port");
 
-            if (!int.TryParse(value, out int port) || port <= 0)
+            if (!int.TryParse(value, out int port) || port is < 1 or > 65535)
             {
                 throw new InvalidOperationException(
-                    "Configuration value 'RabbitMQ:Port' must be a positive integer.");
+                    "Configuration value 'RabbitMQ:Port' must be between 1 and 65535.");
             }
 
             return port;

@@ -22,7 +22,7 @@ namespace Auktionshuset.Infrastructure.Data
                 OutboxId = integrationEvent.EventId,
                 EventType = contract.EventContractName,
                 Payload = payload,
-                OccuredAtTime = integrationEvent.OccurredAt.ToUniversalTime()
+                OccurredAtTime = integrationEvent.OccurredAt.ToUniversalTime()
             };
 
             dbContext.OutboxMessages.Add(outboxMessage);

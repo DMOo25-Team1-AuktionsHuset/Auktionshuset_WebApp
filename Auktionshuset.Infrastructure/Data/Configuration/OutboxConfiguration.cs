@@ -10,7 +10,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             builder.HasKey(o => o.OutboxId);
             builder.Property(o => o.EventType).IsRequired();
             builder.Property(o => o.Payload).IsRequired();
-            builder.Property(o => o.OccuredAtTime).IsRequired();
+            builder.Property(o => o.OccurredAtTime).IsRequired();
             builder.Property(o => o.ProcessedAtTime).IsRequired(false);
             builder.Property(o => o.Attempts).IsRequired();
             builder.Property(o => o.NextAttemptAtTime)
@@ -25,7 +25,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             builder.HasIndex(o => new
             {
                 o.NextAttemptAtTime,
-                o.OccuredAtTime,
+                o.OccurredAtTime,
                 o.OutboxId
             })
             .HasDatabaseName("OutboxMessages_Ready")

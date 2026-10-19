@@ -432,7 +432,18 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("OccuredAtTime")
+                    b.Property<DateTime?>("LeaseExpiresAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("NextAttemptAtTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime>("OccurredAtTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Payload")
@@ -442,7 +453,14 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Property<DateTime?>("ProcessedAtTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("QuarantinedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("OutboxId");
+
+                    b.HasIndex("NextAttemptAtTime", "OccurredAtTime", "OutboxId")
+                        .HasDatabaseName("OutboxMessages_Ready")
+                        .HasFilter("\"ProcessedAtTime\" IS NULL AND \"QuarantinedAtTime\" IS NULL");
 
                     b.ToTable("OutboxMessages");
                 });

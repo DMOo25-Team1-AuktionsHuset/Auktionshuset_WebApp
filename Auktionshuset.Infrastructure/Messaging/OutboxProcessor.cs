@@ -121,7 +121,7 @@ namespace Auktionshuset.Infrastructure.Messaging
             catch (Exception ex)
             {
                 bool permanentFailure =
-                    ex is JsonException or NotSupportedException;
+                    ex is PermanentMessageException or JsonException or NotSupportedException;
 
                 bool updated = await store.FailAsync(
                     message,
