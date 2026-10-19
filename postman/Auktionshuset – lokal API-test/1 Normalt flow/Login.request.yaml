@@ -1,0 +1,25 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: '{"email":"{{email}}","password":"{{password}}"}'
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Login returnerer 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const data = pm.response.json();
+        pm.test("Access token findes", () => pm.expect(data.accessToken).to.be.a("string").and.not.empty);
+        pm.environment.set("accessToken", data.accessToken);
+        if (data.refreshToken) pm.environment.set("refreshToken", data.refreshToken);
+      } else {
+        pm.environment.unset("accessToken");
+        pm.environment.unset("refreshToken");
+      }
+    language: text/javascript
+order: 1000

@@ -428,3 +428,8 @@ FodyWeavers.xsd
 *.msm
 *.msp
 /.zed
+
+# Local Postman workspace association and environments (credentials/tokens)
+/postman/.postman/
+/postman/*.environment.yaml
+/postman/*.postman_environment.json

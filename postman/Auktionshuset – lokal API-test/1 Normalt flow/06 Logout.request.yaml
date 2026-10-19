@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/logout"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: '{"refreshToken":"{{refreshToken}}"}'
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 204', () => pm.response.to.have.status(204));
+      if (pm.response.code === 204) { pm.environment.unset("accessToken"); pm.environment.unset("refreshToken"); }
+    language: text/javascript
+  - type: beforeRequest
+    code: pm.environment.set("loggedOutRefreshToken", pm.environment.get("refreshToken"));
+    language: text/javascript
+order: 6000
