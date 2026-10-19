@@ -7,7 +7,11 @@ Du opretter en lokal konto, som du kan bruge til at logge ind under udvikling.
 
 Åbn **PowerShell**, og kør:
 
-[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$keyBytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($keyBytes)
+$rng.Dispose()
+[Convert]::ToBase64String($keyBytes)
 
 Kopiér resultatet. Du skal bruge det i næste trin.
 Signing key bruges af API'et til login-tokens; det er ikke din adgangskode.
