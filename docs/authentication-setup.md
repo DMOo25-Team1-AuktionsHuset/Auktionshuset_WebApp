@@ -25,51 +25,42 @@ Signing key bruges af API'et til login-tokens; det er ikke din adgangskode.
 Visual Studio åbner filen `secrets.json`. Indstillingerne i denne fil gemmes
 kun på din computer og følger ikke med Git.
 
-## 3. Indsæt login-indstillingerne
+## 3. Indsæt database- og login-indstillinger
 
-Hvis filen er tom eller kun indeholder `{}`, indsætter du hele eksemplet:
+Her bruges feltnavne med kolon, så eksemplet har samme format som teamets
+secrets.json. Kopiér eksemplet, hvis din fil er tom:
 
-{
-  "Authentication": {
-    "Issuer": "Auktionshuset.Api",
-    "Audience": "Auktionshuset.Web",
-    "SigningKey": "INDSÆT NØGLEN FRA POWERSHELL HER",
-    "BootstrapAdmin": {
-      "Email": "udvikler@example.com",
-      "Password": "VÆLG DIN EGEN ADGANGSKODE HER"
+    {
+      "ConnectionStrings:DefaultConnection": "Host=DATABASESERVER;Port=5432;Database=auction_db;Username=DATABASEBRUGER;Password=DATABASEADGANGSKODE",
+      "Authentication:Issuer": "Auktionshuset.Api",
+      "Authentication:Audience": "Auktionshuset.Web",
+      "Authentication:SigningKey": "INDSÆT NØGLEN FRA POWERSHELL HER",
+      "Authentication:BootstrapAdmin:Email": "udvikler@example.com",
+      "Authentication:BootstrapAdmin:Password": "VÆLG DIN EGEN ADGANGSKODE HER"
     }
-  }
-}
 
-Ret disse tre værdier, og behold anførselstegnene omkring dem:
+- **ConnectionStrings:DefaultConnection:** Få den korrekte forbindelse til teamets database fra den ansvarlige via en privat kanal. Eksemplets server, databasebruger og adgangskode er pladsholdere. Computeren skal have netværksadgang til databaseserveren.
+- **Authentication:SigningKey:** Indsæt din egen genererede nøgle fra trin 1.
+- **Authentication:BootstrapAdmin:Email:** Skriv din egen login-email.
+- **Authentication:BootstrapAdmin:Password:** Vælg din egen login-adgangskode. Det er ikke databaseadgangskoden.
+- **Authentication:Issuer** og **Authentication:Audience:** Behold værdierne fra eksemplet.
 
-- **SigningKey:** Indsæt resultatet fra trin 1.
-- **Email:** Skriv den email, du vil logge ind med.
-- **Password:** Vælg din egen adgangskode.
+Hvis filen allerede har indstillinger, fx RabbitMQ eller databaseforbindelsen,
+skal du beholde dem og kun tilføje de manglende felter inden for de samme ydre
+krølleparenteser. Behold en eksisterende gyldig signing key. Hvert feltnavn må
+kun optræde én gang. Der skal være komma mellem felterne, men ikke efter det
+sidste felt.
 
-`Issuer` og `Audience` kan stå præcis som i eksemplet.
+.NET understøtter også indlejrede sektioner, men brug én skrivemåde for hvert
+felt. Tilføj fx ikke både en indlejret Authentication-sektion og de samme
+Authentication-felter med kolon.
 
-Hvis filen allerede indeholder fx en databaseforbindelse, skal du beholde den
-og tilføje `Authentication` ved siden af med komma mellem felterne:
+Del kun den nødvendige databaseforbindelse med de relevante teammedlemmer.
+Hver udvikler vælger sin egen signing key og sit eget bootstrap-login; det er
+ikke nødvendigt at kopiere en andens komplette secrets.json. Ingen rigtige
+secrets skal lægges i repositoryet.
 
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "DIN EKSISTERENDE DATABASEFORBINDELSE"
-  },
-  "Authentication": {
-    "Issuer": "Auktionshuset.Api",
-    "Audience": "Auktionshuset.Web",
-    "SigningKey": "INDSÆT NØGLEN FRA POWERSHELL HER",
-    "BootstrapAdmin": {
-      "Email": "udvikler@example.com",
-      "Password": "VÆLG DIN EGEN ADGANGSKODE HER"
-    }
-  }
-}
-
-Behold din rigtige databaseforbindelse i stedet for teksten i eksemplet.
-Hvis du allerede har en `Authentication`-sektion, skal du rette den eksisterende,
-så der kun er én. Gem filen med **Ctrl+S**.
+Gem filen med **Ctrl+S**.
 
 ## 4. Start begge projekter
 
@@ -78,7 +69,7 @@ så der kun er én. Gem filen med **Ctrl+S**.
 3. Brug **https**-profilen til API'et. Den bruger adressen `https://localhost:7061`, som frontenden er konfigureret til at kontakte.
 4. Start solutionen. Hvis projekterne allerede kørte, skal du stoppe og starte dem igen.
 
-Guiden forudsætter, at projektets database og øvrige tjenester allerede er sat
+Guiden forudsætter, at projektets database og øvrige tjenester er sat
 op som beskrevet i README. Trinene her opsætter selve login-funktionen.
 
 ## 5. Log ind
