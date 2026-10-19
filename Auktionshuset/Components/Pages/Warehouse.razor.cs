@@ -1,5 +1,6 @@
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
+using Auktionshuset.Contracts.Security;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Models;
@@ -115,9 +116,9 @@ public partial class Warehouse : IAsyncDisposable
     protected override async Task OnInitializedAsync()
     {
         ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        canCreateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission);
-        canUpdateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission);
-        canDeleteLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission);
+        canCreateLots = AdminRoles.CanManageLots(user);
+        canUpdateLots = AdminRoles.CanManageLots(user);
+        canDeleteLots = AdminRoles.CanManageLots(user);
         ResetForm();
         await LoadLotsAsync();
     }

@@ -9,8 +9,19 @@ public sealed class ServerTicketStore(TimeProvider timeProvider) : ITicketStore
 {
     public const string SessionIdClaim = "app_session_id";
     public const string BackendTokenProperty = ".backend_access_token";
+    public const string RefreshTokenProperty = ".backend_refresh_token";
+    public const string AccessTokenExpiryProperty = ".backend_access_expires_at";
+    public const string RefreshTokenExpiryProperty = ".backend_refresh_expires_at";
+    public const string ClientIpProperty = ".client_ip";
 
-    private readonly ConcurrentDictionary<string, AuthenticationTicket> tickets = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Session> tickets = new(StringComparer.Ordinal);
+
+    // One lock per session serializes refresh and logout across HTTP requests and Blazor circuits.
+    internal sealed class Session(AuthenticationTicket ticket)
+    {
+        internal readonly SemaphoreSlim Gate = new(1, 1);
+        internal AuthenticationTicket Ticket = ticket;
+    }
 
     public Task<string> StoreAsync(AuthenticationTicket ticket)
     {
@@ -20,18 +31,23 @@ public sealed class ServerTicketStore(TimeProvider timeProvider) : ITicketStore
             identity.AddClaim(new Claim(SessionIdClaim, sessionId));
         }
 
-        tickets[sessionId] = Clone(ticket);
+        tickets[sessionId] = new Session(Clone(ticket));
         return Task.FromResult(sessionId);
     }
 
-    public Task RenewAsync(string key, AuthenticationTicket ticket)
+    public async Task RenewAsync(string key, AuthenticationTicket ticket)
     {
-        if (IsValid(key))
+        Session? session = GetSession(key);
+        if (session is null) return;
+        await session.Gate.WaitAsync();
+        try
         {
-            tickets[key] = Clone(ticket);
+            TryUpdate(key, session, ticket);
         }
-
-        return Task.CompletedTask;
+        finally
+        {
+            session.Gate.Release();
+        }
     }
 
     public Task<AuthenticationTicket?> RetrieveAsync(string key) =>
@@ -47,19 +63,32 @@ public sealed class ServerTicketStore(TimeProvider timeProvider) : ITicketStore
 
     public AuthenticationTicket? GetValidTicket(string sessionId)
     {
-        if (!tickets.TryGetValue(sessionId, out AuthenticationTicket? ticket))
+        Session? session = GetSession(sessionId);
+        return session is null ? null : Clone(session.Ticket);
+    }
+
+    internal Session? GetSession(string sessionId)
+    {
+        if (!tickets.TryGetValue(sessionId, out Session? session))
         {
             return null;
         }
 
-        DateTimeOffset? expiresAt = ticket.Properties.ExpiresUtc;
+        DateTimeOffset? expiresAt = session.Ticket.Properties.ExpiresUtc;
         if (expiresAt is null || expiresAt <= timeProvider.GetUtcNow())
         {
             tickets.TryRemove(sessionId, out _);
             return null;
         }
 
-        return Clone(ticket);
+        return session;
+    }
+
+    internal bool TryUpdate(string sessionId, Session session, AuthenticationTicket ticket)
+    {
+        if (!ReferenceEquals(GetSession(sessionId), session)) return false;
+        session.Ticket = Clone(ticket);
+        return true;
     }
 
     public void Invalidate(string sessionId) => tickets.TryRemove(sessionId, out _);

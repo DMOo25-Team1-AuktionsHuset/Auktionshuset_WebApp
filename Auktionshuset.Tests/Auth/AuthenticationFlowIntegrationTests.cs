@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using Auktionshuset.Contracts.Dto.Auth;
+using Auktionshuset.Contracts.Security;
 using Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -135,7 +136,7 @@ public sealed class AuthenticationFlowIntegrationTests
     }
 
     [Fact]
-    public async Task AuctionCreationDoesNotFetchLotsWithoutLotReadPermission()
+    public async Task AuctionAdminFetchesLotsWithoutLegacyPermissionClaims()
     {
         using var factory = new FrontendFactory();
         using HttpClient client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
@@ -146,8 +147,8 @@ public sealed class AuthenticationFlowIntegrationTests
 
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
         string html = await page.Content.ReadAsStringAsync();
-        Assert.Contains("Du har ikke rettighed til at se lageret", html, StringComparison.Ordinal);
-        Assert.DoesNotContain(factory.ApiRequests, request =>
+        Assert.DoesNotContain("Du har ikke rettighed til at se lageret", html, StringComparison.Ordinal);
+        Assert.Contains(factory.ApiRequests, request =>
             request.Owner == "auction-no-lots@example.test" && request.Path.StartsWith("/api/lots", StringComparison.Ordinal));
     }
 
@@ -300,18 +301,16 @@ public sealed class AuthenticationFlowIntegrationTests
             }
 
             string email = login!.Email;
-            string[] permissions = email.StartsWith("auction-", StringComparison.Ordinal)
-                ? email == "auction-no-lots@example.test" ? ["auctions.create"] : ["auctions.create", "lots.read"]
-                : email.StartsWith("api-", StringComparison.Ordinal)
-                    ? ["auctions.create", "lots.read"]
-                    : email.StartsWith("warehouse-", StringComparison.Ordinal) ? ["lots.read"] : [];
+            string[] roles = email.StartsWith("auction-", StringComparison.Ordinal)
+                || email.StartsWith("api-", StringComparison.Ordinal)
+                || email.StartsWith("warehouse-", StringComparison.Ordinal) ? [AdminRoles.AuctionAdmin] : [];
             var response = new LoginResponse(
                 $"backend-jwt-{email}",
                 "Bearer",
                 email == "expiring@example.test"
                     ? DateTimeOffset.UtcNow.AddMilliseconds(700)
                     : DateTimeOffset.UtcNow.AddMinutes(30),
-                new AuthenticatedUserResponse(Guid.NewGuid(), email, [], permissions));
+                new AuthenticatedUserResponse(Guid.NewGuid(), email, roles, []));
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(response) };
         }
     }

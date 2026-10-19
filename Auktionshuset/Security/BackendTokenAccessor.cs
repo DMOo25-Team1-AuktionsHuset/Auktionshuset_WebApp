@@ -8,7 +8,7 @@ namespace Auktionshuset.Security;
 public sealed class BackendTokenAccessor(
     AuthenticationStateProvider authenticationStateProvider,
     IHttpContextAccessor httpContextAccessor,
-    ServerTicketStore ticketStore)
+    BackendSessionService sessions)
 {
     public async Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
@@ -25,15 +25,7 @@ public sealed class BackendTokenAccessor(
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        AuthenticationTicket? ticket = ticketStore.GetValidTicket(sessionId);
-        if (ticket is null)
-        {
-            return null;
-        }
-
-        return ticket.Properties.Items.TryGetValue(ServerTicketStore.BackendTokenProperty, out string? token)
-            ? token
-            : null;
+        return await sessions.GetAccessTokenAsync(sessionId, cancellationToken);
     }
 
     public async Task InvalidateCurrentSessionAsync()
@@ -47,7 +39,7 @@ public sealed class BackendTokenAccessor(
         string? sessionId = user.FindFirstValue(ServerTicketStore.SessionIdClaim);
         if (!string.IsNullOrEmpty(sessionId))
         {
-            ticketStore.Invalidate(sessionId);
+            await sessions.LogoutAsync(sessionId);
         }
     }
 }

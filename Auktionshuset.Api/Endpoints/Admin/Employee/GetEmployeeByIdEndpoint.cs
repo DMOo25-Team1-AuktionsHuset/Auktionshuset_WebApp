@@ -1,5 +1,6 @@
 using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
+using Auktionshuset.Api.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +11,7 @@ public static class GetEmployeeByIdEndpoint
     public static RouteGroupBuilder MapGetEmployeeById(this RouteGroupBuilder group)
     {
         group.MapGet("/{employeeId:guid}", HandleAsync)
+            .RequireAuthorization(SecurityPolicies.CanReadEmployees)
             .WithName("GetEmployeeById")
             .WithSummary("Gets an employee by identifier")
             .Produces<EmployeeResponse>()

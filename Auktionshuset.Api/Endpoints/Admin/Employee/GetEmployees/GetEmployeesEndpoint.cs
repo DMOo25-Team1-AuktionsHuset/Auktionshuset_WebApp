@@ -1,5 +1,6 @@
 ﻿using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
+using Auktionshuset.Api.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
@@ -14,6 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
         public static RouteGroupBuilder MapGetEmployees(this RouteGroupBuilder group)
         {
             group.MapGet("/", HandleAsync)
+                .RequireAuthorization(SecurityPolicies.CanReadEmployees)
                 .WithName("GetEmployees")
                 .WithSummary("Gets every employee")
                 .Produces<IReadOnlyList<EmployeeListItemResponse>>();

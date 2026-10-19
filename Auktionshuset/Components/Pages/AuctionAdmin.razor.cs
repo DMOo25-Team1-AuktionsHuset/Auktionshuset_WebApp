@@ -1,5 +1,6 @@
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
+using Auktionshuset.Contracts.Security;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
@@ -175,8 +176,8 @@ public partial class AuctionAdmin : IDisposable
     protected override async Task OnInitializedAsync()
     {
         ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        canViewLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission);
-        canManageAuctions = user.IsInRole("Admin");
+        canViewLots = AdminRoles.CanReadLots(user);
+        canManageAuctions = AdminRoles.CanManageAuctions(user);
         ResetForm();
 
         await Task.WhenAll(LoadLotsAsync(), LoadEmployeesAsync(), LoadAuctionsAsync());

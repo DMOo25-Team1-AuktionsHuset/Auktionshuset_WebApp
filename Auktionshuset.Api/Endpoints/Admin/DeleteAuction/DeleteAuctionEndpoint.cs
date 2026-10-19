@@ -18,7 +18,7 @@ public static class DeleteAuctionEndpoint
             .WithSummary("Deletes an auction")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound)
-            .RequireAuthorization(SecurityPolicies.Admin);
+            .RequireAuthorization(SecurityPolicies.CanCreateAuction);
 
         return group;
     }

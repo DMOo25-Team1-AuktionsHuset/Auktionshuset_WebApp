@@ -22,6 +22,7 @@ public static class LocalAuthEndpoints
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         IAntiforgery antiforgery,
+        TimeProvider clock,
         CancellationToken cancellationToken)
     {
         try
@@ -47,6 +48,8 @@ public static class LocalAuthEndpoints
             ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
         using var client = httpClientFactory.CreateClient("BackendAuthentication");
         client.BaseAddress = new Uri(apiBaseUrl);
+        string? clientIp = context.Connection.RemoteIpAddress?.ToString();
+        BackendSessionService.ForwardClientIp(client, clientIp);
 
         LoginResponse? login;
         try
@@ -88,7 +91,9 @@ public static class LocalAuthEndpoints
 
         if (login is null
             || string.IsNullOrWhiteSpace(login.AccessToken)
-            || login.ExpiresAtUtc <= DateTimeOffset.UtcNow
+            || login.ExpiresAtUtc <= clock.GetUtcNow()
+            || (!string.IsNullOrEmpty(login.RefreshToken) && login.RefreshTokenExpiresAtUtc <= clock.GetUtcNow())
+            || (!string.IsNullOrEmpty(login.RefreshToken) && login.RefreshTokenExpiresAtUtc is null)
             || login.User is null
             || login.User.UserId == Guid.Empty
             || string.IsNullOrWhiteSpace(login.User.Email))
@@ -96,31 +101,25 @@ public static class LocalAuthEndpoints
             return Results.Redirect("/login?error=unavailable");
         }
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, login.User.UserId.ToString()),
-            new(ClaimTypes.Email, login.User.Email),
-            new(ClaimTypes.Name, login.User.Email)
-        };
-        claims.AddRange(login.User.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
-        claims.AddRange(login.User.Permissions.Select(permission => new Claim("permission", permission)));
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
+        var principal = BackendSessionService.CreatePrincipal(login.User, CookieAuthenticationDefaults.AuthenticationScheme);
         var properties = new AuthenticationProperties
         {
             IsPersistent = true,
             AllowRefresh = false,
-            IssuedUtc = DateTimeOffset.UtcNow,
-            ExpiresUtc = login.ExpiresAtUtc
+            IssuedUtc = clock.GetUtcNow(),
+            ExpiresUtc = string.IsNullOrEmpty(login.RefreshToken) ? login.ExpiresAtUtc : login.RefreshTokenExpiresAtUtc
         };
         properties.Items[ServerTicketStore.BackendTokenProperty] = login.AccessToken;
+        properties.Items[ServerTicketStore.RefreshTokenProperty] = login.RefreshToken;
+        properties.Items[ServerTicketStore.AccessTokenExpiryProperty] = login.ExpiresAtUtc.ToString("O");
+        properties.Items[ServerTicketStore.RefreshTokenExpiryProperty] = login.RefreshTokenExpiresAtUtc?.ToString("O");
+        properties.Items[ServerTicketStore.ClientIpProperty] = clientIp;
 
         await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, properties);
         return Results.Redirect("/");
     }
 
-    private static async Task<IResult> LogoutAsync(HttpContext context, IAntiforgery antiforgery)
+    private static async Task<IResult> LogoutAsync(HttpContext context, IAntiforgery antiforgery, BackendSessionService sessions)
     {
         try
         {
@@ -131,6 +130,8 @@ public static class LocalAuthEndpoints
             return Results.BadRequest("Ugyldig formular. Genindlæs siden og prøv igen.");
         }
 
+        string? sessionId = context.User.FindFirstValue(ServerTicketStore.SessionIdClaim);
+        if (sessionId is not null) await sessions.LogoutAsync(sessionId);
         await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return Results.Redirect("/login");
     }

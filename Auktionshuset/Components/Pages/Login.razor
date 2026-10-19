@@ -58,6 +58,7 @@
     {
         errorMessage = ErrorCode switch
         {
+            "rate-limited" => "Der er foretaget for mange loginforsøg. Vent et øjeblik og prøv igen.",
             "invalid" => "Email eller adgangskode er forkert.",
             "unavailable" => "Login kunne ikke gennemføres, fordi serveren ikke er tilgængelig. Prøv igen om lidt.",
             _ => null

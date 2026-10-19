@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
+using System.Security.Claims;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +19,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ServerTicketStore>();
+builder.Services.AddSingleton<BackendSessionService>();
 builder.Services.AddSingleton<ITicketStore>(services => services.GetRequiredService<ServerTicketStore>());
 builder.Services.AddScoped<AuthenticationStateProvider, SessionRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<BackendTokenAccessor>();
@@ -33,7 +37,20 @@ builder.Services
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
         options.SlidingExpiration = false;
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            string? sessionId = context.Principal?.FindFirstValue(ServerTicketStore.SessionIdClaim);
+            var sessions = context.HttpContext.RequestServices.GetRequiredService<BackendSessionService>();
+            if (sessionId is null || await sessions.GetAccessTokenAsync(sessionId, context.HttpContext.RequestAborted) is null)
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+            var ticket = context.HttpContext.RequestServices.GetRequiredService<ServerTicketStore>().GetValidTicket(sessionId);
+            if (ticket is not null) context.ReplacePrincipal(ticket.Principal);
+        };
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.Redirect("/login");
@@ -46,7 +63,8 @@ builder.Services
         };
     });
 builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
-    .Configure<ITicketStore>((options, ticketStore) => options.SessionStore = ticketStore);
+    .Configure<ITicketStore>((options, ticketStore) => options.SessionStore = ticketStore)
+    .Configure<TimeProvider>((options, clock) => options.TimeProvider = clock);
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(FrontendPolicies.Admin, policy =>
@@ -73,6 +91,17 @@ builder.Services.AddHttpClient("BackendApi", client =>
 builder.Services.AddHttpClient("BackendAuthentication", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Clear();
+    foreach (string address in builder.Configuration.GetSection("Authentication:KnownProxies").Get<string[]>() ?? [])
+        options.KnownProxies.Add(IPAddress.Parse(address));
+    options.ForwardLimit = 1;
+    options.ForwardedHeaders = options.KnownProxies.Count == 0 ? ForwardedHeaders.None
+        : ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 builder.Services.AddScoped(services => new BackendApiClient(
     services.GetRequiredService<IHttpClientFactory>().CreateClient("BackendApi"),
@@ -88,6 +117,7 @@ builder.Services.AddScoped<AuctionRealtimeService>();
 builder.Services.AddScoped<EmployeeRealtimeService>();
 
 WebApplication app = builder.Build();
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

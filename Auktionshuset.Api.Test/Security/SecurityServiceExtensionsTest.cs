@@ -24,7 +24,7 @@ public class SecurityServiceExtensionsTest
     }
 
     [Fact]
-    public async Task AddSecurityServices_ConfiguresCreateAuctionPermissionPolicy()
+    public async Task AddSecurityServices_ConfiguresAuctionRolePolicy()
     {
         using ServiceProvider provider = CreateServiceProvider();
         IAuthorizationPolicyProvider policyProvider = provider.GetRequiredService<IAuthorizationPolicyProvider>();
@@ -36,10 +36,13 @@ public class SecurityServiceExtensionsTest
             policy.Requirements,
             requirement => requirement is DenyAnonymousAuthorizationRequirement);
 
-        ClaimsAuthorizationRequirement claimRequirement = Assert.Single(
-            policy.Requirements.OfType<ClaimsAuthorizationRequirement>());
-        Assert.Equal(SecurityPermissions.ClaimType, claimRequirement.ClaimType);
-        Assert.Equal([SecurityPermissions.CreateAuction], claimRequirement.AllowedValues);
+        var authorization = provider.GetRequiredService<IAuthorizationService>();
+        foreach (string role in new[] { SecurityRoles.AuctionAdmin, SecurityRoles.SuperAdmin, SecurityRoles.LotAdmin, SecurityRoles.Customer })
+        {
+            var user = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Role, role)], "test"));
+            var result = await authorization.AuthorizeAsync(user, null, policy);
+            Assert.Equal(role is SecurityRoles.AuctionAdmin or SecurityRoles.SuperAdmin, result.Succeeded);
+        }
     }
 
     [Fact]

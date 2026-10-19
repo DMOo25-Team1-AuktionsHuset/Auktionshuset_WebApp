@@ -5,6 +5,12 @@ using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Infrastructure.Service;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -37,12 +43,16 @@ public class EndpointAuthorizationPipelineTest
 
         (HttpMethod Method, string Path, string Endpoint)[] requests =
         [
+            (HttpMethod.Get, "/api/employee/", "employee read"),
+            (HttpMethod.Get, $"/api/employee/{Guid.NewGuid()}", "employee detail"),
             (HttpMethod.Post, "/api/employee/", "employee write"),
             (HttpMethod.Put, $"/api/lots/{Guid.NewGuid()}", "lot write"),
             (HttpMethod.Get, "/api/lots/", "lot read"),
             (HttpMethod.Post, $"/api/lots/{Guid.NewGuid()}/image", "lot image upload"),
             (HttpMethod.Delete, $"/api/lots/{Guid.NewGuid()}/image", "lot image removal"),
-            (HttpMethod.Post, "/api/auctions/", "auction create")
+            (HttpMethod.Post, "/api/auctions/", "auction create"),
+            (HttpMethod.Put, $"/api/auctions/{Guid.NewGuid()}", "auction update"),
+            (HttpMethod.Delete, $"/api/auctions/{Guid.NewGuid()}", "auction delete")
         ];
 
         foreach ((HttpMethod method, string path, string endpoint) in requests)
@@ -54,6 +64,37 @@ public class EndpointAuthorizationPipelineTest
                 response.StatusCode == HttpStatusCode.Forbidden,
                 $"Expected {endpoint} to return 403 but got {(int)response.StatusCode}.");
         }
+    }
+
+    [Theory]
+    [InlineData(SecurityRoles.AuctionAdmin, true)]
+    [InlineData(SecurityRoles.SuperAdmin, true)]
+    [InlineData(SecurityRoles.LotAdmin, false)]
+    [InlineData(SecurityRoles.Customer, false)]
+    public async Task EmployeeReadsAndAuctionWritesUseConsistentRoleChecks(string role, bool allowed)
+    {
+        using IHost host = await StartServerAsync();
+        using HttpClient client = host.GetTestClient();
+        var token = host.Services.GetRequiredService<IAccessTokenService>().Issue(new AuthUser
+        {
+            UserId = Guid.NewGuid(), Email = "role-test@example.test", PasswordHash = string.Empty,
+            Roles = [role], Permissions = []
+        });
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Value);
+        using var list = await client.GetAsync("/api/employee/");
+        Assert.Equal(allowed ? HttpStatusCode.OK : HttpStatusCode.Forbidden, list.StatusCode);
+        using var detail = await client.GetAsync("/api/employee/8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60");
+        Assert.Equal(allowed ? HttpStatusCode.OK : HttpStatusCode.Forbidden, detail.StatusCode);
+        Guid missingAuction = Guid.NewGuid();
+        using var update = await client.PutAsJsonAsync($"/api/auctions/{missingAuction}", new
+        {
+            Name = "Role test", StartsAt = DateTime.Now.AddDays(1), EndsAt = DateTime.Now.AddDays(2),
+            EmployeeId = Guid.Parse("8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60"),
+            AuctionHouseId = Guid.NewGuid(), Lots = Array.Empty<object>()
+        });
+        Assert.Equal(allowed ? HttpStatusCode.NotFound : HttpStatusCode.Forbidden, update.StatusCode);
+        using var delete = await client.DeleteAsync($"/api/auctions/{missingAuction}");
+        Assert.Equal(allowed ? HttpStatusCode.NotFound : HttpStatusCode.Forbidden, delete.StatusCode);
     }
 
     private static async Task<IHost> StartServerAsync()
@@ -78,6 +119,10 @@ public class EndpointAuthorizationPipelineTest
                     services.AddApiServices();
                     services.AddSingleton(configuration);
                     services.AddSecurityServices(configuration);
+                    services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
+                    services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
+                    services.AddSingleton<ILotRepository, InMemoryLotRepository>();
+                    services.AddSingleton<IIntegrationEventPublisher, RecordingEventPublisher>();
                 });
                 webHost.Configure(app =>
                 {
