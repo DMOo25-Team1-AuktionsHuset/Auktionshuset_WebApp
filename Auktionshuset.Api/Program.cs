@@ -5,6 +5,7 @@ using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
+using Auktionshuset.Api.Endpoints.Device;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
@@ -55,8 +56,20 @@ if (app.Environment.IsDevelopment())
 
 await app.MigrateAndSeedDatabaseAsync();
 
+// Før routing og endpoints:
+app.UseWebSockets();
+
+// Sammen med de øvrige endpoint-registreringer:
+if (app.Environment.IsDevelopment())
+{
+    app.MapDeviceTestEndpoints();
+}
 app.UseForwardedHeaders();
-app.UseHttpsRedirection();
+app.UseWhen(
+    context =>
+        !app.Environment.IsDevelopment() ||
+        context.Request.Path != "/ws/device/test",
+    branch => branch.UseHttpsRedirection());
 app.UseRouting();
 app.UseRateLimiter();
 
