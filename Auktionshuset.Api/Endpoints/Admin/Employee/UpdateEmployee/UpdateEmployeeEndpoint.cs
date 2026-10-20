@@ -16,7 +16,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
                 .Produces<UpdateEmployeeResponse>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status404NotFound)
                 .ProducesValidationProblem()
-                .RequireAuthorization(SecurityPolicies.Admin);
+                .RequireAuthorization(SecurityPolicies.CanUpdateEmployee);
 
             return group;
         }

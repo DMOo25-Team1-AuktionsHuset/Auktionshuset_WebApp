@@ -2,6 +2,7 @@ using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Domain;
 using Auktionshuset.Domain.Entities;
 using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
@@ -44,16 +45,18 @@ public sealed class CreateAuctionHandler(
             return CreateAuctionResult.Invalid(errors);
         }
 
-        var assignedEmployee = employee!;
+        Guid auctionHouseForAssignment = command.AuctionHouseId
+            ?? employee?.AuctionHouseId
+            ?? AuctionHouseDefaults.DefaultAuctionHouseId;
         var auction = new AuctionEntity
         {
             AuctionId = Guid.NewGuid(),
             Name = command.Name.Trim(),
             StartsAt = command.StartsAt,
             EndedAt = command.EndsAt,
-            EmployeeId = assignedEmployee.EmployeeId,
-            Employee = assignedEmployee,
-            AuctionHouseId = assignedEmployee.AuctionHouseId,
+            EmployeeId = employee?.EmployeeId,
+            Employee = employee,
+            AuctionHouseId = auctionHouseForAssignment,
             AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now)
         };
 

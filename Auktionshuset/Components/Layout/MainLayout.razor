@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@using System.Security.Claims
+@using Auktionshuset.Contracts.Security
 
 <div class="app-shell">
     <header class="site-header">
@@ -15,10 +17,10 @@
                 <AuthorizeView Policy="@FrontendPolicies.CanViewLots">
                     <Authorized><NavLink href="warehouse" Match="NavLinkMatch.Prefix">Lager</NavLink></Authorized>
                 </AuthorizeView>
-                <AuthorizeView Policy="@FrontendPolicies.CanCreateAuction">
+                <AuthorizeView Policy="@FrontendPolicies.CanViewAuctions">
                     <Authorized><NavLink href="admin/auctions" Match="NavLinkMatch.Prefix">Auktioner</NavLink></Authorized>
                 </AuthorizeView>
-                <AuthorizeView Policy="@FrontendPolicies.Admin">
+                <AuthorizeView Policy="@FrontendPolicies.CanViewEmployees">
                     <Authorized><NavLink href="admin/employees" Match="NavLinkMatch.Prefix">Medarbejdere</NavLink></Authorized>
                 </AuthorizeView>
             </nav>
@@ -26,7 +28,11 @@
             <AuthorizeView>
                 <Authorized Context="authState">
                     <div class="account-actions">
-                        <span class="account-email">@authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</span>
+                        @if (GetRoleDisplayName(authState.User) is { } roleDisplayName)
+                        {
+                            <span class="account-role">@roleDisplayName</span>
+                        }
+                        <span class="account-email">@authState.User.FindFirst(ClaimTypes.Email)?.Value</span>
                         <form method="post" action="/auth/logout">
                             <AntiforgeryToken />
                             <button type="submit" class="btn btn-secondary btn-sm">Log ud</button>
@@ -41,6 +47,17 @@
         @Body
     </main>
 </div>
+
+@code {
+    private static string? GetRoleDisplayName(ClaimsPrincipal user) =>
+        user.FindFirst(ClaimTypes.Role)?.Value switch
+        {
+            RoleNames.LotAdmin => "Lageradministrator",
+            RoleNames.AuctionAdmin => "Auktionsadministrator",
+            RoleNames.Admin => "Systemadministrator",
+            _ => null
+        };
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     Der er opstået en fejl.

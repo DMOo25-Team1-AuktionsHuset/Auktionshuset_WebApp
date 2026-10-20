@@ -62,13 +62,14 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Invalid(errors);
         }
 
-        var assignedEmployee = employee!;
         auction.Name = command.Name.Trim();
         auction.StartsAt = command.StartsAt;
         auction.EndedAt = command.EndsAt;
-        auction.EmployeeId = assignedEmployee.EmployeeId;
-        auction.Employee = assignedEmployee;
-        auction.AuctionHouseId = assignedEmployee.AuctionHouseId;
+        auction.EmployeeId = employee?.EmployeeId;
+        auction.Employee = employee;
+        auction.AuctionHouseId = command.AuctionHouseId
+            ?? employee?.AuctionHouseId
+            ?? auction.AuctionHouseId;
         auction.AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now);
 
         int itemCount = AuctionValidation.CountItems(auctionLots);

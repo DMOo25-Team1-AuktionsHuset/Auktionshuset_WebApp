@@ -14,7 +14,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee
                 .WithSummary("Deletes an employee")
                 .Produces(StatusCodes.Status204NoContent)
                 .Produces(StatusCodes.Status404NotFound)
-                .RequireAuthorization(SecurityPolicies.Admin);
+                .RequireAuthorization(SecurityPolicies.CanDeleteEmployee);
             return group;
         }
         public static async Task<Results<NoContent, NotFound>> HandleAsync(

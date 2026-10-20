@@ -15,7 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee
                 .WithSummary("Creates a new employee")
                 .Produces<CreateEmployeeResponse>(StatusCodes.Status201Created)
                 .ProducesValidationProblem()
-                .RequireAuthorization(SecurityPolicies.Admin);
+                .RequireAuthorization(SecurityPolicies.CanCreateEmployee);
             return group;
         }
 

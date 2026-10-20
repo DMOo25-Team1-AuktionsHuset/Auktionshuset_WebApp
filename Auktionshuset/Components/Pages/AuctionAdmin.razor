@@ -1,12 +1,10 @@
 @page "/admin/auctions"
 @page "/admin/auctions/create"
-@attribute [Authorize(Policy = FrontendPolicies.CanCreateAuction)]
+@attribute [Authorize(Policy = FrontendPolicies.CanViewAuctions)]
 @rendermode InteractiveServer
-@using System.Globalization
 @using Auktionshuset.Contracts.Dto.Admin.Auction
 @using Auktionshuset.Contracts.Dto.Admin.Employee
 @using Auktionshuset.Contracts.Dto.Admin.Lot
-@using Auktionshuset.Models
 
 <PageTitle>Auktioner | Auktionshuset</PageTitle>
 
@@ -91,15 +89,15 @@
                         {
                             <InputSelect id="auction-employee" @bind-Value="model.EmployeeId">
                                 <option value="">Vælg auktionarius</option>
-                                @foreach (var employee in employees)
+                                @foreach (EmployeeListItemResponse employee in employees)
                                 {
-                                    <option value="@employee.EmployeeId">@employee.FirstName @employee.LastName</option>
+                                    <option value="@employee.EmployeeId">@employee.DisplayName</option>
                                 }
                             </InputSelect>
 
                             @if (employees.Count == 0)
                             {
-                                <span class="help-text">Der er ingen medarbejdere at vælge. Opret en medarbejder, før auktionen gemmes.</span>
+                                <span class="help-text">Der er ingen medarbejdere at vælge. Auktionarius kan udelades.</span>
                             }
                         }
                         <ValidationMessage For="@(() => model.EmployeeId)" />
@@ -125,7 +123,7 @@
                             <button type="button" class="btn btn-secondary btn-sm" @onclick="ClearSelection">Ryd valg</button>
                         </div>
                         <ul class="selection-list">
-                            @foreach (var line in SelectedLotLines)
+                            @foreach (SelectedLot line in SelectedLotLines)
                             {
                                 <li>@line.Name &mdash; @line.Quantity stk.</li>
                             }
@@ -143,7 +141,7 @@
                 }
 
                 <div class="form-actions">
-                    <button type="submit" class="btn" disabled="@isSubmitting">
+                    <button type="submit" class="btn" disabled="@(isSubmitting || (editingAuctionId.HasValue ? !canUpdateAuctions : !canCreateAuctions))">
                         @if (isSubmitting)
                         {
                             <span class="spinner" aria-hidden="true"></span>
@@ -215,10 +213,10 @@
             {
                 @* En afkrydset genstand tilføjes med hele sit lagerantal. *@
                 <ul class="lot-options" aria-label="Genstande i lageret">
-                    @foreach (var lot in FilteredPickerLots)
+                    @foreach (LotListItemResponse lot in FilteredPickerLots)
                     {
-                        var isPicked = selectedLots.ContainsKey(lot.LotId);
-                        var thumbnailUrl = LotService.ResolveImageUrl(lot.ImageUrl);
+                        bool isPicked = selectedLots.ContainsKey(lot.LotId);
+                        string? thumbnailUrl = LotService.ResolveImageUrl(lot.ImageUrl);
 
                         <li class="lot-option @(isPicked ? "is-selected" : null)" @key="lot.LotId">
                             <input id="@($"pick-{lot.LotId}")"
@@ -297,7 +295,7 @@
                 <div class="field">
                     <label for="auction-page-size">Pr. side</label>
                     <select id="auction-page-size" @bind="auctionPageSize" @bind:after="OnAuctionPageSizeChanged">
-                        @foreach (var size in PageSizeOptions)
+                        @foreach (int size in PageSizeOptions)
                         {
                             <option value="@size">@size</option>
                         }
@@ -355,10 +353,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var auction in PagedAuctions)
+                        @foreach (AuctionListItemResponse auction in PagedAuctions)
                         {
-                            var isSelected = editingAuctionId == auction.AuctionId;
-                            var imageUrls = auction.ImageUrls
+                            bool isSelected = editingAuctionId == auction.AuctionId;
+                            string[] imageUrls = auction.ImageUrls
                                 .Select(LotService.ResolveImageUrl)
                                 .OfType<string>()
                                 .ToArray();
@@ -372,7 +370,7 @@
                                     else
                                     {
                                         <span class="thumb-strip">
-                                            @foreach (var url in imageUrls.Take(3))
+                                            @foreach (string url in imageUrls.Take(3))
                                             {
                                                 <img class="dash-thumb" src="@url" alt="" loading="lazy" />
                                             }
@@ -389,7 +387,7 @@
                                 </td>
 
                                 <td class="cell-name" data-label="Navn">
-                                    @if (canManageAuctions)
+                                    @if (canUpdateAuctions)
                                     {
                                         <button type="button"
                                                 class="row-activator"
@@ -425,7 +423,7 @@
                                 <td class="cell-date" data-label="Slut">@(auction.EndsAt?.ToString("g", DanishCulture) ?? "Ikke fastsat")</td>
 
                                 <td class="cell-actions" data-label="Handlinger">
-                                    @if (canManageAuctions && pendingDeleteId == auction.AuctionId)
+                                    @if (canDeleteAuctions && pendingDeleteId == auction.AuctionId)
                                     {
                                         <div class="row-confirm" role="group" aria-label="@($"Bekræft sletning af {auction.Name}")">
                                             <span class="row-confirm-text">Slet auktionen?</span>
@@ -444,26 +442,28 @@
                                             </button>
                                         </div>
                                     }
-                                    else if (canManageAuctions)
+                                    else if (canUpdateAuctions || canDeleteAuctions)
                                     {
                                         <div class="row-actions">
-                                            <button type="button"
-                                                    class="btn btn-secondary btn-sm"
-                                                    @onclick:stopPropagation="true"
-                                                    @onclick="() => BeginEditAsync(auction)">
-                                                Rediger
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-danger btn-sm"
-                                                    @onclick:stopPropagation="true"
-                                                    @onclick="() => RequestDelete(auction.AuctionId)">
-                                                Slet
-                                            </button>
+                                            @if (canUpdateAuctions)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-secondary btn-sm"
+                                                        @onclick:stopPropagation="true"
+                                                        @onclick="() => BeginEditAsync(auction)">
+                                                    Rediger
+                                                </button>
+                                            }
+                                            @if (canDeleteAuctions)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-danger btn-sm"
+                                                        @onclick:stopPropagation="true"
+                                                        @onclick="() => RequestDelete(auction.AuctionId)">
+                                                    Slet
+                                                </button>
+                                            }
                                         </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="muted">Ingen handlinger</span>
                                     }
                                 </td>
                             </tr>

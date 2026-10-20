@@ -1,3 +1,4 @@
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.GetAuctions;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
@@ -18,13 +19,15 @@ public static class GetAuctionsEndpoint
         group.MapGet("/", HandleGetAllAsync)
             .WithName("GetAuctions")
             .WithSummary("Gets every auction for the dashboard")
-            .Produces<IReadOnlyList<AuctionListItemResponse>>();
+            .Produces<IReadOnlyList<AuctionListItemResponse>>()
+            .RequireAuthorization(SecurityPolicies.CanViewAuctions);
 
         group.MapGet("/{auctionId:guid}", HandleGetByIdAsync)
             .WithName("GetAuction")
             .WithSummary("Gets a single auction with its lot lines")
             .Produces<AuctionDetailResponse>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(SecurityPolicies.CanViewAuctions);
 
         return group;
     }

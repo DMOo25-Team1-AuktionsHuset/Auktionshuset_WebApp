@@ -70,9 +70,9 @@ app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
 
 app.MapHub<AuctionHub>("/hubs/auction", options => options.CloseOnAuthenticationExpiration = true)
-    .RequireAuthorization(SecurityPolicies.CanCreateAuction);
+    .RequireAuthorization(SecurityPolicies.CanViewAuctions);
 app.MapHub<EmployeeHub>("/hubs/employee", options => options.CloseOnAuthenticationExpiration = true)
-    .RequireAuthorization(SecurityPolicies.CanReadEmployees);
+    .RequireAuthorization(SecurityPolicies.CanViewEmployees);
 app.MapHub<LotHub>("/hubs/lot", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.CanViewLots);
 

@@ -36,7 +36,7 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
-                    b.Property<Guid>("EmployeeId")
+                    b.Property<Guid?>("EmployeeId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("EndedAt")
@@ -637,8 +637,7 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.HasOne("Auktionshuset.Domain.Entities.Employee", "Employee")
                         .WithMany("Auctions")
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("AuctionHouse");
 

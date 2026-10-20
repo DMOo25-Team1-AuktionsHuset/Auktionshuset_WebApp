@@ -1,5 +1,5 @@
 @page "/admin/employees"
-@attribute [Authorize(Policy = FrontendPolicies.Admin)]
+@attribute [Authorize(Policy = FrontendPolicies.CanViewEmployees)]
 @rendermode InteractiveServer
 @using System.Globalization
 @using Auktionshuset.Contracts.Dto.Admin.Employee

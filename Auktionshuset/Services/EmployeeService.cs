@@ -9,6 +9,23 @@ namespace Auktionshuset.Services;
 
 public sealed class EmployeeService(BackendApiClient httpClient)
 {
+    public async Task<IReadOnlyList<EmployeeOptionResponse>> GetOptionsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await httpClient.GetAsync("api/employee/options", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken, "Auktionarius", "hentes");
+
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<IReadOnlyList<EmployeeOptionResponse>>(cancellationToken)
+                ?? [];
+        }
+        catch (JsonException exception)
+        {
+            throw new EmployeeApiException("Serveren returnerede ikke en gyldig liste over auktionarius.", response.StatusCode, exception);
+        }
+    }
+
     public async Task<IReadOnlyList<EmployeeListItemResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {

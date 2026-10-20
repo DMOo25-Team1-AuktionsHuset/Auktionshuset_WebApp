@@ -116,6 +116,62 @@ public sealed class AuthenticationFlowIntegrationTests
         Assert.Contains("Du har ikke rettighed", await dashboard.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("configured-lot-admin@example.test", true, false, false, "Lageradministrator")]
+    [InlineData("configured-auction-admin@example.test", true, true, false, "Auktionsadministrator")]
+    [InlineData("configured-admin@example.test", true, true, true, "Systemadministrator")]
+    public async Task ConfiguredAdminRolesExposeOnlyTheirAuthorizedNavigationAndPages(
+        string email, bool seesWarehouse, bool seesAuctions, bool seesEmployees, string roleDisplayName)
+    {
+        using var factory = new FrontendFactory();
+        using HttpClient client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using HttpResponseMessage login = await LoginAsync(client, email, "correct");
+        Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
+
+        string dashboard = await (await client.GetAsync("/")).Content.ReadAsStringAsync();
+        Assert.Equal(seesWarehouse, dashboard.Contains("href=\"warehouse\"", StringComparison.Ordinal));
+        Assert.Equal(seesAuctions, dashboard.Contains("href=\"admin/auctions\"", StringComparison.Ordinal));
+        Assert.Equal(seesEmployees, dashboard.Contains("href=\"admin/employees\"", StringComparison.Ordinal));
+        Assert.Contains(roleDisplayName, dashboard, StringComparison.Ordinal);
+
+        if (seesAuctions)
+        {
+            using HttpResponseMessage auctions = await client.GetAsync("/admin/auctions");
+            Assert.Equal(HttpStatusCode.OK, auctions.StatusCode);
+            string auctionsHtml = await auctions.Content.ReadAsStringAsync();
+            Assert.Contains("Opret auktion", auctionsHtml, StringComparison.Ordinal);
+            Assert.Contains("Rediger", auctionsHtml, StringComparison.Ordinal);
+            Assert.Contains("Slet", auctionsHtml, StringComparison.Ordinal);
+            Assert.Contains(factory.ApiRequests, request =>
+                request.Owner == email && request.Path.StartsWith("/api/employee/options", StringComparison.Ordinal));
+            Assert.DoesNotContain(factory.ApiRequests, request =>
+                request.Owner == email && request.Path == "/api/employee");
+
+            if (!seesEmployees)
+            {
+                int beforeEmployeeNavigation = factory.ApiRequests.Count;
+                using HttpResponseMessage employeeDenied = await client.GetAsync("/admin/employees");
+                Assert.Equal(HttpStatusCode.Redirect, employeeDenied.StatusCode);
+                Assert.Equal("/?access=denied", RedirectPath(employeeDenied));
+                Assert.Equal(beforeEmployeeNavigation, factory.ApiRequests.Count);
+            }
+        }
+        else
+        {
+            int before = factory.ApiRequests.Count;
+            using HttpResponseMessage auctionDenied = await client.GetAsync("/admin/auctions");
+            Assert.Equal(HttpStatusCode.Redirect, auctionDenied.StatusCode);
+            Assert.Equal("/?access=denied", RedirectPath(auctionDenied));
+            Assert.Equal(before, factory.ApiRequests.Count);
+        }
+
+        if (seesEmployees)
+        {
+            using HttpResponseMessage employees = await client.GetAsync("/admin/employees");
+            Assert.Equal(HttpStatusCode.OK, employees.StatusCode);
+        }
+    }
+
     [Fact]
     public async Task WarehouseReadPermissionDoesNotExposeWriteActions()
     {
@@ -301,16 +357,35 @@ public sealed class AuthenticationFlowIntegrationTests
             }
 
             string email = login!.Email;
-            string[] roles = email.StartsWith("auction-", StringComparison.Ordinal)
-                || email.StartsWith("api-", StringComparison.Ordinal)
-                || email.StartsWith("warehouse-", StringComparison.Ordinal) ? [AdminRoles.AuctionAdmin] : [];
+            string[] permissions = email switch
+            {
+                "configured-lot-admin@example.test" => ["lots.read", "lots.create", "lots.update", "lots.delete"],
+                "configured-auction-admin@example.test" =>
+                ["lots.read", "lots.create", "lots.update", "lots.delete", "auctions.read", "auctions.create", "auctions.update", "auctions.delete"],
+                "configured-admin@example.test" =>
+                ["lots.read", "lots.create", "lots.update", "lots.delete", "auctions.read", "auctions.create", "auctions.update", "auctions.delete", "employees.read", "employees.create", "employees.update", "employees.delete"],
+                "auction-no-lots@example.test" => ["auctions.read", "auctions.create"],
+                _ when email.StartsWith("auction-", StringComparison.Ordinal) =>
+                    ["auctions.read", "auctions.create", "auctions.update", "auctions.delete", "lots.read"],
+                _ when email.StartsWith("api-", StringComparison.Ordinal) => ["auctions.read", "auctions.create", "lots.read"],
+                _ when email.StartsWith("warehouse-", StringComparison.Ordinal) => ["lots.read"],
+                _ => []
+            };
+            string[] roles = email switch
+            {
+                "configured-lot-admin@example.test" => ["LotAdmin"],
+                "configured-auction-admin@example.test" => ["AuctionAdmin"],
+                "configured-admin@example.test" => ["Admin"],
+                _ when email.StartsWith("auction-", StringComparison.Ordinal) => ["AuctionAdmin"],
+                _ => []
+            };
             var response = new LoginResponse(
                 $"backend-jwt-{email}",
                 "Bearer",
                 email == "expiring@example.test"
                     ? DateTimeOffset.UtcNow.AddMilliseconds(700)
                     : DateTimeOffset.UtcNow.AddMinutes(30),
-                new AuthenticatedUserResponse(Guid.NewGuid(), email, roles, []));
+                new AuthenticatedUserResponse(Guid.NewGuid(), email, roles, permissions));
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(response) };
         }
     }
@@ -329,9 +404,27 @@ public sealed class AuthenticationFlowIntegrationTests
                 : owner.StartsWith("api-403", StringComparison.Ordinal)
                     ? HttpStatusCode.Forbidden
                     : HttpStatusCode.OK;
+            object responseBody = request.RequestUri?.AbsolutePath.EndsWith("/api/auctions", StringComparison.Ordinal) == true
+                ? new[]
+                {
+                    new
+                    {
+                        auctionId = Guid.Parse("d282b9bf-9ebc-47de-847a-77332a6944d1"),
+                        name = "Testauktion",
+                        status = "Kommende",
+                        startsAt = DateTime.Now.AddDays(2),
+                        endsAt = DateTime.Now.AddDays(2).AddHours(1),
+                        employeeId = (Guid?)null,
+                        employeeName = "Ikke tildelt",
+                        lotCount = 0,
+                        itemCount = 0,
+                        imageUrls = Array.Empty<string>()
+                    }
+                }
+                : Array.Empty<object>();
             return Task.FromResult(new HttpResponseMessage(statusCode)
             {
-                Content = JsonContent.Create(Array.Empty<object>())
+                Content = JsonContent.Create(responseBody)
             });
         }
     }

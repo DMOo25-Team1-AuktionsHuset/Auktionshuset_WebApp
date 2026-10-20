@@ -54,7 +54,15 @@ public static class SecurityServiceExtensions
             AddPermissionPolicy(options, SecurityPolicies.CanUpdateLot, SecurityPermissions.UpdateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanDeleteLot, SecurityPermissions.DeleteLot);
             AddPermissionPolicy(options, SecurityPolicies.CanViewLots, SecurityPermissions.ViewLots);
+            AddPermissionPolicy(options, SecurityPolicies.CanViewAuctions, SecurityPermissions.ViewAuctions);
             AddPermissionPolicy(options, SecurityPolicies.CanCreateAuction, SecurityPermissions.CreateAuction);
+            AddPermissionPolicy(options, SecurityPolicies.CanUpdateAuction, SecurityPermissions.UpdateAuction);
+            AddPermissionPolicy(options, SecurityPolicies.CanDeleteAuction, SecurityPermissions.DeleteAuction);
+            AddPermissionPolicy(options, SecurityPolicies.CanViewEmployeeOptions, SecurityPermissions.ViewAuctions);
+            AddPermissionPolicy(options, SecurityPolicies.CanViewEmployees, SecurityPermissions.ViewEmployees);
+            AddPermissionPolicy(options, SecurityPolicies.CanCreateEmployee, SecurityPermissions.CreateEmployee);
+            AddPermissionPolicy(options, SecurityPolicies.CanUpdateEmployee, SecurityPermissions.UpdateEmployee);
+            AddPermissionPolicy(options, SecurityPolicies.CanDeleteEmployee, SecurityPermissions.DeleteEmployee);
             options.AddPolicy(SecurityPolicies.CanWriteLotImage, policy =>
                 policy.RequireAuthenticatedUser().RequireAssertion(context =>
                     AdminRoles.CanManageLots(context.User)));

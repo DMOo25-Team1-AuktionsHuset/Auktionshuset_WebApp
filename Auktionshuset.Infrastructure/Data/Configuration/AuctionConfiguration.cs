@@ -32,7 +32,8 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.HasOne(a => a.Employee)
                 .WithMany(employee => employee.Auctions)
                 .HasForeignKey(a => a.EmployeeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
         }
     }
 }

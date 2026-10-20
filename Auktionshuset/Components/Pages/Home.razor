@@ -27,7 +27,7 @@
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Policy="@FrontendPolicies.CanCreateAuction">
+        <AuthorizeView Policy="@FrontendPolicies.CanViewAuctions">
             <Authorized>
                 <a class="card home-link" href="admin/auctions">
                     <h2>Auktioner</h2>
@@ -37,7 +37,7 @@
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Policy="@FrontendPolicies.Admin">
+        <AuthorizeView Policy="@FrontendPolicies.CanViewEmployees">
             <Authorized>
                 <a class="card home-link" href="admin/employees">
                     <h2>Medarbejdere</h2>

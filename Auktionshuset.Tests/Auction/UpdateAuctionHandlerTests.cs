@@ -142,10 +142,10 @@ public class UpdateAuctionHandlerTests
     }
 
     /// <summary>
-    /// Verifies that an existing auction cannot be updated without its required auctionarius.
+    /// Verifies that an existing auction can be left without an assigned auctionarius.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithoutEmployee_ReturnsInvalid()
+    public async Task HandleAsync_WithoutEmployee_ClearsAssignment()
     {
         Employee employee = TestData.CreateEmployee();
         (UpdateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _, Guid auctionId) = await CreateExistingAuctionAsync(employee);
@@ -161,12 +161,12 @@ public class UpdateAuctionHandlerTests
                 Lots: []),
             CancellationToken.None);
 
-        Assert.False(result.Succeeded);
-        Assert.Contains(result.Errors, error => error.Contains("tilknyttet auktionarius"));
+        Assert.True(result.Succeeded);
 
         Auction? auction = await auctions.GetByIdAsync(auctionId, CancellationToken.None);
         Assert.NotNull(auction);
-        Assert.Equal(employee.EmployeeId, auction.EmployeeId);
+        Assert.Null(auction.EmployeeId);
+        Assert.Null(auction.Employee);
     }
 
     /// <summary>

@@ -47,8 +47,6 @@ public partial class AuctionAdmin : IDisposable
     [Inject]
     private AuctionRealtimeService AuctionRealtimeService { get; set; } = default!;
 
-    [Inject]
-    private EmployeeRealtimeService EmployeeRealtimeService { get; set; } = default!;
 
     // --- Formular ---------------------------------------------------------
 
@@ -70,7 +68,7 @@ public partial class AuctionAdmin : IDisposable
 
     // --- Medarbejdere -----------------------------------------------------
 
-    private IReadOnlyList<EmployeeListItemResponse> employees = [];
+    private IReadOnlyList<EmployeeOptionResponse> employees = [];
     private bool isLoadingEmployees;
     private string? employeeError;
 
@@ -88,7 +86,9 @@ public partial class AuctionAdmin : IDisposable
     private bool isDeleting;
     private bool isDisposed;
     private bool canViewLots;
-    private bool canManageAuctions;
+    private bool canCreateAuctions;
+    private bool canUpdateAuctions;
+    private bool canDeleteAuctions;
 
     /// <summary>
     /// One genstand chosen for the auction, with the number of units the auction includes.
@@ -176,8 +176,10 @@ public partial class AuctionAdmin : IDisposable
     protected override async Task OnInitializedAsync()
     {
         ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        canViewLots = AdminRoles.CanReadLots(user);
-        canManageAuctions = AdminRoles.CanManageAuctions(user);
+        canViewLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission);
+        canCreateAuctions = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateAuctionPermission);
+        canUpdateAuctions = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateAuctionPermission);
+        canDeleteAuctions = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteAuctionPermission);
         ResetForm();
 
         await Task.WhenAll(LoadLotsAsync(), LoadEmployeesAsync(), LoadAuctionsAsync());
@@ -193,18 +195,14 @@ public partial class AuctionAdmin : IDisposable
         AuctionRealtimeService.AuctionCreated += OnAuctionCreatedAsync;
         AuctionRealtimeService.AuctionUpdated += OnAuctionUpdatedAsync;
         AuctionRealtimeService.AuctionDeleted += OnAuctionDeletedAsync;
-        EmployeeRealtimeService.EmployeeCreated += OnEmployeeCreatedAsync;
-        EmployeeRealtimeService.EmployeeUpdated += OnEmployeeUpdatedAsync;
-        EmployeeRealtimeService.EmployeeDeleted += OnEmployeeDeletedAsync;
 
         try
         {
             await AuctionRealtimeService.StartAsync();
-            await EmployeeRealtimeService.StartAsync();
         }
         catch (Exception)
         {
-            realtimeError = "Liveforbindelsen til auktioner eller medarbejdere kunne ikke startes. Siden kan stadig bruges, men listen opdateres ikke automatisk.";
+            realtimeError = "Liveforbindelsen til auktioner kunne ikke startes. Siden kan stadig bruges, men listen opdateres ikke automatisk.";
             StateHasChanged();
         }
     }
@@ -216,9 +214,7 @@ public partial class AuctionAdmin : IDisposable
         AuctionRealtimeService.AuctionCreated -= OnAuctionCreatedAsync;
         AuctionRealtimeService.AuctionUpdated -= OnAuctionUpdatedAsync;
         AuctionRealtimeService.AuctionDeleted -= OnAuctionDeletedAsync;
-        EmployeeRealtimeService.EmployeeCreated -= OnEmployeeCreatedAsync;
-        EmployeeRealtimeService.EmployeeUpdated -= OnEmployeeUpdatedAsync;
-        EmployeeRealtimeService.EmployeeDeleted -= OnEmployeeDeletedAsync;
+
     }
 
     /// <summary>
@@ -237,26 +233,6 @@ public partial class AuctionAdmin : IDisposable
     private Task OnAuctionDeletedAsync(DeleteAuctionNotification notification) =>
         RefreshAuctionsAsync();
 
-    private Task OnEmployeeCreatedAsync(CreateEmployeeNotification _) => RefreshEmployeesAsync();
-
-    private Task OnEmployeeUpdatedAsync(UpdateEmployeeNotification _) => RefreshEmployeesAsync();
-
-    private Task OnEmployeeDeletedAsync(DeleteEmployeeNotification _) => RefreshEmployeesAsync();
-
-    private Task RefreshEmployeesAsync()
-    {
-        if (isDisposed)
-        {
-            return Task.CompletedTask;
-        }
-
-        return InvokeAsync(async () =>
-        {
-            if (isDisposed) return;
-            await LoadEmployeesAsync();
-            if (!isDisposed) StateHasChanged();
-        });
-    }
 
     private Task RefreshAuctionsAsync()
     {
@@ -279,7 +255,8 @@ public partial class AuctionAdmin : IDisposable
     /// </summary>
     private async Task SubmitAsync()
     {
-        if (isSubmitting)
+        if (isSubmitting
+            || (editingAuctionId.HasValue ? !canUpdateAuctions : !canCreateAuctions))
         {
             return;
         }
@@ -374,7 +351,7 @@ public partial class AuctionAdmin : IDisposable
     /// <param name="auction">The dashboard row that was activated.</param>
     private async Task BeginEditAsync(AuctionListItemResponse auction)
     {
-        if (!canManageAuctions)
+        if (!canUpdateAuctions)
         {
             return;
         }
@@ -546,6 +523,11 @@ public partial class AuctionAdmin : IDisposable
 
     private void RequestDelete(Guid auctionId)
     {
+        if (!canDeleteAuctions)
+        {
+            return;
+        }
+
         pendingDeleteId = auctionId;
         statusMessage = null;
     }
@@ -557,7 +539,7 @@ public partial class AuctionAdmin : IDisposable
     /// </summary>
     private async Task ConfirmDeleteAsync()
     {
-        if (pendingDeleteId is not { } auctionId || isDeleting || isSubmitting)
+        if (pendingDeleteId is not { } auctionId || isDeleting || isSubmitting || !canDeleteAuctions)
         {
             return;
         }
@@ -647,7 +629,7 @@ public partial class AuctionAdmin : IDisposable
 
         try
         {
-            employees = await EmployeeService.GetAllAsync();
+            employees = await EmployeeService.GetOptionsAsync();
         }
         catch (EmployeeApiException exception)
         {

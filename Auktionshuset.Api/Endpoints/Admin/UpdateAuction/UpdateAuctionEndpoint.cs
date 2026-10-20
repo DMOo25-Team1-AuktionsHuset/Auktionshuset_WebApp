@@ -21,7 +21,7 @@ public static class UpdateAuctionEndpoint
             .Produces<UpdateAuctionResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .ProducesValidationProblem()
-            .RequireAuthorization(SecurityPolicies.CanCreateAuction);
+            .RequireAuthorization(SecurityPolicies.CanUpdateAuction);
 
         return group;
     }
