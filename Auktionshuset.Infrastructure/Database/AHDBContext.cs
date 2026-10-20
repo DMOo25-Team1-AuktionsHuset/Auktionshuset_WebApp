@@ -26,6 +26,7 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<BidCommandKey> BidCommandKeys => Set<BidCommandKey>();
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+        public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
         /// <summary>
         /// Applies every <c>IEntityTypeConfiguration</c> declared in the infrastructure assembly.

@@ -416,6 +416,61 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.ToTable("BidCommandKeys");
                 });
 
+            modelBuilder.Entity("Auktionshuset.Infrastructure.Data.InboxMessage", b =>
+                {
+                    b.Property<Guid>("InboxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConsumerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("InboxQuarantinedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MessageKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTime?>("ProcessedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("RecievedAtTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("TransportMessageId")
+                        .HasColumnType("text");
+
+                    b.HasKey("InboxId");
+
+                    b.HasIndex("ConsumerName", "MessageKey")
+                        .IsUnique()
+                        .HasDatabaseName("InboxMessages_Identity");
+
+                    b.HasIndex("RecievedAtTime", "InboxId")
+                        .HasDatabaseName("InboxMessages_Ready")
+                        .HasFilter("\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
+
+                    b.ToTable("InboxMessages");
+                });
+
             modelBuilder.Entity("Auktionshuset.Infrastructure.Data.OutboxMessage", b =>
                 {
                     b.Property<Guid>("OutboxId")

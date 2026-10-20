@@ -1,10 +1,8 @@
-using Auktionshuset.Application.EventHandling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Text;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
 
@@ -13,7 +11,7 @@ internal sealed class AdminEventsConsumer(
     RabbitMqTopologyInitializer topology,
     IServiceScopeFactory scopeFactory,
     EventContractRegistry registry,
-    ILogger<AdminEventsConsumer> logger) 
+    ILogger<AdminEventsConsumer> logger)
     : BackgroundService
 {
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
@@ -21,7 +19,7 @@ internal sealed class AdminEventsConsumer(
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        while(!stoppingToken.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
@@ -102,26 +100,30 @@ internal sealed class AdminEventsConsumer(
                     using var delivery = CancellationTokenSource.CreateLinkedTokenSource(
                         session.Token, eventArgs.CancellationToken);
 
-                    string json = Encoding.UTF8.GetString(eventArgs.Body.ToArray());
-
-                    EventContractRegistry.EventContractRecord contract =
-                        registry.ByName(eventArgs.RoutingKey);
-
-                    IIntegrationEvent message =
-                        registry.Deserialize(contract, json);
+                    byte[] payload = eventArgs.Body.ToArray();
 
                     await using AsyncServiceScope scope =
                      scopeFactory.CreateAsyncScope();
 
-                    await contract.Dispatch(
-                        scope.ServiceProvider,
-                        message,
-                        delivery.Token);
+                    var inbox = scope.ServiceProvider.GetRequiredService<DbInboxStore>();
+
+
+                    InboxTypes inboxResult = await inbox.StoreNewMessageAsync(
+                        consumerName: RabbitMqTopology.Queues.Admin,
+                        eventType: eventArgs.RoutingKey,
+                        transportMessageId: eventArgs.BasicProperties.MessageId,
+                        payload: payload,
+                        cancellationToken: delivery.Token);
 
                     await channel.BasicAckAsync(
                         deliveryTag: eventArgs.DeliveryTag,
                         multiple: false,
                         cancellationToken: delivery.Token);
+
+                    if (inboxResult == InboxTypes.Quarantined)
+                    {
+                        logger.LogWarning("Message quarantined: {MessageId}", eventArgs.BasicProperties.MessageId);
+                    }
                 }
                 catch (Exception ex)
                 {
