@@ -1,12 +1,15 @@
 ﻿using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
     public class DbInboxStore(AHDBContext context)
     {
-        public async Task<InboxTypes> StoreNewMessageAsync(string consumerName,
+        public async Task<InboxTypes> StoreNewMessageAsync(
+            string consumerName,
             string eventType,
             string? transportMessageId,
             byte[] payload,
@@ -16,17 +19,30 @@ namespace Auktionshuset.Infrastructure.Messaging
 
             bool hasEventId = Guid.TryParse(transportMessageId, out var eventId) && eventId != Guid.Empty;
 
+            byte[] fingerprintInput = JsonSerializer.SerializeToUtf8Bytes(new
+            {
+                EventType = eventType,
+                TransportMessageId = transportMessageId,
+                Payload = payload
+            });
+
+            string fingerprint = Convert.ToHexString(SHA256.HashData(fingerprintInput));
+
+            string messageKey = hasEventId ? eventId.ToString("D") : $"invalid:{fingerprint}";
+
             var inboxMessage = new InboxMessage
             {
                 InboxId = Guid.NewGuid(),
                 EventId = hasEventId ? eventId : null,
                 TransportMessageId = transportMessageId,
                 ConsumerName = consumerName,
-                MessageKey = transportMessageId ?? string.Empty,
+                MessageKey = messageKey,
                 EventType = eventType,
                 Payload = payload,
-                RecievedAtTime = DateTime.UtcNow
+                RecievedAtTime = DateTime.UtcNow,
+                Error = hasEventId ? null : "MessageId missing or not valid"
             };
+
             int inserted = await InsertMessageAsync(inboxMessage, cancellationToken);
 
             if (inserted == 1)
@@ -34,12 +50,14 @@ namespace Auktionshuset.Infrastructure.Messaging
                 return hasEventId ? InboxTypes.Stored : InboxTypes.Quarantined;
             }
 
-            InboxMessage? existingMessage = await context.InboxMessages
-                .Where(m => m.ConsumerName == consumerName && m.MessageKey == inboxMessage.MessageKey)
-                .FirstOrDefaultAsync(cancellationToken);
+            InboxMessage existingMessage = await context.InboxMessages
+                .AsNoTracking()
+                .SingleAsync(existingMessage =>
+                    existingMessage.ConsumerName == consumerName
+                    && existingMessage.MessageKey == messageKey,
+                    cancellationToken);
 
-            bool sameMessage = existingMessage is not null
-                && existingMessage.EventType == inboxMessage.EventType
+            bool sameMessage = existingMessage.EventType == eventType
                 && existingMessage.Payload.SequenceEqual(inboxMessage.Payload);
 
             if (sameMessage)
@@ -47,17 +65,32 @@ namespace Auktionshuset.Infrastructure.Messaging
                 return InboxTypes.Duplicate;
             }
 
+            // if same EvenId but different content, save conflict
+            // seperately without overwriting the original
+            var conflict = new InboxMessage
+            {
+                InboxId = Guid.NewGuid(),
+                EventId = inboxMessage.EventId,
+                TransportMessageId = transportMessageId,
+                ConsumerName = consumerName,
+                MessageKey = $"conflict:{fingerprint}",
+                EventType = eventType,
+                Payload = payload,
+                Error = "Messagekey already received with different routingkey or payload"
+            };
+
             await InsertMessageAsync(inboxMessage, cancellationToken);
 
             return InboxTypes.Quarantined;
         }
 
-        public Task<int> InsertMessageAsync(InboxMessage inboxMessage,
+        public Task<int> InsertMessageAsync(
+            InboxMessage inboxMessage,
             CancellationToken cancellationToken)
         {
             bool hasEventId = inboxMessage.EventId.HasValue;
             Guid eventId = inboxMessage.EventId.GetValueOrDefault();
-            bool isQuarantined = inboxMessage.Error is null;
+            bool isQuarantined = inboxMessage.Error is not null;
             string transportMessageId = inboxMessage.TransportMessageId ?? string.Empty;
             string error = inboxMessage.Error ?? string.Empty;
 
@@ -77,18 +110,20 @@ namespace Auktionshuset.Infrastructure.Messaging
                 )
                 VALUES (
                     {inboxMessage.InboxId},
-                    {(hasEventId ? eventId : null)},
-                    {transportMessageId},
+                    CASE WHEB {hasEventId} THEN {eventId} ELSE NULL END,
+                    NULLIF({transportMessageId}, ''),
                     {inboxMessage.ConsumerName},
                     {inboxMessage.MessageKey},
                     {inboxMessage.EventType},
                     {inboxMessage.Payload},
-                    {inboxMessage.RecievedAtTime},
-                    {(isQuarantined ? null : inboxMessage.ProcessedAtTime)},
-                    {(isQuarantined ? null : error)},
-                    {(isQuarantined ? inboxMessage.InboxQuarantinedAtTime : null)}
+                    CURRENT_TIMESTAMP,
+                    CASE
+                        WHEN {isQuarantined} THEN CURRENT_TIMESTAMP
+                        ELSE NULL
+                    END
                 )
-                ON CONFLICT ("ConsumerName", "MessageKey") DO NOTHING
+                ON CONFLICT ("ConsumerName", "MessageKey") 
+                DO NOTHING
                 """, cancellationToken);
         }
     }

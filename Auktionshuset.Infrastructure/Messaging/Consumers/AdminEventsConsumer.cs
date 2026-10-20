@@ -140,6 +140,10 @@ internal sealed class AdminEventsConsumer(
 
             logger.LogInformation(
                 "RabbitMq consumer listening to {QueueName}", RabbitMqTopology.Queues.Admin);
+
+            Exception failure = await ended.Task.WaitAsync(stoppingToken);
+
+            throw new IOException("RabbitMQ consumers session was interrupted", failure);
         }
         finally
         {
