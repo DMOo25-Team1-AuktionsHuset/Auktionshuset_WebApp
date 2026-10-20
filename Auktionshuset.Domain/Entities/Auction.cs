@@ -5,8 +5,8 @@
         public required Guid AuctionId { get; set; }
         public required Guid AuctionHouseId { get; set; }
         public AuctionHouse AuctionHouse { get; set; } = null!;
-        public required Guid EmployeeId { get; set; }
-        public Employee Employee { get; set; } = null!;
+        public Guid? EmployeeId { get; set; }
+        public Employee? Employee { get; set; }
         public required string Name { get; set; }
         public required DateTime StartsAt { get; set; }
         public DateTime? EndedAt { get; set; }

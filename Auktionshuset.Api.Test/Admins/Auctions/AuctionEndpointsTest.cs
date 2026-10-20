@@ -1,7 +1,7 @@
-using Auktionshuset.Api.Endpoints.Admin.Auction.CreateAuction;
-using Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
-using Auktionshuset.Api.Endpoints.Admin.Auction.GetAuctions;
-using Auktionshuset.Api.Endpoints.Admin.Auction.UpdateAuction;
+using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
+using Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
+using Auktionshuset.Api.Endpoints.Admin.GetAuctions;
+using Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
@@ -82,10 +82,10 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
-    /// Verifies that an auction cannot be created without its required auctionarius.
+    /// Verifies that an auction can be created without assigning an auctionarius.
     /// </summary>
     [Fact]
-    public async Task Create_WithoutEmployee_ReturnsValidationProblem()
+    public async Task Create_WithoutEmployee_ReturnsCreatedWithUnassignedAuctionarius()
     {
         (TestContext? context, EmployeeRow _, Lot _) = await CreateContextAsync();
 
@@ -94,10 +94,12 @@ public class AuctionEndpointsTest
             CreateHandler(context),
             CancellationToken.None);
 
-        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
-        Assert.Contains(
-            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
-            message => message.Contains("tilknyttet auktionarius"));
+        Assert.IsType<Created<CreateAuctionResponse>>(result.Result);
+        AuctionListItemResponse row = Assert.Single((await GetAuctionsEndpoint.HandleGetAllAsync(
+            new GetAuctionsHandler(context.Auctions, context.Employees),
+            CancellationToken.None)).Value!);
+        Assert.Null(row.EmployeeId);
+        Assert.Equal("Ikke tildelt", row.EmployeeName);
     }
 
     /// <summary>
@@ -189,24 +191,26 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
-    /// Verifies that a request without an auctionarius is rejected and is not listed.
+    /// Verifies that an auction without an auctionarius remains visible with a fallback label.
     /// </summary>
     [Fact]
-    public async Task GetAuctions_WithoutEmployee_DoesNotCreateAnAuction()
+    public async Task GetAuctions_WithoutEmployee_ReturnsUnassignedAuction()
     {
         (TestContext? context, EmployeeRow _, Lot _) = await CreateContextAsync();
 
-        Results<Created<CreateAuctionResponse>, ValidationProblem> createResult = await CreateAuctionEndpoint.HandleAsync(
+        var createResult = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(null, []),
             CreateHandler(context),
             CancellationToken.None);
-        Assert.IsType<ValidationProblem>(createResult.Result);
+        Assert.IsType<Created<CreateAuctionResponse>>(createResult.Result);
 
         Ok<IReadOnlyList<AuctionListItemResponse>> result = await GetAuctionsEndpoint.HandleGetAllAsync(
             new GetAuctionsHandler(context.Auctions, context.Employees),
             CancellationToken.None);
 
-        Assert.Empty(result.Value!);
+        AuctionListItemResponse auction = Assert.Single(result.Value!);
+        Assert.Null(auction.EmployeeId);
+        Assert.Equal("Ikke tildelt", auction.EmployeeName);
     }
 
     /// <summary>
@@ -284,10 +288,10 @@ public class AuctionEndpointsTest
     }
 
     /// <summary>
-    /// Verifies that an auction cannot be updated without its required auctionarius.
+    /// Verifies that an auction can be updated to have no assigned auctionarius.
     /// </summary>
     [Fact]
-    public async Task Update_WithoutEmployee_ReturnsValidationProblem()
+    public async Task Update_WithoutEmployee_ClearsAssignment()
     {
         (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
         Guid auctionId = await CreateAuctionAsync(context, employee);
@@ -298,14 +302,12 @@ public class AuctionEndpointsTest
             new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
             CancellationToken.None);
 
-        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
-        Assert.Contains(
-            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
-            message => message.Contains("tilknyttet auktionarius"));
+        Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
 
         Auction? stored = await context.Auctions.GetByIdAsync(auctionId, CancellationToken.None);
         Assert.NotNull(stored);
-        Assert.Equal(employee.EmployeeId, stored.EmployeeId);
+        Assert.Null(stored.EmployeeId);
+        Assert.Null(stored.Employee);
     }
 
     /// <summary>
@@ -467,15 +469,15 @@ public class AuctionEndpointsTest
     private static async Task<(TestContext Context, EmployeeRow Employee, Lot Lot)> CreateContextAsync(
         int lotQuantity = 1)
     {
-        InMemoryEmployeeRepository employees = new InMemoryEmployeeRepository();
-        Employee seeded = (await employees.GetAllAsync(CancellationToken.None))[0];
+        var employees = new InMemoryEmployeeRepository();
+        var seeded = (await employees.GetAllAsync(CancellationToken.None))[0];
         var employee = new EmployeeRow(
             seeded.EmployeeId,
             seeded.AuctionHouseId,
             $"{seeded.FirstName} {seeded.LastName}".Trim());
 
-        InMemoryLotRepository lots = new InMemoryLotRepository();
-        Lot lot = new Lot
+        var lots = new InMemoryLotRepository();
+        var lot = new Lot
         {
             LotId = Guid.NewGuid(),
             Name = "Stol",

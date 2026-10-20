@@ -1,4 +1,5 @@
-﻿using Auktionshuset.Application.Admin.Employees;
+﻿using Auktionshuset.Api.Security;
+using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -17,7 +18,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
                 .WithName("GetEmployees")
                 .WithSummary("Gets every employee")
                 .Produces<IReadOnlyList<EmployeeListItemResponse>>()
-                .AllowAnonymous();
+                .RequireAuthorization(SecurityPolicies.CanViewEmployees);
 
             return group;
         }
@@ -28,6 +29,32 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
         /// <param name="handler">The handler that supplies every employee.</param>
         /// <param name="cancellationToken">The token used to cancel the operation.</param>
         /// <returns>A 200 response containing every employee.</returns>
+        public static RouteGroupBuilder MapEmployeeOptions(this RouteGroupBuilder group)
+        {
+            group.MapGet("/options", HandleOptionsAsync)
+                .WithName("GetEmployeeOptions")
+                .WithSummary("Gets the limited employee options used to assign an auctioneer")
+                .Produces<IReadOnlyList<EmployeeOptionResponse>>()
+                .RequireAuthorization(SecurityPolicies.CanViewEmployeeOptions);
+
+            return group;
+        }
+
+        public static async Task<Ok<IReadOnlyList<EmployeeOptionResponse>>> HandleOptionsAsync(
+            GetEmployeesHandler handler,
+            CancellationToken cancellationToken)
+        {
+            IReadOnlyList<Domain.Entities.Employee> employees = await handler.HandleAsync(cancellationToken);
+
+            EmployeeOptionResponse[] response = employees
+                .Select(employee => new EmployeeOptionResponse(
+                    employee.EmployeeId,
+                    $"{employee.FirstName} {employee.LastName}".Trim()))
+                .ToArray();
+
+            return TypedResults.Ok<IReadOnlyList<EmployeeOptionResponse>>(response);
+        }
+
         public static async Task<Ok<IReadOnlyList<EmployeeListItemResponse>>> HandleAsync(
             GetEmployeesHandler handler,
             CancellationToken cancellationToken)

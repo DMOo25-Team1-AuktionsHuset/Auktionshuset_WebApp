@@ -32,7 +32,6 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     /// <summary>
     /// Gets or sets the required identifier of the auctionarius assigned to the auction.
     /// </summary>
-    [Required(ErrorMessage = "Vælg en auktionarius.")]
     public Guid? EmployeeId { get; set; }
 
     /// <summary>

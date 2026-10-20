@@ -1,7 +1,8 @@
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
+namespace Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
 
 public static class DeleteAuctionEndpoint
 {
@@ -16,7 +17,8 @@ public static class DeleteAuctionEndpoint
             .WithName("DeleteAuction")
             .WithSummary("Deletes an auction")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(SecurityPolicies.CanDeleteAuction);
 
         return group;
     }

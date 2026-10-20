@@ -2,6 +2,7 @@
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
 {
@@ -14,7 +15,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
                 .WithSummary("Updates an employee")
                 .Produces<UpdateEmployeeResponse>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status404NotFound)
-                .ProducesValidationProblem();
+                .ProducesValidationProblem()
+                .RequireAuthorization(SecurityPolicies.CanUpdateEmployee);
 
             return group;
         }
@@ -25,7 +27,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
             [FromServices] UpdateEmployeeHandler handler,
             CancellationToken cancellationToken)
         {
-            UpdateEmployeeCommand command = new UpdateEmployeeCommand(
+            var command = new UpdateEmployeeCommand(
                 EmployeeId: employeeId,
                 FirstName: request.FirstName.Trim(),
                 LastName: request.LastName.Trim(),
