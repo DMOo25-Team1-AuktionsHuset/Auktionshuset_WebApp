@@ -53,7 +53,7 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddSingleton<IIntegrationEventPublisher, RabbitMqIntegrationEventPublisher>();
             services.AddScoped<IOutboxWriter, EfOutboxWriter>();
             services.AddScoped<DbOutboxStore>();
-            services.AddScoped<DbInboxStore>();
+            services.AddScoped<IInboxStore, DbInboxStore>();
             services.AddHostedService<OutboxProcessor>();
             services.AddHostedService<AdminEventsConsumer>();
 

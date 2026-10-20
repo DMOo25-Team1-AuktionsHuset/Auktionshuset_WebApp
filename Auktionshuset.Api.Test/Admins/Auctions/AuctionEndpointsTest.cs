@@ -1,6 +1,7 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
-using Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
-using Auktionshuset.Api.Endpoints.Admin.GetAuctions;
+using Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction.GetAuctions;
+using Auktionshuset.Api.Endpoints.Admin.Auction.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
@@ -275,7 +276,7 @@ public class AuctionEndpointsTest
         Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
             auctionId,
             CreateValidUpdateRequest(employee.EmployeeId, [(lot.LotId, 5)]),
-            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
+            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork()),
             CancellationToken.None);
 
         Ok<UpdateAuctionResponse> ok = Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
@@ -299,7 +300,7 @@ public class AuctionEndpointsTest
         Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
             auctionId,
             CreateValidUpdateRequest(null, []),
-            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
+            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork()),
             CancellationToken.None);
 
         Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
@@ -321,7 +322,7 @@ public class AuctionEndpointsTest
         Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
             Guid.NewGuid(),
             CreateValidUpdateRequest(employee.EmployeeId, []),
-            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
+            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork()),
             CancellationToken.None);
 
         Assert.IsType<NotFound>(result.Result);
@@ -346,7 +347,7 @@ public class AuctionEndpointsTest
         Results<Ok<UpdateAuctionResponse>, NotFound, ValidationProblem> result = await UpdateAuctionEndpoint.HandleAsync(
             auctionId,
             request,
-            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher),
+            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork()),
             CancellationToken.None);
 
         ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
@@ -363,7 +364,7 @@ public class AuctionEndpointsTest
     {
         (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
         Guid auctionId = await CreateAuctionAsync(context, employee);
-        var handler = new DeleteAuctionHandler(context.Auctions, context.Publisher);
+        var handler = new DeleteAuctionHandler(context.Auctions, context.Publisher, new RecordingUnitOfWork());
 
         Results<NoContent, NotFound> deleted = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
         Results<NoContent, NotFound> repeated = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
@@ -384,7 +385,7 @@ public class AuctionEndpointsTest
 
         await DeleteAuctionEndpoint.HandleAsync(
             auctionId,
-            new DeleteAuctionHandler(context.Auctions, context.Publisher),
+            new DeleteAuctionHandler(context.Auctions, context.Publisher, new RecordingUnitOfWork()),
             CancellationToken.None);
 
         AuctionDeletedIntegrationEvent published = Assert.Single(context.Publisher.Published.OfType<AuctionDeletedIntegrationEvent>());
@@ -422,7 +423,7 @@ public class AuctionEndpointsTest
     }
 
     private static CreateAuctionHandler CreateHandler(TestContext context) =>
-        new(context.Auctions, context.Lots, context.Employees, context.Publisher);
+        new(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork());
 
     private static async Task<Guid> CreateAuctionAsync(
         TestContext context,

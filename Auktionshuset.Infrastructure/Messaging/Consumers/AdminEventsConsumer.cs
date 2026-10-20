@@ -10,7 +10,6 @@ internal sealed class AdminEventsConsumer(
     IRabbitMqConnectionProvider connections,
     RabbitMqTopologyInitializer topology,
     IServiceScopeFactory scopeFactory,
-    EventContractRegistry registry,
     ILogger<AdminEventsConsumer> logger)
     : BackgroundService
 {
@@ -105,7 +104,7 @@ internal sealed class AdminEventsConsumer(
                     await using AsyncServiceScope scope =
                      scopeFactory.CreateAsyncScope();
 
-                    var inbox = scope.ServiceProvider.GetRequiredService<DbInboxStore>();
+                    var inbox = scope.ServiceProvider.GetRequiredService<IInboxStore>();
 
 
                     InboxTypes inboxResult = await inbox.StoreNewMessageAsync(

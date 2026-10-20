@@ -42,7 +42,7 @@ public class LotImageEndpointsTest
         var handler = new UploadLotImageHandler(
             repository,
             new FakeLotImageStore { NextFileName = "abc123.png" },
-            new RecordingEventPublisher());
+            new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -62,7 +62,7 @@ public class LotImageEndpointsTest
     public async Task Upload_WithUnknownLot_ReturnsNotFound()
     {
         InMemoryLotRepository repository = await CreateRepositoryAsync();
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             Guid.NewGuid(),
@@ -81,7 +81,7 @@ public class LotImageEndpointsTest
     {
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -100,7 +100,7 @@ public class LotImageEndpointsTest
     {
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         DefaultHttpContext context = new DefaultHttpContext();
         context.Request.ContentType = "application/json";
@@ -124,7 +124,7 @@ public class LotImageEndpointsTest
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var imageStore = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -148,7 +148,7 @@ public class LotImageEndpointsTest
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var imageStore = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -168,7 +168,7 @@ public class LotImageEndpointsTest
     {
         Lot lot = CreateLot(imageFileName: "billede.jpg");
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
-        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<Ok<LotImageResponse>, NotFound> result = await LotImageEndpoints.HandleRemoveAsync(lot.LotId, handler, CancellationToken.None);
 
@@ -183,7 +183,7 @@ public class LotImageEndpointsTest
     public async Task Remove_WithUnknownLot_ReturnsNotFound()
     {
         InMemoryLotRepository repository = await CreateRepositoryAsync();
-        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<Ok<LotImageResponse>, NotFound> result = await LotImageEndpoints.HandleRemoveAsync(Guid.NewGuid(), handler, CancellationToken.None);
 

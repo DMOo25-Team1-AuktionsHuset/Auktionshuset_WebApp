@@ -89,7 +89,7 @@ public class DeleteAuctionHandlerTests
         employees.Add(employee);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher);
+        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher, new RecordingUnitOfWork());
 
         CreateAuctionResult first = await createHandler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)),
@@ -99,7 +99,7 @@ public class DeleteAuctionHandlerTests
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(3), DateTime.Now.AddDays(4)),
             CancellationToken.None);
 
-        return (new DeleteAuctionHandler(auctions, publisher), auctions, first.AuctionId, second.AuctionId);
+        return (new DeleteAuctionHandler(auctions, publisher, new RecordingUnitOfWork()), auctions, first.AuctionId, second.AuctionId);
     }
 
     private static async Task<(DeleteAuctionHandler Handler, InMemoryAuctionRepository Auctions, Guid AuctionId, RecordingEventPublisher Publisher)> CreateHandlerWithPublisherAsync(
@@ -113,7 +113,7 @@ public class DeleteAuctionHandlerTests
 
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork())
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,
@@ -124,6 +124,6 @@ public class DeleteAuctionHandlerTests
 
         Assert.True(created.Succeeded);
 
-        return (new DeleteAuctionHandler(auctionRepository, publisher), auctionRepository, created.AuctionId, publisher);
+        return (new DeleteAuctionHandler(auctionRepository, publisher, new RecordingUnitOfWork()), auctionRepository, created.AuctionId, publisher);
     }
 }

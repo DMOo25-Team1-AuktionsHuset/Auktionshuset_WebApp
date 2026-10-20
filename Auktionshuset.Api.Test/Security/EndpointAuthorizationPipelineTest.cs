@@ -11,6 +11,7 @@ using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Api.Test;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
@@ -264,6 +265,8 @@ public class EndpointAuthorizationPipelineTest
                     services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
                     services.AddSingleton<ILotRepository, InMemoryLotRepository>();
                     services.AddSingleton<IIntegrationEventPublisher, RecordingEventPublisher>();
+                    services.AddSingleton<IOutboxWriter, RecordingEventPublisher>();
+                    services.AddSingleton<IUnitOfWork, RecordingUnitOfWork>();
                     services.AddSingleton<ILotImageStore>(_ => new TestLotImageStore());
                     services.AddSingleton(configuration);
                     services.AddSecurityServices(configuration);

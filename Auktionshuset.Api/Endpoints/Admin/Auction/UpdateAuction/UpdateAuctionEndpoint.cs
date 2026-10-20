@@ -1,4 +1,4 @@
-using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;

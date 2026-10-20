@@ -1,6 +1,7 @@
 using Auktionshuset.Api.Security;
-using Auktionshuset.Api.Endpoints.Admin.DeleteAuction;
-using Auktionshuset.Api.Endpoints.Admin.GetAuctions;
+using Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction.GetAuctions;
+using Auktionshuset.Api.Endpoints.Admin.Auction.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
 
 namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction

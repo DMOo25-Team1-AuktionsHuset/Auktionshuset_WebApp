@@ -361,7 +361,7 @@ public class CreateAuctionHandlerTests
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
         return (
-            new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher),
+            new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork()),
             auctionRepository,
             employeeRepository,
             publisher);

@@ -1,8 +1,9 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Domain.Entities;
+using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 
@@ -10,13 +11,14 @@ public sealed class UpdateAuctionHandler(
     IAuctionRepository auctionRepository,
     ILotRepository lotRepository,
     IEmployeeRepository employeeRepository,
-    IIntegrationEventPublisher eventPublisher)
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork)
 {
     public async Task<UpdateAuctionResult> HandleAsync(
         UpdateAuctionCommand command,
         CancellationToken cancellationToken)
     {
-        Auction? auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
+        AuctionEntity? auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
 
         if (auction is null)
         {
@@ -81,7 +83,7 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Missing();
         }
 
-        await eventPublisher.PublishAsync(
+        await outboxWriter.AddAsync(
             new AuctionUpdatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 AuctionId: auction.AuctionId,
@@ -93,6 +95,8 @@ public sealed class UpdateAuctionHandler(
                 ItemCount: itemCount,
                 OccurredAt: DateTime.Now),
             cancellationToken);
+
+        await unitOfWork.CommitBatchAsync(cancellationToken);
 
         return UpdateAuctionResult.Updated(auction.AuctionId, auctionLots.Count, itemCount);
     }

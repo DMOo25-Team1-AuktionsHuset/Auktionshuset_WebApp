@@ -309,7 +309,7 @@ public class UpdateAuctionHandlerTests
 
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork())
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,
@@ -321,7 +321,7 @@ public class UpdateAuctionHandlerTests
         Assert.True(created.Succeeded);
 
         return (
-            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher),
+            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork()),
             auctionRepository,
             employeeRepository,
             publisher,
@@ -356,7 +356,7 @@ public class UpdateAuctionHandlerTests
         await auctionRepository.AddAsync(auction, [], CancellationToken.None);
 
         return (
-            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher),
+            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork()),
             auctionRepository,
             employeeRepository,
             publisher,

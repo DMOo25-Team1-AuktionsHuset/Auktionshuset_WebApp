@@ -58,7 +58,7 @@ public class LotEndpointsTest
         var repository = new InMemoryLotRepository();
         await repository.AddAsync(lot, CancellationToken.None);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
-        UpdateLotHandler handler = new UpdateLotHandler(repository, publisher);
+        UpdateLotHandler handler = new UpdateLotHandler(repository, publisher, new RecordingUnitOfWork());
         UpdateLotRequest request = new UpdateLotRequest
         {
             Name = "  Updated lot  ",
@@ -105,7 +105,7 @@ public class LotEndpointsTest
                 Tags = [],
                 AuctionHouseId = Guid.NewGuid()
             },
-            new UpdateLotHandler(new InMemoryLotRepository(), new RecordingEventPublisher()),
+            new UpdateLotHandler(new InMemoryLotRepository(), new RecordingEventPublisher(), new RecordingUnitOfWork()),
             CancellationToken.None);
 
         Assert.IsType<NotFound>(result.Result);

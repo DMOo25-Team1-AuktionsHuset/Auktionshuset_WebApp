@@ -19,7 +19,7 @@ public class DeleteLotTest
         Lot other = CreateLot();
         await repository.AddAsync(target, CancellationToken.None);
         await repository.AddAsync(other, CancellationToken.None);
-        DeleteLotHandler handler = new DeleteLotHandler(repository, new RecordingEventPublisher());
+        DeleteLotHandler handler = new DeleteLotHandler(repository, new RecordingEventPublisher(), new RecordingUnitOfWork());
 
         Results<NoContent, NotFound> result = await DeleteLotEndpoint.HandleAsync(target.LotId, handler, CancellationToken.None);
 
@@ -45,7 +45,7 @@ public class DeleteLotTest
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             DeleteLotEndpoint.HandleAsync(
                 lot.LotId,
-                new DeleteLotHandler(repository, new RecordingEventPublisher()),
+                new DeleteLotHandler(repository, new RecordingEventPublisher(), new RecordingUnitOfWork()),
                 cancellation.Token));
 
         Assert.Equal(lot.LotId, Assert.Single(await repository.GetAllAsync(CancellationToken.None)).LotId);

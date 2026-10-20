@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
-    public class DbInboxStore(AHDBContext context)
+    public class DbInboxStore(AHDBContext context) : IInboxStore
     {
         public async Task<InboxTypes> StoreNewMessageAsync(
             string consumerName,
@@ -79,7 +79,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                 Error = "Messagekey already received with different routingkey or payload"
             };
 
-            await InsertMessageAsync(inboxMessage, cancellationToken);
+            await InsertMessageAsync(conflict, cancellationToken);
 
             return InboxTypes.Quarantined;
         }
@@ -110,13 +110,15 @@ namespace Auktionshuset.Infrastructure.Messaging
                 )
                 VALUES (
                     {inboxMessage.InboxId},
-                    CASE WHEB {hasEventId} THEN {eventId} ELSE NULL END,
+                    CASE WHEN {hasEventId} THEN {eventId} ELSE NULL END,
                     NULLIF({transportMessageId}, ''),
                     {inboxMessage.ConsumerName},
                     {inboxMessage.MessageKey},
                     {inboxMessage.EventType},
                     {inboxMessage.Payload},
                     CURRENT_TIMESTAMP,
+                    NULL,
+                    NULLIF({error}, ''),
                     CASE
                         WHEN {isQuarantined} THEN CURRENT_TIMESTAMP
                         ELSE NULL
