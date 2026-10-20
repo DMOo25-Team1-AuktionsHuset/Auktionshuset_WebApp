@@ -104,7 +104,7 @@ internal sealed class AdminEventsConsumer(
                     await using AsyncServiceScope scope =
                      scopeFactory.CreateAsyncScope();
 
-                    var inbox = scope.ServiceProvider.GetRequiredService<IInboxStore>();
+                    var inbox = scope.ServiceProvider.GetRequiredService<DbInboxStore>();
 
 
                     InboxTypes inboxResult = await inbox.StoreNewMessageAsync(

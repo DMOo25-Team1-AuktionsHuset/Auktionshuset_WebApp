@@ -510,7 +510,7 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Property<DateTime?>("ProcessedAtTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("RecievedAtTime")
+                    b.Property<DateTime>("ReceivedAtTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -524,7 +524,7 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("InboxMessages_Identity");
 
-                    b.HasIndex("ConsumerName", "NextAttemptAtTime", "RecievedAtTime", "InboxId")
+                    b.HasIndex("ConsumerName", "NextAttemptAtTime", "ReceivedAtTime", "InboxId")
                         .HasDatabaseName("InboxMessages_Ready")
                         .HasFilter("\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
 

@@ -13,7 +13,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             builder.Property(i => i.MessageKey).IsRequired();
             builder.Property(i => i.EventType).IsRequired();
             builder.Property(i => i.Payload).HasColumnType("bytea").IsRequired();
-            builder.Property(i => i.RecievedAtTime).HasDefaultValueSql("CURRENT_TIMESTAMP").IsRequired();
+            builder.Property(i => i.ReceivedAtTime).HasDefaultValueSql("CURRENT_TIMESTAMP").IsRequired();
             builder.Property(i => i.ProcessedAtTime).IsRequired(false);
             builder.Property(i => i.Error).IsRequired(false);
             builder.Property(i => i.InboxQuarantinedAtTime).IsRequired(false);
@@ -35,7 +35,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             {
                 i.ConsumerName,
                 i.NextAttemptAtTime,
-                i.RecievedAtTime,
+                i.ReceivedAtTime,
                 i.InboxId
             })
             .HasDatabaseName("InboxMessages_Ready")

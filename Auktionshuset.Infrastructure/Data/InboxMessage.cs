@@ -9,7 +9,7 @@
         public required string MessageKey { get; init; }
         public required string EventType { get; init; }
         public required byte[] Payload { get; init; }
-        public DateTime RecievedAtTime { get; init; }
+        public DateTime ReceivedAtTime { get; init; }
         public DateTime? ProcessedAtTime { get; set; }
         public string? Error { get; set; }
         public DateTime? InboxQuarantinedAtTime { get; set; }

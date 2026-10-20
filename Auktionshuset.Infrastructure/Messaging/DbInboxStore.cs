@@ -39,7 +39,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                 MessageKey = messageKey,
                 EventType = eventType,
                 Payload = payload,
-                RecievedAtTime = DateTime.UtcNow,
+                ReceivedAtTime = DateTime.UtcNow,
                 Error = hasEventId ? null : "MessageId missing or not valid"
             };
 
@@ -103,7 +103,7 @@ namespace Auktionshuset.Infrastructure.Messaging
                     "MessageKey",
                     "EventType",
                     "Payload",
-                    "RecievedAtTime",
+                    "ReceivedAtTime",
                     "ProcessedAtTime",
                     "Error",
                     "InboxQuarantinedAtTime"
