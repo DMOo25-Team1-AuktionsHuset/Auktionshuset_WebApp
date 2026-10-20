@@ -466,6 +466,11 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("ConsumerName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -483,9 +488,20 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Property<DateTime?>("InboxQuarantinedAtTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("LeaseExpiresAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("MessageKey")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("NextAttemptAtTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<byte[]>("Payload")
                         .IsRequired()
@@ -508,7 +524,7 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("InboxMessages_Identity");
 
-                    b.HasIndex("RecievedAtTime", "InboxId")
+                    b.HasIndex("ConsumerName", "NextAttemptAtTime", "RecievedAtTime", "InboxId")
                         .HasDatabaseName("InboxMessages_Ready")
                         .HasFilter("\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
 
@@ -935,50 +951,6 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("AuctionHouse");
-                });
-
-            modelBuilder.Entity("Auktionshuset.Domain.Entities.RefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("FamilyRevokedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReplacedByTokenId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExpiresAt");
-
-                    b.HasIndex("FamilyId");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique();
-
-                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("Auktionshuset.Infrastructure.Data.BidCommandKey", b =>

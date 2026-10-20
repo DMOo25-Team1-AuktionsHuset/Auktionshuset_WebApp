@@ -17,6 +17,11 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             builder.Property(i => i.ProcessedAtTime).IsRequired(false);
             builder.Property(i => i.Error).IsRequired(false);
             builder.Property(i => i.InboxQuarantinedAtTime).IsRequired(false);
+            builder.Property(i => i.Attempts).HasDefaultValue(0).IsRequired();
+            builder.Property(i => i.NextAttemptAtTime).HasDefaultValueSql("CURRENT_TIMESTAMP").IsRequired();
+            builder.Property(i => i.LeaseToken).IsRequired(false);
+            builder.Property(i => i.LeaseExpiresAtTime).IsRequired(false);
+
 
             builder.HasIndex(i => new
             {
@@ -28,6 +33,8 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
 
             builder.HasIndex(i => new
             {
+                i.ConsumerName,
+                i.NextAttemptAtTime,
                 i.RecievedAtTime,
                 i.InboxId
             })

@@ -13,6 +13,10 @@
         public DateTime? ProcessedAtTime { get; set; }
         public string? Error { get; set; }
         public DateTime? InboxQuarantinedAtTime { get; set; }
+        public int Attempts { get; set; }
+        public DateTime NextAttemptAtTime { get; set; }
+        public Guid? LeaseToken { get; set; }
+        public DateTime? LeaseExpiresAtTime { get; set; }
 
     }
 }

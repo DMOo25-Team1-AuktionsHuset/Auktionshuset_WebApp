@@ -1,12 +1,12 @@
-﻿using Auktionshuset.Infrastructure.Data;
+﻿using System.Security.Cryptography;
+using System.Text.Json;
+using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
-using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
-    public class DbInboxStore(AHDBContext context) : IInboxStore
+    public class DbInboxStore(AHDBContext context)
     {
         public async Task<InboxTypes> StoreNewMessageAsync(
             string consumerName,
@@ -127,6 +127,141 @@ namespace Auktionshuset.Infrastructure.Messaging
                 ON CONFLICT ("ConsumerName", "MessageKey") 
                 DO NOTHING
                 """, cancellationToken);
+        }
+
+        public async Task QuarantineExhaustedAsync(string consumerName, CancellationToken cancellationToken)
+        {
+            int maxAttempts = InboxPolicy.MaxAttempts;
+
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE "InboxMessages"
+                SET
+                    "InboxQuarantinedAtTime" = CURRENT_TIMESTAMP,
+                    "LeaseToken" = NULL,
+                    "LeaseExpiresAtTime" = NULL,
+                    "Error" = COALESCE(
+                        "Error",
+                        'Last try did not stop before lease expired')
+                WHERE "ConsumerName" = {consumerName}
+                    AND "ProcessedAtTime" IS NULL
+                    AND "InboxQuarantinedAtTime" IS NULL
+                    AND "Attempts" >= {maxAttempts}
+                    AND (
+                        "LeaseExpiresAtTime" IS NULL
+                        OR "LeaseExpiresAtTime" <= CURRENT_TIMESTAMP
+                    )
+                """, cancellationToken);
+        }
+
+        public async Task<InboxMessage?> TryClaimAsync(string consumerName, CancellationToken cancellation)
+        {
+            Guid leaseToken = Guid.NewGuid();
+            int leaseSeconds = InboxPolicy.LeaseSeconds;
+            int maxAttempts = InboxPolicy.MaxAttempts;
+
+            List<InboxMessage> messages = await context.InboxMessages
+                .FromSqlInterpolated($"""
+                WITH unclaimed AS (
+                    SELECT "InboxId"
+                    FROM "InboxMessages"
+                    WHERE "ConsumerName" = {consumerName}
+                        AND "ProcessedAtTime" IS NULL
+                        AND "InboxQuarantinedAtTime" IS NULL
+                        AND "Attempts" < {maxAttempts}
+                        AND "NextAttemptAtTime" <= CURRENT_TIMESTAMP
+                        AND (
+                            "LeaseExpiresAtTime" IS NULL
+                            OR "LeaseExpiresAtTime" <= CURRENT_TIMESTAMP
+                    )
+                    ORDER BY
+                        "NextAttemptAtTime",
+                        "ReceivedAtTime",
+                        "InboxId"
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED
+                )
+                UPDATE "InboxMessages" AS message
+                SET
+                    "LeaseToken" = {leaseToken},
+                    "LeaseExpiresAtTime" = 
+                        CURRENT_TIMESTAMP
+                        + make_interval(secs => {leaseSeconds}),
+                    "Attempts" = message."Attempts" + 1
+                FROM unclaimed
+                WHERE message."InboxId" = unclaimed."InboxId"
+                RETURNING message.*
+                """)
+                .AsNoTracking()
+                .ToListAsync(cancellation);
+
+            return messages.SingleOrDefault();
+        }
+
+        public async Task<bool> CompleteAsync(
+            Guid inboxId,
+            Guid leaseToken,
+            CancellationToken cancellationToken)
+        {
+            int affected = await context.Database
+                .ExecuteSqlInterpolatedAsync($"""
+                UPDATE "InboxMessages"
+                SET
+                    "ProcessedAtTime" = CURRENT_TIMESTAMP,
+                    "Error" = NULL,
+                    "LeaseToken" = NULL,
+                    "LeaseExpiresAtTime" = NULL
+                WHERE "InboxId" = {inboxId}
+                    AND "LeaseToken" = {leaseToken}
+                    AND "LeaseExpiresAtTime" > CURRENT_TIMESTAMP
+                    AND "ProcessedAtTime" IS NULL
+                    AND "InboxQuarantinedAtTime" IS NULL
+                """, cancellationToken);
+
+            return affected == 1;
+        }
+
+        public async Task<bool> FailAsync(
+            InboxMessage message,
+            Guid leaseToken,
+            Exception exception,
+            bool permanantFailure,
+            CancellationToken cancellationToken)
+        {
+            bool quarantine = permanantFailure ||
+                message.Attempts >= InboxPolicy.MaxAttempts;
+
+            int retrySeconds =
+                InboxPolicy.RetryDelaySeconds(message.Attempts);
+
+            string error = exception.ToString();
+
+            if (error.Length > 4000)
+                error = error[..4000];
+
+            int affected = await context.Database
+                .ExecuteSqlInterpolatedAsync($"""
+                UPDATE "InboxMessages"
+                SET
+                    "Error" = {error},
+                    "NextAttemptAtTime" =
+                        CURRENT_TIMESTAMP
+                        + make_interval(secs => {retrySeconds}),
+                    "InboxQuarantinedAtTime" =
+                        CASE
+                            WHEN {quarantine}
+                            THEN CURRENT_TIMESTAMP
+                            ELSE NULL
+                        END,
+                    "LeaseToken" = NULL,
+                    "LeaseExpiresAtTime" = NULL
+                WHERE "InboxId" = {message.InboxId}
+                    AND "LeaseToken" = {leaseToken}
+                    AND "LeaseExpiresAtTime" > CURRENT_TIMESTAMP
+                    AND "ProcessedAtTime" IS NULL
+                    AND "InboxQuarantinedAtTime" IS NULL
+                """, cancellationToken);
+
+            return affected == 1;
         }
     }
 }
