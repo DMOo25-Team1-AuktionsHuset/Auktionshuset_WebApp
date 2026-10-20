@@ -52,6 +52,9 @@ namespace Auktionshuset.Infrastructure.Service
             DatabaseCredentials credentials =
                 await secretProvider.GetDatabaseCredentialsAsync();
 
+            RabbitMqCredentials rabbitMqCredentials =
+                await secretProvider.GetRabbitMqCredentialsAsync();
+
             // Non-sensitive PostgreSQL configuration
             string host = configuration["Database:Host"]
                           ?? throw new InvalidOperationException("Database:Host mangler.");
@@ -76,7 +79,7 @@ namespace Auktionshuset.Infrastructure.Service
                 options.UseNpgsql(connectionString));
 
             // Existing infrastructure registrations
-            services.AddRabbitMq(configuration);
+            services.AddRabbitMq(configuration, rabbitMqCredentials);
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();

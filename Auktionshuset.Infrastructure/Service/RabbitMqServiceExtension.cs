@@ -1,6 +1,7 @@
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
+using Auktionshuset.Infrastructure.Service.Vault;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
@@ -17,7 +18,8 @@ namespace Auktionshuset.Infrastructure.Service
         /// <returns>The same service collection so that further calls can be chained.</returns>
         internal static IServiceCollection AddRabbitMq(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            RabbitMqCredentials credentials)
         {
             services.AddSingleton<RabbitMqRoutingKeyResolver>();
 
@@ -27,22 +29,15 @@ namespace Auktionshuset.Infrastructure.Service
                     configuration,
                     "RabbitMQ:HostName");
 
-                string userName = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:UserName");
-
-                string password = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:Password");
-
                 int port = GetRequiredRabbitMqPort(configuration);
 
                 var factory = new ConnectionFactory
                 {
                     HostName = hostName,
                     Port = port,
-                    UserName = userName,
-                    Password = password
+                    UserName = credentials.Username,
+                    Password = credentials.Password,
+                    VirtualHost = "/"
                 };
 
                 return factory
