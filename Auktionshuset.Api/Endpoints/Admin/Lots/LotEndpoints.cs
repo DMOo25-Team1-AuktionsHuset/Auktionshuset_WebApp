@@ -17,7 +17,8 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lots
         {
             RouteGroupBuilder group = endpoints
                 .MapGroup("/api/lots")
-                .WithTags("Lots");
+                .WithTags("Lots")
+                .RequireAuthorization();
 
             group.MapCreateLot();
             group.MapUpdateLot();

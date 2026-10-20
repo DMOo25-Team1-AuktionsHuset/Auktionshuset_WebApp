@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/refresh"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: '{"refreshToken":"{{refreshToken}}"}'
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) { const d = pm.response.json(); pm.environment.set("accessToken", d.accessToken); pm.environment.set("refreshToken", d.refreshToken); }
+    language: text/javascript
+  - type: beforeRequest
+    code: pm.environment.set("previousRefreshToken", pm.environment.get("refreshToken"));
+    language: text/javascript
+order: 4000

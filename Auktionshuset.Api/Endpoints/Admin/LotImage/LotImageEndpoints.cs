@@ -1,5 +1,6 @@
-using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Lots.Images;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -45,13 +46,15 @@ public static class LotImageEndpoints
             .Produces<LotImageResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .ProducesValidationProblem()
+            .RequireAuthorization(SecurityPolicies.CanWriteLotImage)
             .DisableAntiforgery();
 
         group.MapDelete("/{lotId:guid}/image", HandleRemoveAsync)
             .WithName("RemoveLotImage")
             .WithSummary("Removes the image of a lot")
             .Produces<LotImageResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(SecurityPolicies.CanUpdateLot);
 
         return group;
     }
@@ -93,11 +96,11 @@ public static class LotImageEndpoints
 
         // Copy the upload into memory so the validator and the store always receive a seekable
         // stream, and so the request's temporary file can be released before the response is written.
-        using MemoryStream buffer = new MemoryStream((int)file.Length);
+        using var buffer = new MemoryStream((int)file.Length);
         await file.CopyToAsync(buffer, cancellationToken);
         buffer.Position = 0;
 
-        UploadLotImageCommand command = new UploadLotImageCommand(
+        var command = new UploadLotImageCommand(
             LotId: lotId,
             FileName: file.FileName,
             ContentType: file.ContentType,

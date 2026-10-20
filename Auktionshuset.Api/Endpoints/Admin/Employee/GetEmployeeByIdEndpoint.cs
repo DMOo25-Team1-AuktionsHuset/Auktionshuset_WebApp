@@ -1,3 +1,4 @@
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -10,11 +11,12 @@ public static class GetEmployeeByIdEndpoint
     public static RouteGroupBuilder MapGetEmployeeById(this RouteGroupBuilder group)
     {
         group.MapGet("/{employeeId:guid}", HandleAsync)
+            .RequireAuthorization(SecurityPolicies.CanReadEmployees)
             .WithName("GetEmployeeById")
             .WithSummary("Gets an employee by identifier")
             .Produces<EmployeeResponse>()
             .Produces(StatusCodes.Status404NotFound)
-            .AllowAnonymous();
+            .RequireAuthorization(SecurityPolicies.CanViewEmployees);
 
         return group;
     }

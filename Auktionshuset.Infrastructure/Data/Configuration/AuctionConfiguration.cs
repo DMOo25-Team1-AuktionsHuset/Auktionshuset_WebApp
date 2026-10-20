@@ -13,7 +13,9 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         /// <summary>
         /// Applies the configuration for <see cref="Auction"/>.
         /// </summary>
-        /// <param name="entity">The builder used to configure the <see cref="Auction"/> entity.</param>
+        /// <param name="entity">
+        /// The builder used to configure the <see cref="Auction"/> entity.
+        /// </param>
         public void Configure(EntityTypeBuilder<Auction> entity)
         {
             var dateTimeConverter = new AuctionDateTimeConverter();
@@ -31,7 +33,8 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.HasOne(a => a.Employee)
                 .WithMany(employee => employee.Auctions)
                 .HasForeignKey(a => a.EmployeeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
         }
     }
 }

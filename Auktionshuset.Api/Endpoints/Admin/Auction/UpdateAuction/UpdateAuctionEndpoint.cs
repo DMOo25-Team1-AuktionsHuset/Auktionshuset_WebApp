@@ -1,8 +1,10 @@
+using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Auktionshuset.Api.Endpoints.Admin.Auction.UpdateAuction;
+namespace Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
 
 public static class UpdateAuctionEndpoint
 {
@@ -18,7 +20,8 @@ public static class UpdateAuctionEndpoint
             .WithSummary("Updates an existing auction")
             .Produces<UpdateAuctionResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization(SecurityPolicies.CanUpdateAuction);
 
         return group;
     }
@@ -37,7 +40,7 @@ public static class UpdateAuctionEndpoint
         UpdateAuctionHandler handler,
         CancellationToken cancellationToken)
     {
-        UpdateAuctionCommand command = new UpdateAuctionCommand(
+        var command = new UpdateAuctionCommand(
             AuctionId: auctionId,
             Name: request.Name.Trim(),
             StartsAt: request.StartsAt!.Value,

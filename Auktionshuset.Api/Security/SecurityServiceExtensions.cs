@@ -1,55 +1,43 @@
+using Auktionshuset.Contracts.Security;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.AspNetCore.Identity;
 
 
 namespace Auktionshuset.Api.Security;
 
 public static class SecurityServiceExtensions
 {
-    private const string EnforceAuthorizationKey = "Security:EnforceAuthorization";
 
     public static IServiceCollection AddSecurityServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        bool enforceAuthorization = configuration.GetValue(EnforceAuthorizationKey, true);
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<
             IPasswordHasher<AuthUser>,
             PasswordHasher<AuthUser>>();
-
+        
         services.AddSingleton<
             IAuthUserStore,
             ConfiguredAuthUserStore>();
         services.AddSingleton<
             IAccessTokenService,
             JwtTokenService>();
+        services.AddScoped<RefreshTokenService>();
+        services.AddAuthRateLimiting(configuration);
 
 
-        if (enforceAuthorization)
-        {
-            services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options => ConfigureJwtBearer(options, configuration));
-        }
-        else
-        {
-            services.AddAuthentication();
-        }
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration));
 
         services.AddAuthorization(options =>
         {
-            if (!enforceAuthorization)
-            {
-                ConfigureDevelopmentBypass(options);
-                return;
-            }
-
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
                 .Build();
@@ -60,32 +48,30 @@ public static class SecurityServiceExtensions
                 policy.RequireRole(SecurityRoles.Admin);
             });
 
+            options.AddPolicy(SecurityPolicies.CanReadEmployees, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(SecurityRoles.AuctionAdmin, SecurityRoles.Admin));
             AddPermissionPolicy(options, SecurityPolicies.CanCreateLot, SecurityPermissions.CreateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanUpdateLot, SecurityPermissions.UpdateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanDeleteLot, SecurityPermissions.DeleteLot);
             AddPermissionPolicy(options, SecurityPolicies.CanViewLots, SecurityPermissions.ViewLots);
+            AddPermissionPolicy(options, SecurityPolicies.CanViewAuctions, SecurityPermissions.ViewAuctions);
             AddPermissionPolicy(options, SecurityPolicies.CanCreateAuction, SecurityPermissions.CreateAuction);
+            AddPermissionPolicy(options, SecurityPolicies.CanUpdateAuction, SecurityPermissions.UpdateAuction);
+            AddPermissionPolicy(options, SecurityPolicies.CanDeleteAuction, SecurityPermissions.DeleteAuction);
+            AddPermissionPolicy(options, SecurityPolicies.CanViewEmployeeOptions, SecurityPermissions.ViewAuctions);
+            AddPermissionPolicy(options, SecurityPolicies.CanViewEmployees, SecurityPermissions.ViewEmployees);
+            AddPermissionPolicy(options, SecurityPolicies.CanCreateEmployee, SecurityPermissions.CreateEmployee);
+            AddPermissionPolicy(options, SecurityPolicies.CanUpdateEmployee, SecurityPermissions.UpdateEmployee);
+            AddPermissionPolicy(options, SecurityPolicies.CanDeleteEmployee, SecurityPermissions.DeleteEmployee);
+            options.AddPolicy(SecurityPolicies.CanWriteLotImage, policy =>
+                policy.RequireAuthenticatedUser().RequireAssertion(context =>
+                    context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.CreateLot)
+                    || context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.UpdateLot)));
         });
 
         return services;
     }
 
-    private static void ConfigureDevelopmentBypass(AuthorizationOptions options)
-    {
-        AuthorizationPolicy allowAnonymousPolicy = new AuthorizationPolicyBuilder()
-            .RequireAssertion(_ => true)
-            .Build();
-
-        options.DefaultPolicy = allowAnonymousPolicy;
-        options.FallbackPolicy = allowAnonymousPolicy;
-
-        options.AddPolicy(SecurityPolicies.Admin, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanCreateLot, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanUpdateLot, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanDeleteLot, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanViewLots, allowAnonymousPolicy);
-        options.AddPolicy(SecurityPolicies.CanCreateAuction, allowAnonymousPolicy);
-    }
 
     private static void ConfigureJwtBearer(
         JwtBearerOptions options,
@@ -94,6 +80,11 @@ public static class SecurityServiceExtensions
         string signingKey = configuration["Authentication:SigningKey"]
             ?? throw new InvalidOperationException(
                 "Missing configuration value 'Authentication:SigningKey'.");
+        if (Encoding.UTF8.GetByteCount(signingKey) < 32)
+        {
+            throw new InvalidOperationException(
+                "Configuration value 'Authentication:SigningKey' must contain at least 32 bytes.");
+        }
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -103,7 +94,8 @@ public static class SecurityServiceExtensions
             ValidAudience = configuration["Authentication:Audience"],
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
-            ValidateLifetime = true
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
 
         options.Events = new JwtBearerEvents

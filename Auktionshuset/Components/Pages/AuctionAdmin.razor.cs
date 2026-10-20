@@ -1,14 +1,18 @@
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
+using Auktionshuset.Contracts.Security;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
+using Auktionshuset.Security;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Authorization;
 using System.Globalization;
+using System.Security.Claims;
 
 namespace Auktionshuset.Components.Pages;
 
@@ -29,6 +33,9 @@ public partial class AuctionAdmin : IDisposable
     private static readonly CultureInfo DanishCulture = CultureInfo.GetCultureInfo("da-DK");
 
     [Inject]
+    private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+
+    [Inject]
     private LotService LotService { get; set; } = default!;
 
     [Inject]
@@ -40,8 +47,6 @@ public partial class AuctionAdmin : IDisposable
     [Inject]
     private AuctionRealtimeService AuctionRealtimeService { get; set; } = default!;
 
-    [Inject]
-    private EmployeeRealtimeService EmployeeRealtimeService { get; set; } = default!;
 
     // --- Formular ---------------------------------------------------------
 
@@ -63,7 +68,7 @@ public partial class AuctionAdmin : IDisposable
 
     // --- Medarbejdere -----------------------------------------------------
 
-    private IReadOnlyList<EmployeeListItemResponse> employees = [];
+    private IReadOnlyList<EmployeeOptionResponse> employees = [];
     private bool isLoadingEmployees;
     private string? employeeError;
 
@@ -80,6 +85,10 @@ public partial class AuctionAdmin : IDisposable
     private Guid? pendingDeleteId;
     private bool isDeleting;
     private bool isDisposed;
+    private bool canViewLots;
+    private bool canCreateAuctions;
+    private bool canUpdateAuctions;
+    private bool canDeleteAuctions;
 
     /// <summary>
     /// One genstand chosen for the auction, with the number of units the auction includes.
@@ -166,6 +175,11 @@ public partial class AuctionAdmin : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        canViewLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission);
+        canCreateAuctions = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateAuctionPermission);
+        canUpdateAuctions = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateAuctionPermission);
+        canDeleteAuctions = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteAuctionPermission);
         ResetForm();
 
         await Task.WhenAll(LoadLotsAsync(), LoadEmployeesAsync(), LoadAuctionsAsync());
@@ -181,18 +195,14 @@ public partial class AuctionAdmin : IDisposable
         AuctionRealtimeService.AuctionCreated += OnAuctionCreatedAsync;
         AuctionRealtimeService.AuctionUpdated += OnAuctionUpdatedAsync;
         AuctionRealtimeService.AuctionDeleted += OnAuctionDeletedAsync;
-        EmployeeRealtimeService.EmployeeCreated += OnEmployeeCreatedAsync;
-        EmployeeRealtimeService.EmployeeUpdated += OnEmployeeUpdatedAsync;
-        EmployeeRealtimeService.EmployeeDeleted += OnEmployeeDeletedAsync;
 
         try
         {
             await AuctionRealtimeService.StartAsync();
-            await EmployeeRealtimeService.StartAsync();
         }
         catch (Exception)
         {
-            realtimeError = "Liveforbindelsen til auktioner eller medarbejdere kunne ikke startes. Siden kan stadig bruges, men listen opdateres ikke automatisk.";
+            realtimeError = "Liveforbindelsen til auktioner kunne ikke startes. Siden kan stadig bruges, men listen opdateres ikke automatisk.";
             StateHasChanged();
         }
     }
@@ -204,9 +214,7 @@ public partial class AuctionAdmin : IDisposable
         AuctionRealtimeService.AuctionCreated -= OnAuctionCreatedAsync;
         AuctionRealtimeService.AuctionUpdated -= OnAuctionUpdatedAsync;
         AuctionRealtimeService.AuctionDeleted -= OnAuctionDeletedAsync;
-        EmployeeRealtimeService.EmployeeCreated -= OnEmployeeCreatedAsync;
-        EmployeeRealtimeService.EmployeeUpdated -= OnEmployeeUpdatedAsync;
-        EmployeeRealtimeService.EmployeeDeleted -= OnEmployeeDeletedAsync;
+
     }
 
     /// <summary>
@@ -225,26 +233,6 @@ public partial class AuctionAdmin : IDisposable
     private Task OnAuctionDeletedAsync(DeleteAuctionNotification notification) =>
         RefreshAuctionsAsync();
 
-    private Task OnEmployeeCreatedAsync(CreateEmployeeNotification _) => RefreshEmployeesAsync();
-
-    private Task OnEmployeeUpdatedAsync(UpdateEmployeeNotification _) => RefreshEmployeesAsync();
-
-    private Task OnEmployeeDeletedAsync(DeleteEmployeeNotification _) => RefreshEmployeesAsync();
-
-    private Task RefreshEmployeesAsync()
-    {
-        if (isDisposed)
-        {
-            return Task.CompletedTask;
-        }
-
-        return InvokeAsync(async () =>
-        {
-            if (isDisposed) return;
-            await LoadEmployeesAsync();
-            if (!isDisposed) StateHasChanged();
-        });
-    }
 
     private Task RefreshAuctionsAsync()
     {
@@ -267,7 +255,8 @@ public partial class AuctionAdmin : IDisposable
     /// </summary>
     private async Task SubmitAsync()
     {
-        if (isSubmitting)
+        if (isSubmitting
+            || (editingAuctionId.HasValue ? !canUpdateAuctions : !canCreateAuctions))
         {
             return;
         }
@@ -362,6 +351,11 @@ public partial class AuctionAdmin : IDisposable
     /// <param name="auction">The dashboard row that was activated.</param>
     private async Task BeginEditAsync(AuctionListItemResponse auction)
     {
+        if (!canUpdateAuctions)
+        {
+            return;
+        }
+
         try
         {
             AuctionDetailResponse? detail = await AuctionService.GetByIdAsync(auction.AuctionId);
@@ -529,6 +523,11 @@ public partial class AuctionAdmin : IDisposable
 
     private void RequestDelete(Guid auctionId)
     {
+        if (!canDeleteAuctions)
+        {
+            return;
+        }
+
         pendingDeleteId = auctionId;
         statusMessage = null;
     }
@@ -540,7 +539,7 @@ public partial class AuctionAdmin : IDisposable
     /// </summary>
     private async Task ConfirmDeleteAsync()
     {
-        if (pendingDeleteId is not { } auctionId || isDeleting || isSubmitting)
+        if (pendingDeleteId is not { } auctionId || isDeleting || isSubmitting || !canDeleteAuctions)
         {
             return;
         }
@@ -590,6 +589,14 @@ public partial class AuctionAdmin : IDisposable
 
     private async Task LoadLotsAsync()
     {
+        if (!canViewLots)
+        {
+            lots = [];
+            isLoadingLots = false;
+            lotListError = "Du har ikke rettighed til at se lageret. Auktionen kan stadig oprettes uden genstande.";
+            return;
+        }
+
         isLoadingLots = true;
         lotListError = null;
 
@@ -622,7 +629,7 @@ public partial class AuctionAdmin : IDisposable
 
         try
         {
-            employees = await EmployeeService.GetAllAsync();
+            employees = await EmployeeService.GetOptionsAsync();
         }
         catch (EmployeeApiException exception)
         {

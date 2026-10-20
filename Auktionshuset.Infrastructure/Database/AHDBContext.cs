@@ -1,5 +1,4 @@
 ﻿using Auktionshuset.Domain.Entities;
-using Auktionshuset.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,10 +22,8 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<Employee> Employee => Set<Employee>();
         public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
         public DbSet<Bid> Bids => Set<Bid>();
-        public DbSet<BidCommandKey> BidCommandKeys => Set<BidCommandKey>();
         public DbSet<Customer> Customers => Set<Customer>();
-        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
-        public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
         /// <summary>
         /// Applies every <c>IEntityTypeConfiguration</c> declared in the infrastructure assembly.
