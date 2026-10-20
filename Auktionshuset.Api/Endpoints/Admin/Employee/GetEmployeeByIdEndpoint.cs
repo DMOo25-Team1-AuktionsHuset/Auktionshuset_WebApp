@@ -1,7 +1,6 @@
 using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
-using Auktionshuset.Api.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 

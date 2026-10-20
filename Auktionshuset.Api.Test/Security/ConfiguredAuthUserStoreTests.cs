@@ -4,7 +4,9 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using Auktionshuset.Api.Endpoints.Auth;
 using Auktionshuset.Api.Security;
+using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Contracts.Dto.Auth;
+using Auktionshuset.Domain.Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -55,6 +57,15 @@ public sealed class ConfiguredAuthUserStoreTests
             token.Claims.Where(claim => claim.Type == SecurityPermissions.ClaimType).Select(claim => claim.Value).Order());
         Assert.DoesNotContain(token.Claims, claim => claim.Type == SecurityPermissions.ClaimType && claim.Value == "employees.read"
             && expectedRole != SecurityRoles.Admin);
+
+        using HttpResponseMessage refreshResponse = await client.PostAsJsonAsync("/api/auth/refresh",
+            new RefreshTokenRequest(login.RefreshToken!));
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+        LoginResponse refreshed = (await refreshResponse.Content.ReadFromJsonAsync<LoginResponse>())!;
+        Assert.Equal(login.User.UserId, refreshed.User.UserId);
+        Assert.Equal(login.User.Roles, refreshed.User.Roles);
+        Assert.Equal(login.User.Permissions.Order(), refreshed.User.Permissions.Order());
+        Assert.NotEqual(login.RefreshToken, refreshed.RefreshToken);
     }
 
     [Fact]
@@ -79,6 +90,14 @@ public sealed class ConfiguredAuthUserStoreTests
         Assert.Equal(SecurityRolePermissions.GetPermissions(SecurityRoles.LotAdmin).Order(), lotAdmin.Permissions.Order());
         Assert.Equal(PasswordVerificationResult.Success,
             hasher.VerifyHashedPassword(bootstrap, bootstrap.PasswordHash, "test-password"));
+        Assert.Same(bootstrap, await store.FindByIdAsync(bootstrap.UserId, CancellationToken.None));
+        Assert.Same(lotAdmin, await store.FindByIdAsync(lotAdmin.UserId, CancellationToken.None));
+        Assert.Null(await store.FindByIdAsync(Guid.NewGuid(), CancellationToken.None));
+
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            store.FindByIdAsync(bootstrap.UserId, cancellation.Token));
     }
 
     [Fact]
@@ -141,14 +160,51 @@ public sealed class ConfiguredAuthUserStoreTests
                     services.AddRouting();
                     services.AddSingleton(configuration);
                     services.AddSecurityServices(configuration);
+                    services.AddSingleton<IRefreshTokenStore, TestRefreshTokenStore>();
                 });
                 webHost.Configure(app =>
                 {
                     app.UseRouting();
+                    app.UseRateLimiter();
                     app.UseAuthentication();
                     app.UseAuthorization();
                     app.UseEndpoints(endpoints => endpoints.MapAuthEndpoints());
                 });
             })
             .StartAsync();
+
+    private sealed class TestRefreshTokenStore : IRefreshTokenStore
+    {
+        private readonly Dictionary<string, RefreshToken> tokens = [];
+
+        public Task AddAsync(RefreshToken token, CancellationToken cancellationToken)
+        {
+            tokens.Add(token.TokenHash, token);
+            return Task.CompletedTask;
+        }
+
+        public Task<RefreshToken?> FindAsync(string tokenHash, CancellationToken cancellationToken) =>
+            Task.FromResult(tokens.GetValueOrDefault(tokenHash));
+
+        public Task<RefreshRotationResult> RotateAsync(string tokenHash, RefreshToken replacement,
+            DateTimeOffset now, CancellationToken cancellationToken)
+        {
+            if (!tokens.TryGetValue(tokenHash, out RefreshToken? current) || current.ExpiresAt <= now)
+                return Task.FromResult(RefreshRotationResult.Invalid);
+            if (current.RevokedAt is not null)
+                return Task.FromResult(RefreshRotationResult.Replay);
+            current.RevokedAt = now;
+            current.ReplacedByTokenId = replacement.Id;
+            tokens.Add(replacement.TokenHash, replacement);
+            return Task.FromResult(RefreshRotationResult.Rotated);
+        }
+
+        public Task RevokeFamilyAsync(string tokenHash, DateTimeOffset now, CancellationToken cancellationToken)
+        {
+            if (tokens.TryGetValue(tokenHash, out RefreshToken? current))
+                foreach (RefreshToken token in tokens.Values.Where(token => token.FamilyId == current.FamilyId))
+                    token.RevokedAt = now;
+            return Task.CompletedTask;
+        }
+    }
 }

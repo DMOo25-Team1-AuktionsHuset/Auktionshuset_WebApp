@@ -18,9 +18,9 @@ namespace Auktionshuset.Tests.Auth;
 public sealed class SessionRefreshIntegrationTests
 {
     [Theory]
-    [InlineData(AdminRoles.SuperAdmin)]
-    [InlineData(AdminRoles.AuctionAdmin)]
-    public async Task AuctionRolesCanSeeEditAndDeleteWithoutPermissionClaims(string role)
+    [InlineData(RoleNames.Admin)]
+    [InlineData(RoleNames.AuctionAdmin)]
+    public async Task AuctionRolesCanSeeEditAndDeleteWithMappedPermissions(string role)
     {
         using var factory = new FrontendFactory(role);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
@@ -37,9 +37,9 @@ public sealed class SessionRefreshIntegrationTests
     }
 
     [Theory]
-    [InlineData(AdminRoles.SuperAdmin)]
-    [InlineData(AdminRoles.LotAdmin)]
-    public async Task LotRolesCanSeeCreateFormWithoutPermissionClaims(string role)
+    [InlineData(RoleNames.Admin)]
+    [InlineData(RoleNames.LotAdmin)]
+    public async Task LotRolesCanSeeCreateFormWithMappedPermissions(string role)
     {
         using var factory = new FrontendFactory(role);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
@@ -52,7 +52,7 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task ExpiredAccessTokenIsRotatedOnPageReloadAndLogoutRevokesReplacement()
     {
-        using var factory = new FrontendFactory(AdminRoles.AuctionAdmin);
+        using var factory = new FrontendFactory(RoleNames.AuctionAdmin);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         using var login = await LoginAsync(client);
         string cookie = string.Join(";", login.Headers.GetValues("Set-Cookie"));
@@ -76,10 +76,10 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task RefreshedRolesApplyBeforePageAuthorization()
     {
-        using var factory = new FrontendFactory(AdminRoles.SuperAdmin);
+        using var factory = new FrontendFactory(RoleNames.Admin);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         using var login = await LoginAsync(client);
-        factory.Backend.Role = AdminRoles.LotAdmin;
+        factory.Backend.Role = RoleNames.LotAdmin;
         factory.Clock.Advance(TimeSpan.FromMinutes(31));
         using var denied = await client.GetAsync("/admin/auctions");
         Assert.Equal("/?access=denied", denied.Headers.Location!.OriginalString);
@@ -90,7 +90,7 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task RejectedRefreshEndsCookieSession()
     {
-        using var factory = new FrontendFactory(AdminRoles.AuctionAdmin);
+        using var factory = new FrontendFactory(RoleNames.AuctionAdmin);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         using var login = await LoginAsync(client);
         factory.Backend.RejectRefresh = true;
@@ -103,7 +103,7 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task AbsoluteRefreshExpiryEndsSessionWithoutAnotherRotation()
     {
-        using var factory = new FrontendFactory(AdminRoles.AuctionAdmin);
+        using var factory = new FrontendFactory(RoleNames.AuctionAdmin);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         using var login = await LoginAsync(client);
         factory.Clock.Advance(TimeSpan.FromDays(8));
@@ -115,7 +115,7 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task RateLimitedLoginShowsDanishError()
     {
-        using var factory = new FrontendFactory(AdminRoles.SuperAdmin);
+        using var factory = new FrontendFactory(RoleNames.Admin);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         factory.Backend.LimitLogin = true;
         using var login = await LoginAsync(client);
@@ -127,7 +127,7 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task BrowserCannotSpoofForwardedAddressInBackendLogin()
     {
-        using var factory = new FrontendFactory(AdminRoles.SuperAdmin);
+        using var factory = new FrontendFactory(RoleNames.Admin);
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         client.DefaultRequestHeaders.Add("X-Forwarded-For", "198.51.100.99");
         using var login = await LoginAsync(client);
@@ -225,7 +225,7 @@ public sealed class SessionRefreshIntegrationTests
                 }
                 return new(HttpStatusCode.OK) { Content = JsonContent.Create(new LoginResponse(
                     $"audit-access-{RefreshCalls}", "Bearer", clock.GetUtcNow().AddMinutes(30),
-                    new AuthenticatedUserResponse(userId, "audit@example.test", [Role], []),
+                    new AuthenticatedUserResponse(userId, "audit@example.test", [Role], PermissionsForRole(Role)),
                     $"audit-refresh-{RefreshCalls}", absoluteExpiry)) };
             }
             LastAccessToken = request.Headers.Authorization?.Parameter;
@@ -235,5 +235,19 @@ public sealed class SessionRefreshIntegrationTests
                 : Array.Empty<object>();
             return new(HttpStatusCode.OK) { Content = JsonContent.Create(bodyContent) };
         }
+
+        private static string[] PermissionsForRole(string role) => role switch
+        {
+            RoleNames.Admin => [PermissionNames.LotsRead, PermissionNames.LotsCreate, PermissionNames.LotsUpdate,
+                PermissionNames.LotsDelete, PermissionNames.AuctionsRead, PermissionNames.AuctionsCreate,
+                PermissionNames.AuctionsUpdate, PermissionNames.AuctionsDelete, PermissionNames.EmployeesRead,
+                PermissionNames.EmployeesCreate, PermissionNames.EmployeesUpdate, PermissionNames.EmployeesDelete],
+            RoleNames.AuctionAdmin => [PermissionNames.LotsRead, PermissionNames.LotsCreate, PermissionNames.LotsUpdate,
+                PermissionNames.LotsDelete, PermissionNames.AuctionsRead, PermissionNames.AuctionsCreate,
+                PermissionNames.AuctionsUpdate, PermissionNames.AuctionsDelete],
+            RoleNames.LotAdmin => [PermissionNames.LotsRead, PermissionNames.LotsCreate, PermissionNames.LotsUpdate,
+                PermissionNames.LotsDelete],
+            _ => []
+        };
     }
 }

@@ -89,7 +89,7 @@
                         {
                             <InputSelect id="auction-employee" @bind-Value="model.EmployeeId">
                                 <option value="">Vælg auktionarius</option>
-                                @foreach (EmployeeListItemResponse employee in employees)
+                                @foreach (EmployeeOptionResponse employee in employees)
                                 {
                                     <option value="@employee.EmployeeId">@employee.DisplayName</option>
                                 }

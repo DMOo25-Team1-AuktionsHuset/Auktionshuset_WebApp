@@ -192,7 +192,7 @@ public sealed class AuthenticationFlowIntegrationTests
     }
 
     [Fact]
-    public async Task AuctionAdminFetchesLotsWithoutLegacyPermissionClaims()
+    public async Task AuctionPageDoesNotFetchLotsWithoutReadPermission()
     {
         using var factory = new FrontendFactory();
         using HttpClient client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
@@ -203,8 +203,8 @@ public sealed class AuthenticationFlowIntegrationTests
 
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
         string html = await page.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("Du har ikke rettighed til at se lageret", html, StringComparison.Ordinal);
-        Assert.Contains(factory.ApiRequests, request =>
+        Assert.Contains("Du har ikke rettighed til at se lageret", html, StringComparison.Ordinal);
+        Assert.DoesNotContain(factory.ApiRequests, request =>
             request.Owner == "auction-no-lots@example.test" && request.Path.StartsWith("/api/lots", StringComparison.Ordinal));
     }
 

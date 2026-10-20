@@ -45,11 +45,11 @@ public static class SecurityServiceExtensions
             options.AddPolicy(SecurityPolicies.Admin, policy =>
             {
                 policy.RequireAuthenticatedUser();
-                policy.RequireRole(SecurityRoles.SuperAdmin);
+                policy.RequireRole(SecurityRoles.Admin);
             });
 
             options.AddPolicy(SecurityPolicies.CanReadEmployees, policy =>
-                policy.RequireAuthenticatedUser().RequireRole(SecurityRoles.AuctionAdmin, SecurityRoles.SuperAdmin));
+                policy.RequireAuthenticatedUser().RequireRole(SecurityRoles.AuctionAdmin, SecurityRoles.Admin));
             AddPermissionPolicy(options, SecurityPolicies.CanCreateLot, SecurityPermissions.CreateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanUpdateLot, SecurityPermissions.UpdateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanDeleteLot, SecurityPermissions.DeleteLot);
@@ -65,7 +65,8 @@ public static class SecurityServiceExtensions
             AddPermissionPolicy(options, SecurityPolicies.CanDeleteEmployee, SecurityPermissions.DeleteEmployee);
             options.AddPolicy(SecurityPolicies.CanWriteLotImage, policy =>
                 policy.RequireAuthenticatedUser().RequireAssertion(context =>
-                    AdminRoles.CanManageLots(context.User)));
+                    context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.CreateLot)
+                    || context.User.HasClaim(SecurityPermissions.ClaimType, SecurityPermissions.UpdateLot)));
         });
 
         return services;
@@ -122,12 +123,7 @@ public static class SecurityServiceExtensions
         options.AddPolicy(policyName, policy =>
         {
             policy.RequireAuthenticatedUser();
-            policy.RequireAssertion(context => permission switch
-            {
-                SecurityPermissions.CreateAuction => AdminRoles.CanManageAuctions(context.User),
-                SecurityPermissions.ViewLots => AdminRoles.CanReadLots(context.User),
-                _ => AdminRoles.CanManageLots(context.User)
-            });
+            policy.RequireClaim(SecurityPermissions.ClaimType, permission);
         });
     }
 }

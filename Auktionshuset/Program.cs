@@ -68,13 +68,13 @@ builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDef
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(FrontendPolicies.Admin, policy =>
-        policy.RequireAuthenticatedUser().RequireRole(AdminRoles.SuperAdmin));
+        policy.RequireAuthenticatedUser().RequireRole(RoleNames.Admin));
     options.AddPolicy(FrontendPolicies.CanViewLots, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanReadLots(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission));
     options.AddPolicy(FrontendPolicies.CanCreateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission));
     options.AddPolicy(FrontendPolicies.CanUpdateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission));
     options.AddPolicy(FrontendPolicies.CanDeleteLot, policy =>
         policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission));
     options.AddPolicy(FrontendPolicies.CanViewAuctions, policy =>

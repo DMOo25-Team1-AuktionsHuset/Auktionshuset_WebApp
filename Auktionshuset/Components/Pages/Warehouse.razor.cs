@@ -116,9 +116,9 @@ public partial class Warehouse : IAsyncDisposable
     protected override async Task OnInitializedAsync()
     {
         ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        canCreateLots = AdminRoles.CanManageLots(user);
-        canUpdateLots = AdminRoles.CanManageLots(user);
-        canDeleteLots = AdminRoles.CanManageLots(user);
+        canCreateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission);
+        canUpdateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission);
+        canDeleteLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission);
         ResetForm();
         await LoadLotsAsync();
     }

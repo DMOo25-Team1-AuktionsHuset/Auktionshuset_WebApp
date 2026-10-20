@@ -61,6 +61,12 @@ public sealed class ConfiguredAuthUserStore : IAuthUserStore
         return Task.FromResult(user);
     }
 
+    public Task<AuthUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(users.Values.FirstOrDefault(user => user.UserId == userId));
+    }
+
     private static void AddUser(
         IDictionary<string, AuthUser> configuredUsers,
         IPasswordHasher<AuthUser> passwordHasher,
