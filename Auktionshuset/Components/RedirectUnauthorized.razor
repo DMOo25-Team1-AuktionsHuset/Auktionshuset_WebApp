@@ -1,0 +1,14 @@
+@inject NavigationManager Navigation
+
+<p class="route-loading" role="status">Kontrollerer adgang...</p>
+
+@code {
+    [Parameter]
+    public AuthenticationState AuthenticationState { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        bool authenticated = AuthenticationState.User.Identity?.IsAuthenticated == true;
+        Navigation.NavigateTo(authenticated ? "/?access=denied" : "/login", forceLoad: !authenticated);
+    }
+}

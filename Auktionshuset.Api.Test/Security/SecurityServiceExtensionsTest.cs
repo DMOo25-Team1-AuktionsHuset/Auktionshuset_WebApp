@@ -24,7 +24,7 @@ public class SecurityServiceExtensionsTest
     }
 
     [Fact]
-    public async Task AddSecurityServices_ConfiguresCreateAuctionPermissionPolicy()
+    public async Task AddSecurityServices_ConfiguresAuctionPermissionPolicy()
     {
         using ServiceProvider provider = CreateServiceProvider();
         IAuthorizationPolicyProvider policyProvider = provider.GetRequiredService<IAuthorizationPolicyProvider>();
@@ -36,36 +36,59 @@ public class SecurityServiceExtensionsTest
             policy.Requirements,
             requirement => requirement is DenyAnonymousAuthorizationRequirement);
 
-        ClaimsAuthorizationRequirement claimRequirement = Assert.Single(
-            policy.Requirements.OfType<ClaimsAuthorizationRequirement>());
-        Assert.Equal(SecurityPermissions.ClaimType, claimRequirement.ClaimType);
-        Assert.Equal([SecurityPermissions.CreateAuction], claimRequirement.AllowedValues);
+        var authorization = provider.GetRequiredService<IAuthorizationService>();
+        foreach (string role in new[] { SecurityRoles.AuctionAdmin, SecurityRoles.Admin, SecurityRoles.LotAdmin, SecurityRoles.Customer })
+        {
+            var claims = SecurityRolePermissions.GetPermissions(role)
+                .Select(permission => new Claim(SecurityPermissions.ClaimType, permission))
+                .Append(new Claim(ClaimTypes.Role, role));
+            var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
+            var result = await authorization.AuthorizeAsync(user, null, policy);
+            Assert.Equal(role is SecurityRoles.AuctionAdmin or SecurityRoles.Admin, result.Succeeded);
+        }
+
+        var roleWithoutPermission = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Role, SecurityRoles.Admin)], "test"));
+        Assert.False((await authorization.AuthorizeAsync(roleWithoutPermission, null, policy)).Succeeded);
     }
 
     [Fact]
-    public async Task AddSecurityServices_WhenAuthorizationIsDisabled_AllowsAnonymousAccess()
+    public async Task AddSecurityServices_EnforcesAuthorizationWhenConfigurationDisablesIt()
     {
         using ServiceProvider provider = CreateServiceProvider(enforceAuthorization: false);
         IAuthorizationService authorizationService = provider.GetRequiredService<IAuthorizationService>();
+        IAuthorizationPolicyProvider policyProvider = provider.GetRequiredService<IAuthorizationPolicyProvider>();
         var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
-        string[] policyNames = new[]
-        {
+        string[] policyNames =
+        [
             SecurityPolicies.Admin,
             SecurityPolicies.CanCreateLot,
             SecurityPolicies.CanUpdateLot,
             SecurityPolicies.CanDeleteLot,
             SecurityPolicies.CanViewLots,
             SecurityPolicies.CanCreateAuction
-        };
+        ];
 
-        foreach (string? policyName in policyNames)
+        AuthorizationPolicy? fallbackPolicy = await policyProvider.GetFallbackPolicyAsync();
+        Assert.NotNull(fallbackPolicy);
+        Assert.Contains(
+            fallbackPolicy.Requirements,
+            requirement => requirement is DenyAnonymousAuthorizationRequirement);
+
+        foreach (string policyName in policyNames)
         {
+            AuthorizationPolicy? policy = await policyProvider.GetPolicyAsync(policyName);
+            Assert.NotNull(policy);
+            Assert.Contains(
+                policy.Requirements,
+                requirement => requirement is DenyAnonymousAuthorizationRequirement);
+
             AuthorizationResult result = await authorizationService.AuthorizeAsync(
                 anonymousUser,
                 resource: null,
                 policyName);
 
-            Assert.True(result.Succeeded, $"Policy '{policyName}' should allow anonymous development access.");
+            Assert.False(result.Succeeded, $"Policy '{policyName}' must reject anonymous access.");
         }
     }
 

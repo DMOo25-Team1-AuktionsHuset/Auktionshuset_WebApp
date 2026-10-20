@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: '{"email":"{{email}}","password":"intentionally-wrong-password"}'
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 401', () => pm.response.to.have.status(401));
+    language: text/javascript
+order: 3000

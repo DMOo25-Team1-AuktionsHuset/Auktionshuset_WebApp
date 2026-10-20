@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 
 namespace Auktionshuset.Api.Security;
 
@@ -59,6 +59,12 @@ public sealed class ConfiguredAuthUserStore : IAuthUserStore
         cancellationToken.ThrowIfCancellationRequested();
         users.TryGetValue(email.Trim(), out AuthUser? user);
         return Task.FromResult(user);
+    }
+
+    public Task<AuthUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(users.Values.FirstOrDefault(user => user.UserId == userId));
     }
 
     private static void AddUser(

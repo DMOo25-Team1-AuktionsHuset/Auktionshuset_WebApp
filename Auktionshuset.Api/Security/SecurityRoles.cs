@@ -1,4 +1,4 @@
-﻿namespace Auktionshuset.Api.Security
+namespace Auktionshuset.Api.Security
 {
     public static class SecurityRoles
     {

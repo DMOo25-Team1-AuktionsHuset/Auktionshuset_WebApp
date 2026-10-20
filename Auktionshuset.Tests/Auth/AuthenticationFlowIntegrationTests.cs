@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using Auktionshuset.Contracts.Dto.Auth;
+using Auktionshuset.Contracts.Security;
 using Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -191,7 +192,7 @@ public sealed class AuthenticationFlowIntegrationTests
     }
 
     [Fact]
-    public async Task AuctionCreationDoesNotFetchLotsWithoutLotReadPermission()
+    public async Task AuctionPageDoesNotFetchLotsWithoutReadPermission()
     {
         using var factory = new FrontendFactory();
         using HttpClient client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });

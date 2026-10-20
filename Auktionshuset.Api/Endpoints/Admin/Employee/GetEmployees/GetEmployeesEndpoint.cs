@@ -15,6 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees
         public static RouteGroupBuilder MapGetEmployees(this RouteGroupBuilder group)
         {
             group.MapGet("/", HandleAsync)
+                .RequireAuthorization(SecurityPolicies.CanReadEmployees)
                 .WithName("GetEmployees")
                 .WithSummary("Gets every employee")
                 .Produces<IReadOnlyList<EmployeeListItemResponse>>()

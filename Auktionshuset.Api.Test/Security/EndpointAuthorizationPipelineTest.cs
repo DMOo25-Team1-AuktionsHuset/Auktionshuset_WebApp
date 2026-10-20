@@ -54,6 +54,8 @@ public class EndpointAuthorizationPipelineTest
 
         (HttpMethod Method, string Path, string Endpoint)[] requests =
         [
+            (HttpMethod.Get, "/api/employee/", "employee read"),
+            (HttpMethod.Get, $"/api/employee/{Guid.NewGuid()}", "employee detail"),
             (HttpMethod.Post, "/api/employee/", "employee write"),
             (HttpMethod.Put, $"/api/lots/{Guid.NewGuid()}", "lot write"),
             (HttpMethod.Get, "/api/lots/", "lot read"),
@@ -265,6 +267,10 @@ public class EndpointAuthorizationPipelineTest
                     services.AddSingleton<ILotImageStore>(_ => new TestLotImageStore());
                     services.AddSingleton(configuration);
                     services.AddSecurityServices(configuration);
+                    services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
+                    services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
+                    services.AddSingleton<ILotRepository, InMemoryLotRepository>();
+                    services.AddSingleton<IIntegrationEventPublisher, RecordingEventPublisher>();
                 });
                 webHost.Configure(app =>
                 {

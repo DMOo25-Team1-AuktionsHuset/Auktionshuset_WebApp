@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace Auktionshuset.Services;
 
-public sealed class EmployeeService(HttpClient httpClient)
+public sealed class EmployeeService(BackendApiClient httpClient)
 {
     public async Task<IReadOnlyList<EmployeeOptionResponse>> GetOptionsAsync(
         CancellationToken cancellationToken = default)

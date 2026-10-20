@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace Auktionshuset.Services;
 
-public sealed class LotService(HttpClient httpClient)
+public sealed class LotService(BackendApiClient httpClient)
 {
     /// <summary>
     /// Fetches every lot from the API.

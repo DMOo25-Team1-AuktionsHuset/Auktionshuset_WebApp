@@ -3,6 +3,7 @@ namespace Auktionshuset.Api.Security;
 public static class SecurityPolicies
 {
     public const string Admin = nameof(Admin);
+    public const string CanReadEmployees = nameof(CanReadEmployees);
     public const string CanCreateLot = nameof(CanCreateLot);
     public const string CanUpdateLot = nameof(CanUpdateLot);
     public const string CanDeleteLot = nameof(CanDeleteLot);

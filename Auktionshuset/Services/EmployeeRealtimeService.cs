@@ -1,4 +1,5 @@
 using Auktionshuset.Contracts.Dto.Admin.Employee;
+using Auktionshuset.Security;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
@@ -11,9 +12,13 @@ public sealed class EmployeeRealtimeService : IAsyncDisposable
     private readonly string hubUrl;
     private readonly SemaphoreSlim startGate = new(1, 1);
     private HubConnection? connection;
+    private bool sessionIsValid = true;
 
-    public EmployeeRealtimeService(IConfiguration configuration)
+    private readonly BackendTokenAccessor tokenAccessor;
+
+    public EmployeeRealtimeService(IConfiguration configuration, BackendTokenAccessor tokenAccessor)
     {
+        this.tokenAccessor = tokenAccessor;
         string apiBaseUrl = configuration["Api:BaseUrl"]
             ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
         hubUrl = $"{apiBaseUrl.TrimEnd('/')}/hubs/employee";
@@ -34,8 +39,9 @@ public sealed class EmployeeRealtimeService : IAsyncDisposable
             }
 
             HubConnection hubConnection = new HubConnectionBuilder()
-                .WithUrl(hubUrl)
-                .WithAutomaticReconnect()
+                .WithUrl(hubUrl, options =>
+                    options.AccessTokenProvider = GetAccessTokenAsync)
+                .WithAutomaticReconnect(new SessionReconnectPolicy(() => sessionIsValid))
                 .Build();
 
             hubConnection.On<CreateEmployeeNotification>(nameof(IEmployeeClient.EmployeeCreatedAsync),
@@ -61,6 +67,13 @@ public sealed class EmployeeRealtimeService : IAsyncDisposable
         {
             startGate.Release();
         }
+    }
+
+    private async Task<string?> GetAccessTokenAsync()
+    {
+        string? accessToken = await tokenAccessor.GetAccessTokenAsync();
+        sessionIsValid = !string.IsNullOrWhiteSpace(accessToken);
+        return accessToken;
     }
 
     public async ValueTask DisposeAsync()

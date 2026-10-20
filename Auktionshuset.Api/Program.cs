@@ -55,7 +55,10 @@ if (app.Environment.IsDevelopment())
 
 await app.MigrateAndSeedDatabaseAsync();
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

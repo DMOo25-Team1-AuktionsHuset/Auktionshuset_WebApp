@@ -1,5 +1,6 @@
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
+using Auktionshuset.Contracts.Security;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;

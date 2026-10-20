@@ -1,3 +1,4 @@
+using Auktionshuset.Contracts.Security;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -27,6 +28,8 @@ public static class SecurityServiceExtensions
         services.AddSingleton<
             IAccessTokenService,
             JwtTokenService>();
+        services.AddScoped<RefreshTokenService>();
+        services.AddAuthRateLimiting(configuration);
 
 
         services
@@ -45,6 +48,8 @@ public static class SecurityServiceExtensions
                 policy.RequireRole(SecurityRoles.Admin);
             });
 
+            options.AddPolicy(SecurityPolicies.CanReadEmployees, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(SecurityRoles.AuctionAdmin, SecurityRoles.Admin));
             AddPermissionPolicy(options, SecurityPolicies.CanCreateLot, SecurityPermissions.CreateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanUpdateLot, SecurityPermissions.UpdateLot);
             AddPermissionPolicy(options, SecurityPolicies.CanDeleteLot, SecurityPermissions.DeleteLot);
@@ -89,7 +94,8 @@ public static class SecurityServiceExtensions
             ValidAudience = configuration["Authentication:Audience"],
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
-            ValidateLifetime = true
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
 
         options.Events = new JwtBearerEvents

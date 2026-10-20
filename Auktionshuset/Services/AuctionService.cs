@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace Auktionshuset.Services;
 
-public sealed class AuctionService(HttpClient httpClient)
+public sealed class AuctionService(BackendApiClient httpClient)
 {
     /// <summary>
     /// Fetches every auction for the dashboard.
