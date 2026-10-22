@@ -108,6 +108,16 @@ jobs:
         env:
           SONAR_TOKEN: ${{ steps.vault.outputs.SONAR_TOKEN }}
         run: |
+         if [ -z "$SONAR_HOST_URL" ]; then
+            echo "::error::SONAR_HOST_URL mangler."
+            exit 1
+         fi
+
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN fra Vault mangler."
+            exit 1
+          fi
+
           "$RUNNER_TEMP/sonar-scanner/dotnet-sonarscanner" begin \
             /k:"auktionshuset-webapp" \
             /d:sonar.host.url="$SONAR_HOST_URL" \
