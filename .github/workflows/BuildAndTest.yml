@@ -1,126 +1,41 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
 name: .NET
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    permissions:
-      contents: read
-      id-token: write
-
-    env:
-      RUN_SONAR: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
-      HEADSCALE_URL: ${{ vars.HEADSCALE_URL }}
-      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+    - name: Checkout repository
+      uses: actions/checkout@v6
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.0.x
+        
+    - name: Restore solution
+      run: dotnet restore AuktionsHuset_WebApp.slnx
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Check Headscale availability
-        if: env.RUN_SONAR == 'true'
-        shell: bash
-        run: |
-          curl --fail --silent --show-error \
-            --connect-timeout 10 \
-            --max-time 30 \
-            "${HEADSCALE_URL%/}/health"
-
-      - name: Connect to Headscale
-        if: env.RUN_SONAR == 'true'
-        uses: tailscale/github-action@v4
-        timeout-minutes: 3
-        with:
-          authkey: ${{ secrets.HEADSCALE_AUTH_KEY }}
-          version: latest
-          args: --login-server=${{ vars.HEADSCALE_URL }} --accept-dns=false --accept-routes=false
-
-      - name: Check SonarQube connectivity
-        if: env.RUN_SONAR == 'true'
-        shell: bash
-        run: |
-          curl --fail --silent --show-error \
-            --connect-timeout 10 \
-            --max-time 30 \
-            "${SONAR_HOST_URL%/}/api/system/status"
-
-      - name: Get SonarQube token from Vault
-        if: env.RUN_SONAR == 'true'
-        id: vault
-        uses: hashicorp/vault-action@v4.0.0
-        with:
-          url: ${{ vars.VAULT_ADDR }}
-          caCertificate: ${{ vars.VAULT_CA_CERT_BASE64 }}
-          method: jwt
-          path: github-sonarqube
-          role: sonarqube-ci
-          jwtGithubAudience: https://github.com/DMOo25-Team1-AuktionsHuset
-          exportEnv: false
-          exportToken: false
-          secrets: |
-            auction/data/development/sonarqube/analysis token | SONAR_TOKEN ;
-
-      - name: Install SonarQube scanner
-        if: env.RUN_SONAR == 'true'
-        shell: bash
-        run: |
-          dotnet tool install dotnet-sonarscanner \
-            --version 12.0.0 \
-            --tool-path "$RUNNER_TEMP/sonar-scanner"
-
-      - name: Restore solution
-        run: dotnet restore AuktionsHuset_WebApp.slnx
-
-      - name: Begin SonarQube analysis
-        if: env.RUN_SONAR == 'true'
-        id: sonar_begin
-        shell: bash
-        env:
-          SONAR_TOKEN: ${{ steps.vault.outputs.SONAR_TOKEN }}
-        run: |
-          "$RUNNER_TEMP/sonar-scanner/dotnet-sonarscanner" begin \
-            /k:"auktionshuset-webapp" \
-            /d:sonar.host.url="$SONAR_HOST_URL" \
-            /d:sonar.token="$SONAR_TOKEN"
-
-      - name: Build entire solution
-        id: build
-        run: >
+    - name: Build entire solution
+      run: >
           dotnet build AuktionsHuset_WebApp.slnx
           --configuration Release
           --no-restore
-          --no-incremental
-          --disable-build-servers
 
-      - name: Run all tests
-        run: >
+    - name: Run all tests
+      run: >
           dotnet test AuktionsHuset_WebApp.slnx
           --configuration Release
           --no-build
           --no-restore
           --filter "Category!=Integration"
           --verbosity normal
-
-      - name: End SonarQube analysis
-        if: ${{ !cancelled() && env.RUN_SONAR == 'true' && steps.sonar_begin.outcome == 'success' && steps.build.outcome == 'success' }}
-        shell: bash
-        env:
-          SONAR_TOKEN: ${{ steps.vault.outputs.SONAR_TOKEN }}
-        run: |
-          "$RUNNER_TEMP/sonar-scanner/dotnet-sonarscanner" end \
-            /d:sonar.token="$SONAR_TOKEN"
