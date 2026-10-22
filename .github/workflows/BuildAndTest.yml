@@ -20,7 +20,7 @@ jobs:
       id-token: write
 
     env:
-      RUN_SONAR: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+      RUN_SONAR: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/Service/VaultImplementation') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
       HEADSCALE_URL: ${{ vars.HEADSCALE_URL }}
       SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
