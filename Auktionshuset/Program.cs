@@ -24,6 +24,9 @@ builder.Services.AddSingleton<ITicketStore>(services => services.GetRequiredServ
 builder.Services.AddScoped<AuthenticationStateProvider, SessionRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<BackendTokenAccessor>();
 builder.Services.AddScoped<FrontendRedirectState>();
+builder.Services.AddScoped<AuctionRealtimeService>();
+builder.Services.AddScoped<EmployeeRealtimeService>();
+builder.Services.AddScoped<LotRealtimeService>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

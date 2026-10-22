@@ -3,6 +3,7 @@ using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Domain;
+using Auktionshuset.Domain.Entities;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
@@ -37,6 +38,7 @@ public partial class EmployeeAdmin : IAsyncDisposable
     private Guid? editingEmployeeId;
     private Guid? editingAuctionHouseId;
     private Guid? pendingDeleteId;
+    private int employeeLoadVersion;
 
     private IReadOnlyList<EmployeeListItemResponse> SortedEmployees => employees
         .OrderBy(employee => employee.FirstName, StringComparer.Create(DanishCulture, true))
@@ -75,19 +77,27 @@ public partial class EmployeeAdmin : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
+        if (!firstRender) 
+            return;
 
-        EmployeeRealtimeService.EmployeeCreated += OnEmployeeCreatedAsync;
-        EmployeeRealtimeService.EmployeeUpdated += OnEmployeeUpdatedAsync;
-        EmployeeRealtimeService.EmployeeDeleted += OnEmployeeDeletedAsync;
+        EmployeeRealtimeService.Invalidated += RefreshEmployeesAsync;
+        EmployeeRealtimeService.ConnectionChanged += OnEmployeeConnectionChangedAsync;
+
         try
         {
             await EmployeeRealtimeService.StartAsync();
+
+            await OnEmployeeConnectionChangedAsync();
+
+            await RefreshEmployeesAsync();
         }
         catch (Exception)
         {
-            realtimeError = "Liveforbindelsen til medarbejdere kunne ikke startes. Du kan stadig administrere medarbejdere; listen opdateres ved genindlæsning.";
-            if (!isDisposed) StateHasChanged();
+            if (!isDisposed)
+            {
+                realtimeError = "Liveforbindelsen til medarbejdere kunne ikke startes.";
+                StateHasChanged();
+            }
         }
     }
 
@@ -148,28 +158,50 @@ public partial class EmployeeAdmin : IAsyncDisposable
 
     private async Task LoadEmployeesAsync()
     {
+        if (isDisposed)
+            return;
+
+        int version = ++employeeLoadVersion;
+
         isLoadingEmployees = true;
         listError = null;
+
         try
         {
-            employees = await EmployeeService.GetAllAsync();
-            if (page > TotalPages) page = TotalPages;
+            var result = await EmployeeService.GetAllAsync();
+
+            if (isDisposed || version != employeeLoadVersion)
+                return;
+
+            employees = result;
+            page = Math.Clamp(
+                page,
+                1,
+                TotalPages);
         }
-        catch (EmployeeApiException exception)
+        catch (Exception ex) when (ex
+            is EmployeeApiException
+            or HttpRequestException
+            or TaskCanceledException)
         {
-            listError = exception.Message;
-        }
-        catch (HttpRequestException)
-        {
-            listError = "Medarbejderne kunne ikke hentes, fordi forbindelsen til serveren fejlede.";
-        }
-        catch (TaskCanceledException)
-        {
-            listError = "Hentning af medarbejdere tog for lang tid. Prøv igen.";
+            if (isDisposed || version != employeeLoadVersion)
+                return;
+
+            listError = ex switch
+            {
+                EmployeeApiException apiException =>
+                    apiException.Message,
+
+                TaskCanceledException =>
+                    "Hentning af medarbejdere to for lang tid",
+
+                _ => "Medarbejdere kunne ikke hentes, prøv igen"
+            };
         }
         finally
         {
-            isLoadingEmployees = false;
+            if (!isDisposed && version == employeeLoadVersion)
+                isLoadingEmployees = false;
         }
     }
 
@@ -254,9 +286,23 @@ public partial class EmployeeAdmin : IAsyncDisposable
     private void PreviousPage() { if (page > 1) page--; }
     private void NextPage() { if (page < TotalPages) page++; }
 
-    private Task OnEmployeeCreatedAsync(CreateEmployeeNotification _) => RefreshEmployeesAsync();
-    private Task OnEmployeeUpdatedAsync(UpdateEmployeeNotification _) => RefreshEmployeesAsync();
-    private Task OnEmployeeDeletedAsync(DeleteEmployeeNotification _) => RefreshEmployeesAsync();
+    private Task OnEmployeeConnectionChangedAsync()
+    {
+        if (isDisposed)
+            return Task.CompletedTask;
+
+        return InvokeAsync(() =>
+        {
+            if (isDisposed)
+                return;
+
+            realtimeError = EmployeeRealtimeService.isConnected
+                ? null
+                : "Liveforbindelsen er ikke tilsluttet, listen opdateres ikke automatisk";
+
+            StateHasChanged();
+        });
+    }
 
     private Task RefreshEmployeesAsync()
     {
@@ -269,12 +315,12 @@ public partial class EmployeeAdmin : IAsyncDisposable
         });
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         isDisposed = true;
-        EmployeeRealtimeService.EmployeeCreated -= OnEmployeeCreatedAsync;
-        EmployeeRealtimeService.EmployeeUpdated -= OnEmployeeUpdatedAsync;
-        EmployeeRealtimeService.EmployeeDeleted -= OnEmployeeDeletedAsync;
-        await Task.CompletedTask;
+        EmployeeRealtimeService.Invalidated -= RefreshEmployeesAsync;
+        EmployeeRealtimeService.ConnectionChanged -= OnEmployeeConnectionChangedAsync;
+
+        return ValueTask.CompletedTask;
     }
 }

@@ -89,6 +89,7 @@ public partial class AuctionAdmin : IDisposable
     private bool canCreateAuctions;
     private bool canUpdateAuctions;
     private bool canDeleteAuctions;
+    private int auctionLoadVersion;
 
     /// <summary>
     /// One genstand chosen for the auction, with the number of units the auction includes.
@@ -142,7 +143,7 @@ public partial class AuctionAdmin : IDisposable
             return DeriveStatus(startsAt.Value, endsAt.Value);
         }
     }
-
+    
     private IReadOnlyList<AuctionListItemResponse> FilteredAuctions
     {
         get
@@ -192,18 +193,24 @@ public partial class AuctionAdmin : IDisposable
             return;
         }
 
-        AuctionRealtimeService.AuctionCreated += OnAuctionCreatedAsync;
-        AuctionRealtimeService.AuctionUpdated += OnAuctionUpdatedAsync;
-        AuctionRealtimeService.AuctionDeleted += OnAuctionDeletedAsync;
+        AuctionRealtimeService.Invalidated += RefreshAuctionsAsync;
+        AuctionRealtimeService.ConnectionChanged += OnAuctionConnectionChangedAsync;
 
         try
         {
             await AuctionRealtimeService.StartAsync();
+
+            await OnAuctionConnectionChangedAsync();
+
+            await RefreshAuctionsAsync();
         }
         catch (Exception)
         {
-            realtimeError = "Liveforbindelsen til auktioner kunne ikke startes. Siden kan stadig bruges, men listen opdateres ikke automatisk.";
-            StateHasChanged();
+            if(!isDisposed)
+            {
+                realtimeError = "Liveforbindelsen kunne ikke startes.";
+                StateHasChanged();
+            }
         }
     }
 
@@ -211,28 +218,9 @@ public partial class AuctionAdmin : IDisposable
     {
         isDisposed = true;
 
-        AuctionRealtimeService.AuctionCreated -= OnAuctionCreatedAsync;
-        AuctionRealtimeService.AuctionUpdated -= OnAuctionUpdatedAsync;
-        AuctionRealtimeService.AuctionDeleted -= OnAuctionDeletedAsync;
-
+        AuctionRealtimeService.Invalidated += RefreshAuctionsAsync;
+        AuctionRealtimeService.ConnectionChanged += OnAuctionConnectionChangedAsync;
     }
-
-    /// <summary>
-    /// Reloads the dashboard whenever an auction changes anywhere, so the list never shows stale or
-    /// duplicated rows.
-    /// </summary>
-    /// <returns>A task that completes once the list has been reloaded.</returns>
-    private Task OnAuctionCreatedAsync(CreateAuctionNotification notification) =>
-        RefreshAuctionsAsync();
-
-    /// <inheritdoc cref="OnAuctionCreatedAsync"/>
-    private Task OnAuctionUpdatedAsync(UpdateAuctionNotification notification) =>
-        RefreshAuctionsAsync();
-
-    /// <inheritdoc cref="OnAuctionCreatedAsync"/>
-    private Task OnAuctionDeletedAsync(DeleteAuctionNotification notification) =>
-        RefreshAuctionsAsync();
-
 
     private Task RefreshAuctionsAsync()
     {
@@ -243,7 +231,30 @@ public partial class AuctionAdmin : IDisposable
 
         return InvokeAsync(async () =>
         {
+            if (!isDisposed)
+                return;
+
             await LoadAuctionsAsync();
+
+            if (!isDisposed)
+                StateHasChanged();
+        });
+    }
+
+    private Task OnAuctionConnectionChangedAsync()
+    {
+        if (isDisposed)
+            return Task.CompletedTask;
+
+        return InvokeAsync(() =>
+        {
+            if (isDisposed)
+                return;
+
+            realtimeError = AuctionRealtimeService.isConnected
+                ? null
+                : "Liveforbindelsen er ikke tilsluttet, listen opdateres ikke automatisk";
+
             StateHasChanged();
         });
     }
@@ -475,29 +486,50 @@ public partial class AuctionAdmin : IDisposable
 
     private async Task LoadAuctionsAsync()
     {
+        if (isDisposed)
+            return;
+
+        int version = ++auctionLoadVersion;
+
         isLoadingAuctions = true;
         auctionListError = null;
 
         try
         {
-            auctions = await AuctionService.GetAllAsync();
-            auctionPage = Math.Clamp(auctionPage, 1, TotalAuctionPages);
+            var result = await AuctionService.GetAllAsync();
+
+            if (isDisposed || version != auctionLoadVersion)
+                return;
+
+            auctions = result;
+            auctionPage = Math.Clamp(
+                auctionPage,
+                1,
+                TotalAuctionPages);
         }
-        catch (AuctionApiException exception)
+        catch (Exception ex) when (ex
+            is AuctionApiException
+            or HttpRequestException
+            or TaskCanceledException)
         {
-            auctionListError = exception.Message;
-        }
-        catch (HttpRequestException)
-        {
-            auctionListError = "Listen over auktioner kunne ikke hentes. Prøv igen om lidt.";
-        }
-        catch (TaskCanceledException)
-        {
-            auctionListError = "Anmodningen om auktionslisten tog for lang tid. Prøv igen.";
+            if (isDisposed || version != auctionLoadVersion)
+                return;
+
+            auctionListError = ex switch
+            {
+                AuctionApiException apiException =>
+                    apiException.Message,
+
+                TaskCanceledException =>
+                    "Hentning af auktioner to for lang tid",
+
+                _ => "Auktioner kunne ikke hentes, prøv igen"
+            };
         }
         finally
         {
-            isLoadingAuctions = false;
+            if (!isDisposed && version == auctionLoadVersion)
+                isLoadingAuctions = false;
         }
     }
 
