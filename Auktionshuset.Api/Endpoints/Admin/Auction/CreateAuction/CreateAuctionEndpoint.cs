@@ -40,7 +40,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Auction.CreateAuction
             CreateAuctionCommand command = new CreateAuctionCommand(
                 Name: request.Name.Trim(),
                 StartsAt: request.StartsAt!.Value,
-                EndsAt: request.EndsAt!.Value,
+                EndsAt: request.EndsAt,
                 EmployeeId: request.EmployeeId,
                 AuctionHouseId: request.AuctionHouseId,
                 Lots: AuctionEndpointMapping.ToSelections(request.Lots));

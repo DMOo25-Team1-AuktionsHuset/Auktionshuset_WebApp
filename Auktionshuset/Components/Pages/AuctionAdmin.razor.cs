@@ -128,21 +128,11 @@ public partial class AuctionAdmin : IDisposable
     /// <summary>
     /// Gets the status the form values currently imply, so the draft can be previewed before saving.
     /// </summary>
-    private string DerivedStatus
-    {
-        get
-        {
-            DateTime? startsAt = model.GetStartsAt();
-            DateTime? endsAt = model.GetEndsAt();
-
-            if (startsAt is null || endsAt is null)
-            {
-                return "Ikke fastsat";
-            }
-
-            return DeriveStatus(startsAt.Value, endsAt.Value);
-        }
-    }
+    private string DerivedStatus =>
+        model.GetStartsAt() is null
+            ? "Ikke fastsat"
+            : StatusUpcoming;
+    
     
     private IReadOnlyList<AuctionListItemResponse> FilteredAuctions
     {
@@ -284,9 +274,9 @@ public partial class AuctionAdmin : IDisposable
         DateTime? startsAt = model.GetStartsAt();
         DateTime? endsAt = model.GetEndsAt();
 
-        if (startsAt is null || endsAt is null)
+        if (startsAt is null || (!string.IsNullOrWhiteSpace(model.EndTime) && endsAt is null))
         {
-            statusMessage = "Udfyld startdato, starttid og sluttid, før auktionen gemmes.";
+            statusMessage = "Udfyld en gyldig startdato og starttid før auktionen gemmes.";
             submissionSucceeded = false;
             return;
         }

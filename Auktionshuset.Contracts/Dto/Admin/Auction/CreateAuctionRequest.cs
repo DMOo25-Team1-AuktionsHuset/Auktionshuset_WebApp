@@ -11,7 +11,6 @@ public sealed class CreateAuctionRequest : IValidatableObject
     [Required(ErrorMessage = "Startdato og starttidspunkt er påkrævet.")]
     public DateTime? StartsAt { get; init; }
 
-    [Required(ErrorMessage = "Slutdato og sluttidspunkt er påkrævet.")]
     public DateTime? EndsAt { get; init; }
 
     /// <summary>

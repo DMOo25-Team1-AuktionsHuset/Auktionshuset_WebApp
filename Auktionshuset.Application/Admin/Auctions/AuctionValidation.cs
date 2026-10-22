@@ -28,7 +28,7 @@ internal static class AuctionValidation
     internal static void CollectErrors(
         string? name,
         DateTime startsAt,
-        DateTime endsAt,
+        DateTime? endsAt,
         Guid? employeeId,
         Employee? employee,
         bool requireFutureStart,
@@ -46,7 +46,7 @@ internal static class AuctionValidation
             errors.Add("Starttidspunktet skal ligge i fremtiden.");
         }
 
-        if (endsAt <= startsAt)
+        if (endsAt is DateTime end && end <= startsAt)
         {
             errors.Add("Sluttidspunktet skal ligge efter starttidspunktet.");
         }

@@ -42,7 +42,7 @@
                     <p class="status-preview" role="status" aria-live="polite">
                         <span class="badge @StatusCssClass(DerivedStatus)">@DerivedStatus</span>
                     </p>
-                    <span class="help-text">Udledes automatisk af start- og sluttidspunktet.</span>
+                    @* <span class="help-text">Udledes automatisk af start- og sluttidspunktet.</span> *@
                 </div>
             </div>
 
@@ -71,12 +71,12 @@
                             </div>
 
                             <div class="field">
-                                <label for="auction-end-time">Sluttid</label>
+                                <label for="auction-end-time">Sluttid (valgfri)</label>
                                 <InputText id="auction-end-time" type="time" @bind-Value="model.EndTime" />
                                 <ValidationMessage For="@(() => model.EndTime)" />
                             </div>
                         </div>
-                        <span class="help-text">Auktionen afholdes på startdatoen, og sluttiden skal ligge efter starttiden samme dag.</span>
+                        <span class="help-text">Auktionen afholdes på startdatoen, og sluttid kan stå tom.</span>
                     </div>
 
                     <div class="field field-wide">

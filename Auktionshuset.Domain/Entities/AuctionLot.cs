@@ -1,4 +1,6 @@
-﻿namespace Auktionshuset.Domain.Entities
+﻿using System.Runtime.InteropServices.JavaScript;
+
+namespace Auktionshuset.Domain.Entities
 {
     public class AuctionLot
     {
@@ -17,7 +19,7 @@
 
         public decimal StartingPrice { get; set; }
 
-
+        public DateTime? ClosedATime { get; set; }
         public Guid? CurrentHighestBidId { get; set; }
         public Bid? CurrentHighestBid { get; set; }
         public ICollection<Bid> Bids { get; set; } = new List<Bid>();

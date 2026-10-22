@@ -25,7 +25,6 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     [RegularExpression(TimePattern, ErrorMessage = "Starttidspunktet skal angives som tt:mm.")]
     public string StartTime { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Angiv et sluttidspunkt.")]
     [RegularExpression(TimePattern, ErrorMessage = "Sluttidspunktet skal angives som tt:mm.")]
     public string EndTime { get; set; } = string.Empty;
 

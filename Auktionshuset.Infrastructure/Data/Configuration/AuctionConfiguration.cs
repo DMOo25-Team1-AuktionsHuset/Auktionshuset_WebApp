@@ -24,6 +24,10 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.Property(a => a.StartsAt).HasConversion(dateTimeConverter).IsRequired();
             entity.Property(a => a.EndedAt).HasConversion(dateTimeConverter);
             entity.Property(a => a.AuctionStatus).IsRequired().HasMaxLength(32);
+            entity.Property(auction => auction.StartedAtTime)
+                .HasColumnType("timestamp with time zone");
+            entity.Property(auction => auction.ClosedAtTime)
+                .HasColumnType("timestamp with time zone");
 
             entity.HasOne(a => a.AuctionHouse)
                 .WithMany(auctionHouse => auctionHouse.Auctions)
