@@ -34,7 +34,14 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-
+          
+      - name: Show workflow context
+        shell: bash
+        run: |
+          echo "Event: $GITHUB_EVENT_NAME"
+          echo "Ref: $GITHUB_REF"
+          echo "RUN_SONAR: $RUN_SONAR"
+          
       - name: Check Headscale availability
         if: env.RUN_SONAR == 'true'
         shell: bash
