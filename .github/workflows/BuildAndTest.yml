@@ -101,6 +101,34 @@ jobs:
       - name: Restore solution
         run: dotnet restore AuktionsHuset_WebApp.slnx
 
+      - name: Check SonarQube authentication
+        if: env.RUN_SONAR == 'true'
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ steps.vault.outputs.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_HOST_URL" ]; then
+            echo "::error::SONAR_HOST_URL mangler."
+            exit 1
+          fi
+
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN fra Vault mangler."
+            exit 1
+          fi
+
+          if [[ "$SONAR_TOKEN" =~ [[:space:]] ]]; then
+            echo "::error::Tokenet indeholder mellemrum eller linjeskift. Kontrollér værdien i Vault."
+            exit 1
+          fi
+
+          curl --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --user "$SONAR_TOKEN:" \
+            --write-out '\nHTTP-status: %{http_code}\n' \
+            "${SONAR_HOST_URL%/}/api/authentication/validate"
+
       - name: Begin SonarQube analysis
         if: env.RUN_SONAR == 'true'
         id: sonar_begin
@@ -108,16 +136,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ steps.vault.outputs.SONAR_TOKEN }}
         run: |
-         if [ -z "$SONAR_HOST_URL" ]; then
-            echo "::error::SONAR_HOST_URL mangler."
-            exit 1
-         fi
-
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "::error::SONAR_TOKEN fra Vault mangler."
-            exit 1
-          fi
-
           "$RUNNER_TEMP/sonar-scanner/dotnet-sonarscanner" begin \
             /k:"auktionshuset-webapp" \
             /d:sonar.host.url="$SONAR_HOST_URL" \
