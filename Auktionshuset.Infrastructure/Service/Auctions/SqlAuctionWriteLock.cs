@@ -15,7 +15,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
         {
             RequireTransaction(context);
 
-            return context.Database.ExecuteSqlRawAsync(
+            return context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                 SELECT "AuctionId"
                 FROM "Auction"

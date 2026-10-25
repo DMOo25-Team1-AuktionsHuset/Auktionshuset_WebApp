@@ -19,7 +19,7 @@ namespace Auktionshuset.Domain.Entities
 
         public decimal StartingPrice { get; set; }
 
-        public DateTime? ClosedATime { get; set; }
+        public DateTime? ClosedAtTime { get; set; }
         public Guid? CurrentHighestBidId { get; set; }
         public Bid? CurrentHighestBid { get; set; }
         public ICollection<Bid> Bids { get; set; } = new List<Bid>();

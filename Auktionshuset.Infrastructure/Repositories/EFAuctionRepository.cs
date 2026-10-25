@@ -55,30 +55,36 @@ namespace Auktionshuset.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<bool> UpdateAsync(Auction auction, IReadOnlyCollection<AuctionLot> auctionLots,
+        public async Task<bool> UpdateAsync(
+            Auction auction,
+            IReadOnlyCollection<AuctionLot> auctionLots,
             CancellationToken cancellationToken)
         {
-            Auction? storedAuction = await context.Auction.FindAsync([auction.AuctionId], cancellationToken);
-            if (storedAuction == null) return false;
+            Auction? storedAuction = await context.Auction.FindAsync(
+                [auction.AuctionId],
+                cancellationToken);
 
+            if (storedAuction is null) return false;
 
-            // Update the auction properties
             context.Entry(storedAuction).CurrentValues.SetValues(auction);
 
-            // Update the auction lots
             List<AuctionLot> existingLots = await context.AuctionLot
-                .Where(lot => lot.AuctionId == auction.AuctionId)
+                .Where(item => item.AuctionId == auction.AuctionId)
                 .ToListAsync(cancellationToken);
 
-            foreach (AuctionLot lot in existingLots)
-            {
-                context.AuctionLot.Remove(lot);
-            }
+            var selectedByLotId =
+                auctionLots.ToDictionary(item => item.LotId);
 
-            foreach (AuctionLot lot in auctionLots)
-            {
-                context.AuctionLot.Add(CreateRow(lot));
-            }
+            var existingByLotId =
+                existingLots.ToDictionary(item => item.LotId);
+
+            foreach (AuctionLot existing in existingLots)
+                if (selectedByLotId.TryGetValue(existing.LotId, out AuctionLot? selected)) existing.Quantity = selected.Quantity;
+                else context.AuctionLot.Remove(existing);
+
+
+            foreach (AuctionLot selected in auctionLots)
+                if (!existingByLotId.ContainsKey(selected.LotId)) context.AuctionLot.Add(CreateRow(selected));
 
             return true;
         }

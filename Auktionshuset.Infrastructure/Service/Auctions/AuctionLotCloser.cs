@@ -19,7 +19,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
             DateTime nowUtc,
             CancellationToken cancellationToken)
         {
-            if (item.ClosedATime is not null) return item.CurrentHighestBidId;
+            if (item.ClosedAtTime is not null) return item.CurrentHighestBidId;
 
             var winner = await context.Bids
                 .Where(bid => bid.AuctionLotId == item.AuctionLotId)
@@ -29,7 +29,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 .FirstOrDefaultAsync(cancellationToken);
 
             item.OpenForBids = false;
-            item.ClosedATime = nowUtc;
+            item.ClosedAtTime = nowUtc;
             item.CurrentHighestBidId = winner?.BidId;
 
             await outboxWriter.AddAsync(
@@ -39,7 +39,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     AuctionLotId: item.AuctionLotId,
                     WinningBidId: winner?.BidId,
                     WinningAmount: winner?.Amount,
-                    OccuredAt: nowUtc),
+                    OccurredAt: nowUtc),
                 cancellationToken);
 
             return winner?.BidId;

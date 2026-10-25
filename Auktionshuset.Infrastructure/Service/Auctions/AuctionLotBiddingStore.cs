@@ -7,6 +7,7 @@ using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Auktionshuset.Application.Admin.Auctions;
 using Npgsql;
 using BidEntity = Auktionshuset.Domain.Entities.Bid;
 
@@ -16,33 +17,39 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
     {
         public async Task<PlaceBidResult> PlaceBidAsync(PlaceBidCommand command, CancellationToken cancellationToken)
         {
+            // Checks the requests basic values
             if (command.RequestId == Guid.Empty || command.Amount <= 0)
             {
                 return Rejected("InvalidBidRequest", 0m);
             }
 
+            // Returns a receipt promptly, if it exists
+            PlaceBidResult? previousResult = await FindPreviousResultAsync(command, cancellationToken);
+            if (previousResult is not null) return previousResult;
+
+            // Starts the transaction for a new bid
             await using IDbContextTransaction transaction =
                 await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
-                await SqlAuctionLotLock.AcquireAsync(db, command.AuctionLotId, cancellationToken);
-
-                // check idempotency before checking whether the session is still active,
-                // retry of already-processed request should return the original result
-                BidCommandKey? previous = await db.BidCommandKeys.SingleOrDefaultAsync(
-                    r => r.CustomerId == command.CustomerId
-                    && r.RequestId == command.RequestId,
+                bool foundAuction = await SqlAuctionWriteLock.AcquireForLotAsync(
+                    db, 
+                    command.AuctionLotId, 
                     cancellationToken);
 
-                if (previous != null)
-                {
-                    await transaction.CommitAsync(cancellationToken);
+                if (!foundAuction) return Rejected("AuctionItemNotFound", 0m);
 
-                    return previous.Matches(command.AuctionLotId, command.Amount)
-                        ? previous.ToResult(duplicate: true)
-                        : Rejected("RequestIdReuseWithDifferentPayload", previous.CurrentPrice);
-                }
+                await SqlAuctionLotLock.AcquireAsync(
+                    db,
+                    command.AuctionLotId,
+                    cancellationToken);
+
+                // The receipt may have been created while waiting for the lock, so check again
+                previousResult = await FindPreviousResultAsync(command, cancellationToken);
+
+                if (previousResult is not null) return previousResult;
+            
 
                 Customer? customer = await db.Customers.SingleOrDefaultAsync(
                     c => c.CustomerId == command.CustomerId,
@@ -64,7 +71,9 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     return Rejected("AuctionItemNotFound", 0m);
                 }
 
-                DateTime now = clock.GetLocalNow().DateTime;
+                DateTime nowUtc = clock.GetUtcNow().UtcDateTime;
+
+                DateTime businessNow = AuctionDateTimeConverter.FromUtc(nowUtc);
 
                 DeviceSession? session = null;
 
@@ -74,8 +83,8 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                         s => s.DeviceSessionId == deviceSessionId
                           && s.CustomerId == command.CustomerId
                           && s.AuctionId == item.AuctionId
-                          && s.StartedAt <= now
-                          && (s.EndedAt == null || s.EndedAt > now),
+                          && s.StartedAt <= nowUtc
+                          && (s.EndedAt == null || s.EndedAt > nowUtc),
                         cancellationToken);
 
                     if (session is null)
@@ -96,8 +105,15 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 bool bidIsTooLow = leader is null
                     ? command.Amount < item.StartingPrice
                     : command.Amount <= leader.Amount;
-                bool auctionIsLive = item.Auction.StartsAt <= now &&
-                    (item.Auction.EndedAt != null || now < item.Auction.EndedAt);
+
+                bool auctionIsLive = 
+                    item.Auction.StartedAtTime is not null
+                        && item.Auction.ClosedAtTime is null
+                        && item.Auction.AuctionStatus == AuctionStatuses.Live
+                        && item.ClosedAtTime is null
+                        && item.Auction.StartsAt <= businessNow
+                        && (item.Auction.EndedAt is null
+                            || businessNow < item.Auction.EndedAt.Value);
 
                 string? errorCode = null;
 
@@ -113,7 +129,11 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 if (errorCode != null)
                 {
                     PlaceBidResult rejected = Rejected(errorCode, currentLeaderPrice);
-                    await SaveKeyAsync(command, rejected, now, cancellationToken);
+                    await SaveKeyAsync(
+                        command, 
+                        rejected, 
+                        nowUtc, 
+                        cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return rejected;
                 }
@@ -123,12 +143,12 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                                        .Where(b => b.AuctionLotId == item.AuctionLotId)
                                        .MaxAsync(b => (int?)b.SequenceNumber, cancellationToken)
                                    ?? 0;
-
+                
                 var bid = new BidEntity
                 {
                     BidId = Guid.NewGuid(),
                     Amount = command.Amount,
-                    PlacedAt = now,
+                    PlacedAt = nowUtc,
                     SequenceNumber = checked(lastSequence + 1),
                     AuctionLotId = item.AuctionLotId,
                     AuctionLot = item,
@@ -139,6 +159,9 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 };
 
                 db.Bids.Add(bid);
+
+                item.CurrentHighestBidId = bid.BidId;
+                item.CurrentHighestBid = bid;
 
                 var accepted = new PlaceBidResult(
                 Accepted: true,
@@ -156,10 +179,10 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                         CustomerId: customer.CustomerId,
                         Amount: bid.Amount,
                         SequenceNumber: bid.SequenceNumber,
-                        OccurredAt: clock.GetUtcNow().UtcDateTime),
+                        OccurredAt: nowUtc),
                     cancellationToken);
 
-                await SaveKeyAsync(command, accepted, now, cancellationToken);
+                await SaveKeyAsync(command, accepted, nowUtc, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 return accepted;
@@ -167,6 +190,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
             catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
             {
                 await transaction.RollbackAsync(cancellationToken);
+                await transaction.DisposeAsync();
                 db.ChangeTracker.Clear();
 
                 // Handles two concurrent copies of one RequestId. If another
@@ -187,46 +211,72 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 return previous.Matches(command.AuctionLotId, command.Amount)
                     ? previous.ToResult(duplicate: true)
                     : Rejected(
-                        "RequestIdReusedWithDifferentPayload",
+                        "RequestIdReuseWithDifferentPayload",
                         previous.CurrentPrice);
             }
+        }
+
+        private async Task<PlaceBidResult?> FindPreviousResultAsync(
+            PlaceBidCommand command,
+            CancellationToken cancellationToken)
+        {
+            BidCommandKey? previous = await db.BidCommandKeys
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    key => key.CustomerId == command.CustomerId
+                        && key.RequestId == command.RequestId,
+                    cancellationToken);
+
+            if (previous is null) return null;
+
+            return previous.Matches(command.AuctionLotId, command.Amount)
+                ? previous.ToResult(duplicate: true)
+                : Rejected(
+                    "RequestIdReuseWithDifferentPayload",
+                    previous.CurrentPrice);
         }
 
         public async Task<Guid?> CloseAuctionLotAsync(Guid auctionLotId, CancellationToken cancellationToken)
         {
             await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            await SqlAuctionLotLock.AcquireAsync(db, auctionLotId, cancellationToken);
-
-            AuctionLot? item = await db.AuctionLot.SingleOrDefaultAsync(
-                al => al.AuctionLotId == auctionLotId,
+            bool foundAuction = await SqlAuctionWriteLock.AcquireForLotAsync(
+                db,
+                auctionLotId,
                 cancellationToken);
 
-            if (item == null)
-            {
-                throw new KeyNotFoundException($"AuctionLot {auctionLotId} does not exist");
-            }
+            if (!foundAuction) throw new KeyNotFoundException($"Genstand {auctionLotId} findes ikke.");
 
-            if (!item.OpenForBids)
-            {
-                await transaction.CommitAsync(cancellationToken);
-                return item.CurrentHighestBidId;
-            }
+            await SqlAuctionLotLock.AcquireAsync(
+                db,
+                auctionLotId,
+                cancellationToken);
 
-            var winner = await db.Bids
-                .Where(b => b.AuctionLotId == auctionLotId)
-                .OrderByDescending(b => b.Amount)
-                .ThenBy(b => b.SequenceNumber)
-                .Select(b => new { b.BidId })
-                .FirstOrDefaultAsync(cancellationToken);
+            AuctionLot? item = await db.AuctionLot
+                .Include(candidate => candidate.Auction)
+                .SingleOrDefaultAsync(candidate => candidate.AuctionLotId == auctionLotId, 
+                                      cancellationToken);
 
-            item.OpenForBids = false;
-            item.CurrentHighestBidId = winner?.BidId;
+            if (item is null) throw new KeyNotFoundException($"Genstand {auctionLotId} findes ikke.");
+
+            if (item.ClosedAtTime is not null) return item.CurrentHighestBidId;
+
+            if (item.Auction.StartedAtTime is null
+                || item.Auction.ClosedAtTime is not null
+                || item.Auction.AuctionStatus != AuctionStatuses.Live)
+                throw new AuctionStateConflictException("Auktionslinjen kan ikke lukkes fra denne tilstand.");
+
+            Guid? winningBidId = await AuctionLotCloser.StageAsync(
+                db,
+                outboxWriter,
+                item,
+                clock.GetUtcNow().UtcDateTime,
+                cancellationToken);
 
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return winner?.BidId;
+            return winningBidId;
         }
 
         private async Task SaveKeyAsync(

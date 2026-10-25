@@ -51,7 +51,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
             auction.AuctionStatus = AuctionStatuses.Live;
 
             foreach (var item in auction.AuctionLots)
-                if (item.ClosedATime is null)
+                if (item.ClosedAtTime is null)
                     item.OpenForBids = true;
 
             await AddUpdatedEventAsync(

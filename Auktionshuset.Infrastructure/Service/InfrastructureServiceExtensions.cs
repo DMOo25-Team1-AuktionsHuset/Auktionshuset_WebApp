@@ -38,7 +38,8 @@ namespace Auktionshuset.Infrastructure.Service
 
             // Add infrastructure services here
             services.AddRabbitMq(configuration);
-            services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+
+            services.AddScoped<IAuctionWriteSessionFactory, PostgresAuctionWriteSessionFactory>();
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
 

@@ -10,5 +10,5 @@ namespace Auktionshuset.Application.Admin.Auctions.Bids
         Guid AuctionId,
         Guid AuctionLotId,
         Guid? WinningBidId,
-        DateTime OccuredAt) : IIntegrationEvent;
+        DateTime OccurredAt) : IIntegrationEvent;
 }
