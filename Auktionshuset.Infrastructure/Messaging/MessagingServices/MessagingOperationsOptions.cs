@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
 {
     internal class MessagingOperationsOptions
     {

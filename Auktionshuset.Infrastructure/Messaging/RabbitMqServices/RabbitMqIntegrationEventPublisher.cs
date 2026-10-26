@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.RabbitMqServices
 {
     internal sealed class RabbitMqIntegrationEventPublisher(
         IRabbitMqConnectionProvider connections,

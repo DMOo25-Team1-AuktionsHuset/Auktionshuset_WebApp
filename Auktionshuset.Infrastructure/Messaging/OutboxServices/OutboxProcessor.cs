@@ -1,11 +1,12 @@
 ﻿using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Data;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.OutboxServices
 {
     internal sealed class OutboxProcessor(
         IServiceScopeFactory scopeFactory,

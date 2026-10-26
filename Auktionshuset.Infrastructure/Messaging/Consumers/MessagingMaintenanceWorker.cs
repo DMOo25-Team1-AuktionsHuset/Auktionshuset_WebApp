@@ -1,4 +1,5 @@
 ﻿using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

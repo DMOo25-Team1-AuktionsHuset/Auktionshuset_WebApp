@@ -8,6 +8,7 @@ using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service;

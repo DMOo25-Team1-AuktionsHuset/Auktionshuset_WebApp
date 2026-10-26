@@ -1,11 +1,14 @@
 ﻿using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.OutboxServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
 {
     internal class MessagingOperations(
         AHDBContext db,

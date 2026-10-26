@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.RabbitMqServices
 {
     internal class RabbitMqTopologyInitializer(EventContractRegistry registry)
     {

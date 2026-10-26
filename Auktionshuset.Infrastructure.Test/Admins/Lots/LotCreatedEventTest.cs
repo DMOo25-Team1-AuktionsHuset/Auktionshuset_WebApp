@@ -8,6 +8,8 @@ using Moq;
 using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 
 namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {

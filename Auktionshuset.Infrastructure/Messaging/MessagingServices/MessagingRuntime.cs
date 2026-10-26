@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Text;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
 {
     internal class MessagingRuntime
         : IMessagingDiagnostics, IDisposable

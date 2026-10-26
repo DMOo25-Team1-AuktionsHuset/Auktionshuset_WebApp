@@ -1,4 +1,4 @@
-namespace Auktionshuset.Infrastructure.Messaging;
+namespace Auktionshuset.Infrastructure.Messaging.InboxServices;
 
 public interface IInboxStore
 {

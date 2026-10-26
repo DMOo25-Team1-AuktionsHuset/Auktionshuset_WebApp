@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.RabbitMqServices
 {
     internal class RabbitMqConnectionProvider(
         ConnectionFactory factory,

@@ -1,3 +1,6 @@
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

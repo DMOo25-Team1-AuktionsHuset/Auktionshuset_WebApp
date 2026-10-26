@@ -2,11 +2,13 @@
 using System.Text.Json;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Data;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.InboxServices
 {
     internal sealed class InboxProcessor(
     IServiceScopeFactory scopeFactory,

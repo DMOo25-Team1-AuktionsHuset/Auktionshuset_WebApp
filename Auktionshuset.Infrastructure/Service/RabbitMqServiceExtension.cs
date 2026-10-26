@@ -3,6 +3,9 @@ using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.OutboxServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
@@ -55,9 +58,6 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddScoped<DbOutboxStore>();
             services.AddScoped<DbInboxStore>();
             services.AddScoped<IInboxStore>(services => services.GetRequiredService<DbInboxStore>());
-            services.AddHostedService<OutboxProcessor>();
-            services.AddHostedService<InboxProcessor>();
-            services.AddHostedService<AdminEventsConsumer>();
 
             return services;
         }

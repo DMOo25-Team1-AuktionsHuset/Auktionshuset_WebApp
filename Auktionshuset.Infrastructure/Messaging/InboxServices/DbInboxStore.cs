@@ -4,7 +4,7 @@ using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.InboxServices
 {
     public class DbInboxStore(AHDBContext context) : IInboxStore
     {

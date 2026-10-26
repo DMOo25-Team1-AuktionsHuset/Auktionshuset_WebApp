@@ -2,7 +2,7 @@
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
-namespace Auktionshuset.Infrastructure.Messaging
+namespace Auktionshuset.Infrastructure.Messaging.OutboxServices
 {
     public class DbOutboxStore(AHDBContext context)
     {
