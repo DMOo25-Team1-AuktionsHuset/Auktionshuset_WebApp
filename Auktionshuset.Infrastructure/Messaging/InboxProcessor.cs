@@ -11,7 +11,8 @@ namespace Auktionshuset.Infrastructure.Messaging
     internal sealed class InboxProcessor(
     IServiceScopeFactory scopeFactory,
     EventContractRegistry registry,
-    ILogger<InboxProcessor> logger)
+    ILogger<InboxProcessor> logger,
+    MessagingRuntime runtime)
     : BackgroundService
     {
         private const string ConsumerName =
@@ -106,6 +107,8 @@ namespace Auktionshuset.Infrastructure.Messaging
             InboxMessage message,
             CancellationToken stoppingToken)
         {
+            using IDisposable measurement = runtime.Measure("inbox");
+
             Guid leaseToken = message.LeaseToken
                 ?? throw new InvalidOperationException(
                     "En reserveret Inbox-besked mangler lease-token.");
@@ -181,6 +184,8 @@ namespace Auktionshuset.Infrastructure.Messaging
                     permanentFailure,
                     stoppingToken);
 
+                runtime.LeaseLost("inbox");
+
                 if (!updated)
                 {
                     logger.LogWarning(
@@ -190,6 +195,8 @@ namespace Auktionshuset.Infrastructure.Messaging
 
                     return;
                 }
+
+                runtime.Failed("inbox");
 
                 logger.LogError(
                     exception,
@@ -208,8 +215,14 @@ namespace Auktionshuset.Infrastructure.Messaging
                 leaseToken,
                 stoppingToken);
 
-            if (!completed)
+            if (completed)
             {
+                runtime.Completed("inbox");
+            }
+            else
+            {
+                runtime.LeaseLost("inbox");
+
                 logger.LogWarning(
                     "Inbox {InboxId}: handlers afsluttede, " +
                     "men lease var ikke længere gyldig. " +

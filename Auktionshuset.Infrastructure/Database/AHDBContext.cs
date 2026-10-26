@@ -28,6 +28,7 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
         public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
+        public DbSet<MessageReplayAudit> MessageReplayAudits => Set<MessageReplayAudit>();
 
         /// <summary>
         /// Applies every <c>IEntityTypeConfiguration</c> declared in the infrastructure assembly.

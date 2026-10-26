@@ -32,6 +32,26 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             .HasFilter(
                 "\"ProcessedAtTime\" IS NULL " +
                 "AND \"QuarantinedAtTime\" IS NULL");
+
+            builder.HasIndex(x => new
+            {
+                x.ProcessedAtTime,
+                x.OutboxId
+            })
+            .HasDatabaseName("OutboxMessages_Retention")
+            .HasFilter(
+                "\"ProcessedAtTime\" IS NOT NULL " +
+                "AND \"QuarantinedAtTime\" IS NULL");
+
+            builder.HasIndex(x => new
+            {
+                x.QuarantinedAtTime,
+                x.OutboxId
+            })
+            .HasDatabaseName("OutboxMessages_Quarantine")
+            .HasFilter(
+                "\"ProcessedAtTime\" IS NULL " +
+                "AND \"QuarantinedAtTime\" IS NOT NULL");
         }
     }
 }

@@ -16,7 +16,7 @@ using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Service;
-
+using Auktionshuset.Infrastructure.Messaging;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -28,8 +28,6 @@ builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
-
-
 
 // needs its own service class
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();

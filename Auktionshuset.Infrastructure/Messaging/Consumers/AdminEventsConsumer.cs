@@ -10,7 +10,8 @@ internal sealed class AdminEventsConsumer(
     IRabbitMqConnectionProvider connections,
     RabbitMqTopologyInitializer topology,
     IServiceScopeFactory scopeFactory,
-    ILogger<AdminEventsConsumer> logger)
+    ILogger<AdminEventsConsumer> logger,
+    MessagingRuntime runtime)
     : BackgroundService
 {
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
@@ -123,6 +124,8 @@ internal sealed class AdminEventsConsumer(
                     {
                         logger.LogWarning("Message quarantined: {MessageId}", eventArgs.BasicProperties.MessageId);
                     }
+
+                    runtime.Received();
                 }
                 catch (Exception ex)
                 {
@@ -137,6 +140,8 @@ internal sealed class AdminEventsConsumer(
                 consumer: consumer,
                 cancellationToken: session.Token);
 
+            runtime.SetConsumerActive(false);
+
             logger.LogInformation(
                 "RabbitMq consumer listening to {QueueName}", RabbitMqTopology.Queues.Admin);
 
@@ -146,6 +151,8 @@ internal sealed class AdminEventsConsumer(
         }
         finally
         {
+            runtime.Received();
+
             // Stop eventual in processing before channel is disposed
             await session.CancelAsync();
         }

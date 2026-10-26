@@ -10,7 +10,8 @@ namespace Auktionshuset.Infrastructure.Messaging
     internal sealed class OutboxProcessor(
         IServiceScopeFactory scopeFactory,
         ILogger<OutboxProcessor> logger,
-        EventContractRegistry registry) : BackgroundService
+        EventContractRegistry registry,
+        MessagingRuntime runtime) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -48,6 +49,8 @@ namespace Auktionshuset.Infrastructure.Messaging
                 await store.QuarantineExhaustedAsync(cancellationToken);
             }
 
+            runtime.Touch("outbox");
+
             for (int index = 0; index < OutboxPolicy.MaxMessagesPerCycle; index++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -60,6 +63,8 @@ namespace Auktionshuset.Infrastructure.Messaging
 
                 OutboxMessage? message =
                     await store.TryClaimAsync(cancellationToken);
+
+                runtime.Attempt("outbox");
 
                 if (message == null)
                 {
@@ -80,6 +85,8 @@ namespace Auktionshuset.Infrastructure.Messaging
             OutboxMessage message,
             CancellationToken cancellationToken)
         {
+            using IDisposable measurement = runtime.Measure("outbox");
+
             Guid leaseToken = message.LeaseToken
                 ?? throw new InvalidOperationException(
                     "A reserved outbox message is missing a lease token");
@@ -130,6 +137,8 @@ namespace Auktionshuset.Infrastructure.Messaging
                     permanentFailure,
                     cancellationToken);
 
+                runtime.LeaseLost("outbox");
+
                 if (!updated)
                 {
                     logger.LogWarning(
@@ -137,6 +146,8 @@ namespace Auktionshuset.Infrastructure.Messaging
 
                     return;
                 }
+
+                runtime.Failed("outbox");
 
                 logger.LogError(
                     ex,
@@ -153,12 +164,19 @@ namespace Auktionshuset.Infrastructure.Messaging
                 leaseToken,
                 cancellationToken);
 
-            if (!completed)
+            if (completed)
             {
+                runtime.Completed("outbox");
+            }
+            else
+            {
+                runtime.LeaseLost("outbox");
+
                 logger.LogWarning(
-                    $"Outbox {message.OutboxId}: publishing confirmed, but lease was no longer valid. Message can be sent again.");
+                    "Outbox {OutboxId}: publishing confirmed, " +
+                    "but lease was no longer valid. Message can be sent again.",
+                    message.OutboxId);
             }
         }
-
     }
 }
