@@ -8,7 +8,7 @@ public sealed class UploadLotImageHandler(
     ILotRepository lotRepository,
     ILotImageStore imageStore,
     IOutboxWriter outboxWriter,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork, TimeProvider clock)
 {
     /// <summary>
     /// Validates and stores an uploaded image for a lot, replacing any image it already had.
@@ -54,7 +54,7 @@ public sealed class UploadLotImageHandler(
             await imageStore.DeleteAsync(previousFileName, cancellationToken);
         }
 
-        await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, cancellationToken);
+        await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, clock.GetUtcNow().UtcDateTime, cancellationToken);
 
         await unitOfWork.CommitBatchAsync(cancellationToken);
 

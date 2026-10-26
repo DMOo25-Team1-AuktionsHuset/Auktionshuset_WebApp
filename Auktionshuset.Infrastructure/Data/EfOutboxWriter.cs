@@ -14,6 +14,15 @@ namespace Auktionshuset.Infrastructure.Data
             IIntegrationEvent integrationEvent,
             CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (integrationEvent.OccurredAt.Kind != DateTimeKind.Utc)
+            {
+                throw new ArgumentException(
+                    "Integration-eventets OccurredAt skal være UTC.",
+                    nameof(integrationEvent));
+            }
+
             EventContractRegistry.EventContractRecord contract = eventContracts.ByType(integrationEvent.GetType());
             string payload = eventContracts.Serialize(integrationEvent);
 
@@ -22,7 +31,7 @@ namespace Auktionshuset.Infrastructure.Data
                 OutboxId = integrationEvent.EventId,
                 EventType = contract.EventContractName,
                 Payload = payload,
-                OccurredAtTime = integrationEvent.OccurredAt.ToUniversalTime()
+                OccurredAtTime = integrationEvent.OccurredAt
             };
 
             dbContext.OutboxMessages.Add(outboxMessage);

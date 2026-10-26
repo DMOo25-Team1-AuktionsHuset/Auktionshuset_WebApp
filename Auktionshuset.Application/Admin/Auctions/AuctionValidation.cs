@@ -31,6 +31,7 @@ internal static class AuctionValidation
         DateTime? endsAt,
         Guid? employeeId,
         Employee? employee,
+        DateTime nowUtc,
         bool requireFutureStart,
         List<string> errors)
     {
@@ -41,15 +42,20 @@ internal static class AuctionValidation
             errors.Add($"Auktionsnavn skal være mellem {MinNameLength} og {MaxNameLength} tegn.");
         }
 
-        if (requireFutureStart && startsAt <= DateTime.Now)
-        {
-            errors.Add("Starttidspunktet skal ligge i fremtiden.");
-        }
+        bool startIsUtc = startsAt.Kind == DateTimeKind.Utc;
+        bool endIsUtc = endsAt == null || endsAt.Value.Kind == DateTimeKind.Utc;
 
-        if (endsAt is DateTime end && end <= startsAt)
-        {
+        if (!startIsUtc)
+            errors.Add("Starttidspunktet skal være angivet som UTC.");
+
+        if (!endIsUtc)
+            errors.Add("Sluttidspunktet skal være angivet som UTC.");
+
+        if (requireFutureStart && startIsUtc && startsAt <= nowUtc)
+            errors.Add("Starttidspunktet skal ligge i fremtiden.");
+
+        if (startIsUtc && endIsUtc && endsAt is DateTime end && end <= startsAt)
             errors.Add("Sluttidspunktet skal ligge efter starttidspunktet.");
-        }
 
         if (employeeId is not null && employee is null)
         {

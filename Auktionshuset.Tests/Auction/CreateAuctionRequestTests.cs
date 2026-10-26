@@ -37,7 +37,7 @@ public class CreateAuctionRequestTests
         CreateAuctionRequest request = new CreateAuctionRequest
         {
             Name = "Forårsauktion",
-            EndsAt = DateTime.Now.AddDays(4),
+            EndsAt = DateTime.UtcNow.AddDays(4),
             EmployeeId = Guid.NewGuid()
         };
 
@@ -47,14 +47,14 @@ public class CreateAuctionRequestTests
     }
 
     /// <summary>
-    /// Verifies that the start time has to lie in the future when an auction is created.
+    /// Future-start validation belongs to the application handler and its injected clock.
     /// </summary>
     [Fact]
-    public void Validate_WithPastStart_ReturnsError()
+    public void Validate_WithPastStart_LeavesClockValidationToHandler()
     {
-        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: DateTime.Now.AddDays(-1)));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: DateTime.UtcNow.AddDays(-1)));
 
-        Assert.Contains(errors, error => error.ErrorMessage?.Contains("fremtiden") == true);
+        Assert.Empty(errors);
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ public class CreateAuctionRequestTests
     [Fact]
     public void Validate_WithEndBeforeStart_ReturnsError()
     {
-        DateTime startsAt = DateTime.Now.AddDays(3);
+        DateTime startsAt = DateTime.UtcNow.AddDays(3);
 
         IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: startsAt, endsAt: startsAt.AddHours(-2)));
 
@@ -79,8 +79,8 @@ public class CreateAuctionRequestTests
         CreateAuctionRequest request = new CreateAuctionRequest
         {
             Name = "Forårsauktion",
-            StartsAt = DateTime.Now.AddDays(3),
-            EndsAt = DateTime.Now.AddDays(4)
+            StartsAt = DateTime.UtcNow.AddDays(3),
+            EndsAt = DateTime.UtcNow.AddDays(4)
         };
 
         Assert.Empty(Validate(request));
@@ -123,8 +123,8 @@ public class CreateAuctionRequestTests
         AuctionLotRequest[]? lots = null) => new()
         {
             Name = name,
-            StartsAt = startsAt ?? DateTime.Now.AddDays(3),
-            EndsAt = endsAt ?? DateTime.Now.AddDays(4),
+            StartsAt = startsAt ?? DateTime.UtcNow.AddDays(3),
+            EndsAt = endsAt ?? DateTime.UtcNow.AddDays(4),
             EmployeeId = Guid.NewGuid(),
             AuctionHouseId = TestData.AuctionHouseId,
             Lots = lots ?? [new AuctionLotRequest(Guid.NewGuid(), 2)]

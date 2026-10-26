@@ -49,6 +49,7 @@ public sealed class UpdateAuctionHandler(
             command.EndsAt,
             command.EmployeeId,
             employee,
+            nowUtc: clock.GetUtcNow().UtcDateTime,
             requireFutureStart: false,
             errors);
 

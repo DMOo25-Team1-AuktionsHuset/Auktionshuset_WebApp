@@ -8,7 +8,7 @@ public sealed class RemoveLotImageHandler(
     ILotRepository lotRepository,
     ILotImageStore imageStore,
     IOutboxWriter outboxWriter,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork, TimeProvider clock)
 {
     /// <summary>
     /// Removes the image of a lot. Removing a lot that has no image is not an error.
@@ -36,7 +36,7 @@ public sealed class RemoveLotImageHandler(
         await lotRepository.UpdateAsync(lot, cancellationToken);
         await imageStore.DeleteAsync(fileName, cancellationToken);
 
-        await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, cancellationToken);
+        await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, clock.GetUtcNow().UtcDateTime, cancellationToken);
 
         await unitOfWork.CommitBatchAsync(cancellationToken);
 

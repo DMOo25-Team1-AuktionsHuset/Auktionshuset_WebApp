@@ -73,8 +73,6 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
                 DateTime nowUtc = clock.GetUtcNow().UtcDateTime;
 
-                DateTime businessNow = AuctionDateTimeConverter.FromUtc(nowUtc);
-
                 DeviceSession? session = null;
 
                 if (command.DeviceSessionId is Guid deviceSessionId)
@@ -111,9 +109,9 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                         && item.Auction.ClosedAtTime is null
                         && item.Auction.AuctionStatus == AuctionStatuses.Live
                         && item.ClosedAtTime is null
-                        && item.Auction.StartsAt <= businessNow
+                        && item.Auction.StartsAt <= nowUtc
                         && (item.Auction.EndedAt is null
-                            || businessNow < item.Auction.EndedAt.Value);
+                            || nowUtc < item.Auction.EndedAt.Value);
 
                 string? errorCode = null;
 

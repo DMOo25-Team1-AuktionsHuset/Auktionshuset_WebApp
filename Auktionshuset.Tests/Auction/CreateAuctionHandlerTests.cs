@@ -22,8 +22,8 @@ public class CreateAuctionHandlerTests
         CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
-                DateTime.Now.AddDays(7),
-                DateTime.Now.AddDays(8),
+                DateTime.UtcNow.AddDays(7),
+                DateTime.UtcNow.AddDays(8),
                 new AuctionLotSelection(first.LotId, 2),
                 new AuctionLotSelection(second.LotId, 2)),
             CancellationToken.None);
@@ -52,8 +52,8 @@ public class CreateAuctionHandlerTests
         CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
-                DateTime.Now.AddDays(2),
-                DateTime.Now.AddDays(3),
+                DateTime.UtcNow.AddDays(2),
+                DateTime.UtcNow.AddDays(3),
                 new AuctionLotSelection(lot.LotId, 1)),
             CancellationToken.None);
 
@@ -71,7 +71,7 @@ public class CreateAuctionHandlerTests
         (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
         CreateAuctionResult result = await handler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)),
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2)),
             CancellationToken.None);
 
         Assert.True(result.Succeeded);
@@ -90,7 +90,7 @@ public class CreateAuctionHandlerTests
         (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
         CreateAuctionResult result = await handler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(-1), DateTime.Now.AddDays(1)),
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(1)),
             CancellationToken.None);
 
         Assert.False(result.Succeeded);
@@ -107,7 +107,7 @@ public class CreateAuctionHandlerTests
     {
         Employee employee = TestData.CreateEmployee();
         (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
-        DateTime startsAt = DateTime.Now.AddDays(3);
+        DateTime startsAt = DateTime.UtcNow.AddDays(3);
 
         CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, startsAt, startsAt.AddHours(-1)),
@@ -128,7 +128,7 @@ public class CreateAuctionHandlerTests
         Employee employee = TestData.CreateEmployee();
         (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
-        CreateAuctionCommand command = TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)) with
+        CreateAuctionCommand command = TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(2), DateTime.UtcNow.AddDays(3)) with
         {
             Name = name
         };
@@ -148,7 +148,7 @@ public class CreateAuctionHandlerTests
         (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync();
 
         CreateAuctionResult result = await handler.HandleAsync(
-            TestData.CreateCommand(Guid.NewGuid(), DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)),
+            TestData.CreateCommand(Guid.NewGuid(), DateTime.UtcNow.AddDays(2), DateTime.UtcNow.AddDays(3)),
             CancellationToken.None);
 
         Assert.False(result.Succeeded);
@@ -164,7 +164,7 @@ public class CreateAuctionHandlerTests
         (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync();
 
         CreateAuctionResult result = await handler.HandleAsync(
-            TestData.CreateCommand(null, DateTime.Now.AddDays(2), DateTime.Now.AddDays(3)),
+            TestData.CreateCommand(null, DateTime.UtcNow.AddDays(2), DateTime.UtcNow.AddDays(3)),
             CancellationToken.None);
 
         Assert.True(result.Succeeded);
@@ -185,8 +185,8 @@ public class CreateAuctionHandlerTests
         CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
-                DateTime.Now.AddDays(2),
-                DateTime.Now.AddDays(3),
+                DateTime.UtcNow.AddDays(2),
+                DateTime.UtcNow.AddDays(3),
                 new AuctionLotSelection(Guid.NewGuid(), 1)),
             CancellationToken.None);
 
@@ -207,8 +207,8 @@ public class CreateAuctionHandlerTests
         CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
-                DateTime.Now.AddDays(2),
-                DateTime.Now.AddDays(3),
+                DateTime.UtcNow.AddDays(2),
+                DateTime.UtcNow.AddDays(3),
                 new AuctionLotSelection(lot.LotId, 1),
                 new AuctionLotSelection(lot.LotId, 2)),
             CancellationToken.None);
@@ -232,8 +232,8 @@ public class CreateAuctionHandlerTests
         CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
-                DateTime.Now.AddDays(2),
-                DateTime.Now.AddDays(3),
+                DateTime.UtcNow.AddDays(2),
+                DateTime.UtcNow.AddDays(3),
                 new AuctionLotSelection(lot.LotId, quantity)),
             CancellationToken.None);
 
@@ -254,8 +254,8 @@ public class CreateAuctionHandlerTests
         CreateAuctionResult result = await handler.HandleAsync(
             TestData.CreateCommand(
                 employee.EmployeeId,
-                DateTime.Now.AddDays(2),
-                DateTime.Now.AddDays(3),
+                DateTime.UtcNow.AddDays(2),
+                DateTime.UtcNow.AddDays(3),
                 new AuctionLotSelection(lot.LotId, 3)),
             CancellationToken.None);
 
@@ -273,7 +273,7 @@ public class CreateAuctionHandlerTests
         (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
         CreateAuctionResult result = await handler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(5), DateTime.Now.AddDays(6)),
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(5), DateTime.UtcNow.AddDays(6)),
             CancellationToken.None);
 
         Auction? auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
@@ -291,7 +291,7 @@ public class CreateAuctionHandlerTests
         (CreateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _) = await CreateHandlerAsync(employee);
 
         CreateAuctionResult result = await handler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(5), DateTime.Now.AddDays(6)),
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(5), DateTime.UtcNow.AddDays(6)),
             CancellationToken.None);
 
         Auction? auction = await auctions.GetByIdAsync(result.AuctionId, CancellationToken.None);
@@ -307,8 +307,8 @@ public class CreateAuctionHandlerTests
     {
         Employee employee = TestData.CreateEmployee();
         Lot lot = TestData.CreateLot("Bord", quantity: 3);
-        DateTime startsAt = DateTime.Now.AddDays(5);
-        DateTime endsAt = DateTime.Now.AddDays(6);
+        DateTime startsAt = DateTime.UtcNow.AddDays(5);
+        DateTime endsAt = DateTime.UtcNow.AddDays(6);
         (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher? publisher) = await CreateHandlerAsync(employee, lot);
 
         CreateAuctionResult result = await handler.HandleAsync(
@@ -335,7 +335,7 @@ public class CreateAuctionHandlerTests
         (CreateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher? publisher) = await CreateHandlerAsync(employee);
 
         CreateAuctionResult result = await handler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(-2), DateTime.Now.AddDays(1)),
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(1)),
             CancellationToken.None);
 
         Assert.False(result.Succeeded);
@@ -361,7 +361,7 @@ public class CreateAuctionHandlerTests
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
         return (
-            new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork()),
+            new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System),
             auctionRepository,
             employeeRepository,
             publisher);

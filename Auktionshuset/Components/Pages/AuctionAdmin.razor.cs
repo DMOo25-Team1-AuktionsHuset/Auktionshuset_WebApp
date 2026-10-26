@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Globalization;
 using System.Security.Claims;
+using Auktionshuset.Contracts.Time;
 
 namespace Auktionshuset.Components.Pages;
 
@@ -46,6 +47,9 @@ public partial class AuctionAdmin : IDisposable
 
     [Inject]
     private AuctionRealtimeService AuctionRealtimeService { get; set; } = default!;
+
+    [Inject]
+    private TimeProvider Clock { get; set; } = default!;
 
 
     // --- Formular ---------------------------------------------------------
@@ -281,6 +285,30 @@ public partial class AuctionAdmin : IDisposable
             return;
         }
 
+        if (!CopenhagenTime.TryToUtc(startsAt.Value, out DateTime startsAtUtc, out string? conversionError))
+        {
+            statusMessage = conversionError;
+            submissionSucceeded = false;
+            return;
+        }
+
+        DateTime? endsAtUtc = null;
+
+        if (endsAt is DateTime localEnd)
+        {
+            if (!CopenhagenTime.TryToUtc(
+                localEnd,
+                out DateTime convertedEnd,
+                out conversionError))
+            {
+                statusMessage = conversionError;
+                submissionSucceeded = false;
+                return;
+            }
+
+            endsAtUtc = convertedEnd;
+        }
+
         isSubmitting = true;
         submissionSucceeded = false;
         statusMessage = null;
@@ -298,8 +326,8 @@ public partial class AuctionAdmin : IDisposable
                 await AuctionService.UpdateAsync(auctionId, new UpdateAuctionRequest
                 {
                     Name = model.Name.Trim(),
-                    StartsAt = startsAt,
-                    EndsAt = endsAt,
+                    StartsAt = new DateTimeOffset(startsAtUtc),
+                    EndsAt = endsAtUtc is DateTime endUtc ? new DateTimeOffset(endUtc) : null,
                     EmployeeId = model.EmployeeId,
                     Lots = requestLots
                 });
@@ -311,8 +339,8 @@ public partial class AuctionAdmin : IDisposable
                 CreateAuctionResponse response = await AuctionService.CreateAsync(new CreateAuctionRequest
                 {
                     Name = model.Name.Trim(),
-                    StartsAt = startsAt,
-                    EndsAt = endsAt,
+                    StartsAt = new DateTimeOffset(startsAtUtc),
+                    EndsAt = endsAtUtc is DateTime endUtc ? new DateTimeOffset(endUtc) : null,
                     EmployeeId = model.EmployeeId,
                     Lots = requestLots
                 });
@@ -369,16 +397,22 @@ public partial class AuctionAdmin : IDisposable
                 return;
             }
 
+            DateTime localStart = CopenhagenTime.FromUtc(detail.StartsAt);
+
+            DateTime? localEnd = detail.EndsAt is DateTime endUtc
+                ? CopenhagenTime.FromUtc(endUtc)
+                : null;
+
             editingAuctionId = detail.AuctionId;
 
             model = new CreateAuctionFormModel
             {
                 Name = detail.Name,
-                StartDate = detail.StartsAt.Date,
-                StartTime = detail.StartsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EndTime = detail.EndsAt?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
+                StartDate = localStart.Date,
+                StartTime = localStart.ToString("HH:mm", CultureInfo.InvariantCulture),
+                EndTime = localEnd?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
                 EmployeeId = detail.EmployeeId,
-                RequireFutureStart = detail.StartsAt > DateTime.Now
+                RequireFutureStart = detail.StartsAt > Clock.GetUtcNow().UtcDateTime
             };
 
             editContext = new EditContext(model);
@@ -674,18 +708,6 @@ public partial class AuctionAdmin : IDisposable
     // --- Hjælpere ---------------------------------------------------------
 
     private static string ShortId(Guid id) => id.ToString("N")[..8];
-
-    private static string DeriveStatus(DateTime startsAt, DateTime endsAt)
-    {
-        DateTime now = DateTime.Now;
-
-        if (now < startsAt)
-        {
-            return StatusUpcoming;
-        }
-
-        return now < endsAt ? StatusLive : StatusEnded;
-    }
 
     private static string StatusCssClass(string status) => status switch
     {

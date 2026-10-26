@@ -1,3 +1,4 @@
+@using Auktionshuset.Contracts.Time
 @page "/admin/employees"
 @attribute [Authorize(Policy = FrontendPolicies.CanViewEmployees)]
 @rendermode InteractiveServer
@@ -56,7 +57,7 @@
                 </div>
                 <div class="field">
                     <label for="employee-birth-date">Fødselsdato</label>
-                    <InputDate id="employee-birth-date" @bind-Value="model.BirthDate" max="@DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
+                    <InputDate id="employee-birth-date" @bind-Value="model.BirthDate" max="@CopenhagenTime.Today(Clock).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
                     <ValidationMessage For="@(() => model.BirthDate)" />
                 </div>
                 <div class="field employee-address">

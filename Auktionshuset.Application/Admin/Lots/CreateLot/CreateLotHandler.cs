@@ -4,7 +4,7 @@ using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Lots.CreateLot
 {
-    public class CreateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork)
+    public class CreateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         /// <summary>
         /// Creates a lot from the specified command, adds it to the repository, and publishes a
@@ -36,7 +36,7 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot
                 Category: lot.Category,
                 Quantity: lot.Quantity,
                 EstimatedValue: lot.EstimatedValue,
-                OccurredAt: DateTime.Now);
+                OccurredAt: clock.GetUtcNow().UtcDateTime);
 
             await outboxWriter.AddAsync(integrationEvent, cancellationToken);
 

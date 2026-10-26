@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Auktionshuset.Infrastructure.Messaging
 {
-    public class DbInboxStore(AHDBContext context)
+    public class DbInboxStore(AHDBContext context) : IInboxStore
     {
         public async Task<InboxTypes> StoreNewMessageAsync(
             string consumerName,
@@ -39,7 +39,6 @@ namespace Auktionshuset.Infrastructure.Messaging
                 MessageKey = messageKey,
                 EventType = eventType,
                 Payload = payload,
-                ReceivedAtTime = DateTime.UtcNow,
                 Error = hasEventId ? null : "MessageId missing or not valid"
             };
 

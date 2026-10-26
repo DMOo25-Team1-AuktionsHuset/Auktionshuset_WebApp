@@ -20,7 +20,7 @@ public class CreateLotTest
     {
         // Arrange
         RecordingLotRepository repository = new RecordingLotRepository();
-        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingOutboxWriter(), new RecordingUnitOfWork());
+        CreateLotHandler handler = new CreateLotHandler(repository, new RecordingOutboxWriter(), new RecordingUnitOfWork(), TimeProvider.System);
 
         // Act
         Created<CreateLotResponse> result = await CreateLotEndpoint.HandleAsync(
@@ -45,7 +45,7 @@ public class CreateLotTest
     {
         // Arrange
         var repository = new RecordingLotRepository();
-        var handler = new CreateLotHandler(repository, new RecordingOutboxWriter(), new RecordingUnitOfWork());
+        var handler = new CreateLotHandler(repository, new RecordingOutboxWriter(), new RecordingUnitOfWork(), TimeProvider.System);
         CreateLotRequest request = CreateValidRequest(
             name: "  Antique vase  ",
             category: "  Ceramics  ",
@@ -72,7 +72,7 @@ public class CreateLotTest
         // Arrange
         var repository = new RecordingLotRepository();
         var publisher = new RecordingOutboxWriter();
-        var handler = new CreateLotHandler(repository, publisher, new RecordingUnitOfWork());
+        var handler = new CreateLotHandler(repository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
         CreateLotCommand command = CreateValidCommand();
 
         // Act
@@ -100,7 +100,7 @@ public class CreateLotTest
         // Arrange
         var repository = new RecordingLotRepository();
         var publisher = new RecordingOutboxWriter();
-        var handler = new CreateLotHandler(repository, publisher, new RecordingUnitOfWork());
+        var handler = new CreateLotHandler(repository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
         CreateLotCommand command = CreateValidCommand();
 
         // Act
@@ -127,7 +127,7 @@ public class CreateLotTest
         // Arrange
         RecordingLotRepository repository = new RecordingLotRepository();
         RecordingOutboxWriter outboxWriter = new RecordingOutboxWriter();
-        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter, new RecordingUnitOfWork());
+        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter, new RecordingUnitOfWork(), TimeProvider.System);
         using CancellationTokenSource cancellationSource = new CancellationTokenSource();
 
         // Act
@@ -148,7 +148,7 @@ public class CreateLotTest
         InvalidOperationException expectedException = new InvalidOperationException("The lot could not be saved.");
         RecordingLotRepository repository = new RecordingLotRepository { ExceptionToThrow = expectedException };
         RecordingOutboxWriter outboxWriter = new RecordingOutboxWriter();
-        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter, new RecordingUnitOfWork());
+        CreateLotHandler handler = new CreateLotHandler(repository, outboxWriter, new RecordingUnitOfWork(), TimeProvider.System);
 
         // Act
         InvalidOperationException actualException = await Assert.ThrowsAsync<InvalidOperationException>(

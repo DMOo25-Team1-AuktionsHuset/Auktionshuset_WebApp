@@ -8,6 +8,26 @@ namespace Auktionshuset.Infrastructure.Test;
 public class AHDBContextModelTests
 {
     [Fact]
+    public void UtcAuctionTimes_KeepTheExistingDatabaseSchema()
+    {
+        var options = new DbContextOptionsBuilder<AHDBContext>()
+            .UseNpgsql("Host=localhost;Database=auction-model-test;Username=postgres;Password=postgres")
+            .Options;
+        using var context = new AHDBContext(options);
+
+        var auction = context.Model.FindEntityType(typeof(Auction))!;
+        foreach (string propertyName in new[] { nameof(Auction.StartsAt), nameof(Auction.EndedAt) })
+        {
+            var property = auction.FindProperty(propertyName)!;
+            Assert.Equal("timestamp with time zone", property.GetColumnType());
+            Assert.Null(property.GetValueConverter());
+        }
+
+        // Model comparison only: this does not connect to PostgreSQL.
+        Assert.False(context.Database.HasPendingModelChanges());
+    }
+
+    [Fact]
     public void Model_UsesExplicitForeignKeysForBidRelationships()
     {
         DbContextOptions<AHDBContext> options = new DbContextOptionsBuilder<AHDBContext>()

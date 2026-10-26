@@ -27,7 +27,6 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
-
             var connectionString =
                 configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(

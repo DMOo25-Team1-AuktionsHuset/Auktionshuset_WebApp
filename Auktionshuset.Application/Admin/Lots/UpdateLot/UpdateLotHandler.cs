@@ -5,7 +5,7 @@ using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Lots.UpdateLot
 {
-    public class UpdateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork)
+    public class UpdateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         /// <summary>
         /// Applies the command's values to an already stored lot and publishes an integration event
@@ -31,7 +31,7 @@ namespace Auktionshuset.Application.Admin.Lots.UpdateLot
 
             await lotRepository.UpdateAsync(lot, cancellationToken);
 
-            await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, cancellationToken);
+            await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, clock.GetUtcNow().UtcDateTime, cancellationToken);
 
             await unitOfWork.CommitBatchAsync(cancellationToken);
 

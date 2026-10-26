@@ -4,7 +4,7 @@ using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
 {
-    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork)
+    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         public async Task<UpdateEmployeeResult?> HandleAsync(UpdateEmployeeCommand command, CancellationToken cancellationToken)
         {
@@ -31,7 +31,7 @@ namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
                 LastName: employee.LastName,
                 BirthDate: employee.BirthDate,
                 Address: employee.Address,
-                OccurredAt: DateTime.Now);
+                OccurredAt: clock.GetUtcNow().UtcDateTime);
 
             await outboxWriter.AddAsync(integrationEvent, cancellationToken);
 

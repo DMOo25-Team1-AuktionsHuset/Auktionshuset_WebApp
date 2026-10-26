@@ -120,14 +120,14 @@ public class GetAuctionsHandlerTests
         var employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
-        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork());
+        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
         CreateAuctionResult earliest = await createHandler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)) with { Name = "Tidlig" },
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2)) with { Name = "Tidlig" },
             CancellationToken.None);
 
         CreateAuctionResult latest = await createHandler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(20), DateTime.Now.AddDays(21)) with { Name = "Sen" },
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(20), DateTime.UtcNow.AddDays(21)) with { Name = "Sen" },
             CancellationToken.None);
 
         GetAuctionsHandler handler = new GetAuctionsHandler(auctionRepository, employeeRepository);
@@ -151,8 +151,8 @@ public class GetAuctionsHandlerTests
         {
             AuctionId = Guid.NewGuid(),
             Name = "Forårsauktion",
-            StartsAt = DateTime.Now.AddDays(2),
-            EndedAt = DateTime.Now.AddDays(3),
+            StartsAt = DateTime.UtcNow.AddDays(2),
+            EndedAt = DateTime.UtcNow.AddDays(3),
             EmployeeId = employeeId,
             AuctionHouseId = TestData.AuctionHouseId,
             AuctionStatus = AuctionStatuses.Upcoming
@@ -177,12 +177,12 @@ public class GetAuctionsHandlerTests
         employeeRepository.Add(employee);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork())
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,
-                    DateTime.Now.AddDays(5),
-                    DateTime.Now.AddDays(6),
+                    DateTime.UtcNow.AddDays(5),
+                    DateTime.UtcNow.AddDays(6),
                     [.. selections.Select(selection => new AuctionLotSelection(selection.Lot.LotId, selection.Quantity))]),
                 CancellationToken.None);
 

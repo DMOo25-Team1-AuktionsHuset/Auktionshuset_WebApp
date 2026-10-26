@@ -54,6 +54,7 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddScoped<IOutboxWriter, EfOutboxWriter>();
             services.AddScoped<DbOutboxStore>();
             services.AddScoped<DbInboxStore>();
+            services.AddScoped<IInboxStore>(services => services.GetRequiredService<DbInboxStore>());
             services.AddHostedService<OutboxProcessor>();
             services.AddHostedService<InboxProcessor>();
             services.AddHostedService<AdminEventsConsumer>();

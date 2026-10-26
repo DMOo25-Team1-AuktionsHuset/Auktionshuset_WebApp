@@ -18,11 +18,10 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         /// </param>
         public void Configure(EntityTypeBuilder<Auction> entity)
         {
-            var dateTimeConverter = new AuctionDateTimeConverter();
             entity.HasKey(a => a.AuctionId);
             entity.Property(a => a.Name).IsRequired().HasMaxLength(120);
-            entity.Property(a => a.StartsAt).HasConversion(dateTimeConverter).IsRequired();
-            entity.Property(a => a.EndedAt).HasConversion(dateTimeConverter);
+            entity.Property(a => a.StartsAt).HasColumnType("timestamp with time zone").IsRequired();
+            entity.Property(a => a.EndedAt).HasColumnType("timestamp with time zone");
             entity.Property(a => a.AuctionStatus).IsRequired().HasMaxLength(32);
             entity.Property(auction => auction.StartedAtTime)
                 .HasColumnType("timestamp with time zone");

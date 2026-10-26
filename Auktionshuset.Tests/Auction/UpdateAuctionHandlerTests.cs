@@ -24,8 +24,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Efterårsauktion",
-                StartsAt: DateTime.Now.AddDays(10),
-                EndsAt: DateTime.Now.AddDays(11),
+                StartsAt: DateTime.UtcNow.AddDays(10),
+                EndsAt: DateTime.UtcNow.AddDays(11),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(second.LotId, 5)]),
@@ -61,8 +61,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Ændret auktion",
-                StartsAt: DateTime.Now.AddDays(-2),
-                EndsAt: DateTime.Now.AddDays(3),
+                StartsAt: DateTime.UtcNow.AddDays(-2),
+                EndsAt: DateTime.UtcNow.AddDays(3),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
@@ -92,8 +92,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: Guid.NewGuid(),
                 Name: "Ukendt",
-                StartsAt: DateTime.Now.AddDays(1),
-                EndsAt: DateTime.Now.AddDays(2),
+                StartsAt: DateTime.UtcNow.AddDays(1),
+                EndsAt: DateTime.UtcNow.AddDays(2),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
@@ -111,7 +111,7 @@ public class UpdateAuctionHandlerTests
     {
         Employee employee = TestData.CreateEmployee();
         (UpdateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _, Guid auctionId) = await CreateExistingAuctionAsync(employee);
-        DateTime startsAt = DateTime.Now.AddDays(4);
+        DateTime startsAt = DateTime.UtcNow.AddDays(4);
 
         UpdateAuctionResult result = await handler.HandleAsync(
             new UpdateAuctionCommand(
@@ -141,8 +141,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: Guid.NewGuid(),
                 AuctionHouseId: null,
                 Lots: []),
@@ -165,8 +165,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: null,
                 AuctionHouseId: null,
                 Lots: []),
@@ -193,8 +193,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(Guid.NewGuid(), 1)]),
@@ -218,8 +218,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(lot.LotId, 1), new AuctionLotSelection(lot.LotId, 2)]),
@@ -245,8 +245,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(lot.LotId, quantity)]),
@@ -269,8 +269,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Vinterauktion",
-                StartsAt: DateTime.Now.AddDays(6),
-                EndsAt: DateTime.Now.AddDays(7),
+                StartsAt: DateTime.UtcNow.AddDays(6),
+                EndsAt: DateTime.UtcNow.AddDays(7),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
@@ -295,8 +295,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(4),
-                EndsAt: DateTime.Now.AddDays(-4),
+                StartsAt: DateTime.UtcNow.AddDays(4),
+                EndsAt: DateTime.UtcNow.AddDays(-4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
@@ -320,12 +320,12 @@ public class UpdateAuctionHandlerTests
 
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork())
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,
-                    DateTime.Now.AddDays(5),
-                    DateTime.Now.AddDays(6),
+                    DateTime.UtcNow.AddDays(5),
+                    DateTime.UtcNow.AddDays(6),
                     [.. lots.Select(lot => new AuctionLotSelection(lot.LotId, 1))]),
                 CancellationToken.None);
 
@@ -357,8 +357,8 @@ public class UpdateAuctionHandlerTests
         {
             AuctionId = Guid.NewGuid(),
             Name = "Igangværende auktion",
-            StartsAt = DateTime.Now.AddDays(-2),
-            EndedAt = DateTime.Now.AddDays(2),
+            StartsAt = DateTime.UtcNow.AddDays(-2),
+            EndedAt = DateTime.UtcNow.AddDays(2),
             EmployeeId = employee.EmployeeId,
             Employee = employee,
             AuctionHouseId = TestData.AuctionHouseId,

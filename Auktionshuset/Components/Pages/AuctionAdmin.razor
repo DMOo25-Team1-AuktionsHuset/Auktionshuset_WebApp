@@ -5,6 +5,7 @@
 @using Auktionshuset.Contracts.Dto.Admin.Auction
 @using Auktionshuset.Contracts.Dto.Admin.Employee
 @using Auktionshuset.Contracts.Dto.Admin.Lot
+@using Auktionshuset.Contracts.Time
 
 <PageTitle>Auktioner | Auktionshuset</PageTitle>
 
@@ -30,6 +31,7 @@
                             <text>Udfyld auktionens oplysninger og vælg eventuelt genstande.</text>
                         }
                     </p>
+                    <p>Alle tidspunkter angives i dansk tid.</p>
                     @if (editingAuctionId.HasValue)
                     {
                         <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
@@ -418,9 +420,9 @@
                                     &middot; @auction.ItemCount enhed@(auction.ItemCount == 1 ? string.Empty : "er")
                                 </td>
 
-                                <td class="cell-date" data-label="Start">@auction.StartsAt.ToString("g", DanishCulture)</td>
+                                <td class="cell-date" data-label="Start">@CopenhagenTime.FromUtc(auction.StartsAt).ToString("g", DanishCulture)</td>
 
-                                <td class="cell-date" data-label="Slut">@(auction.EndsAt?.ToString("g", DanishCulture) ?? "Ikke fastsat")</td>
+                                <td class="cell-date" data-label="Slut">@(auction.EndsAt is DateTime endUtc ? CopenhagenTime.FromUtc(endUtc).ToString("g", DanishCulture) : "Ikke fastsat")</td>
 
                                 <td class="cell-actions" data-label="Handlinger">
                                     @if (canDeleteAuctions && pendingDeleteId == auction.AuctionId)

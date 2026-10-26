@@ -3,7 +3,7 @@ using Auktionshuset.Application.Abstraction.Admin.Employees;
 
 namespace Auktionshuset.Application.Admin.Employees.CreateEmployee
 {
-    public class CreateEmployeeHandler(IEmployeeRepository employeeRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork)
+    public class CreateEmployeeHandler(IEmployeeRepository employeeRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         public async Task<CreateEmployeeResult> HandleAsync(CreateEmployeeCommand command, CancellationToken cancellationToken)
         {
@@ -27,7 +27,7 @@ namespace Auktionshuset.Application.Admin.Employees.CreateEmployee
                 LastName: employee.LastName,
                 BirthDate: employee.BirthDate,
                 Address: employee.Address,
-                OccurredAt: DateTime.Now);
+                OccurredAt: clock.GetUtcNow().UtcDateTime);
 
             await outboxWriter.AddAsync(integrationEvent, cancellationToken);
 

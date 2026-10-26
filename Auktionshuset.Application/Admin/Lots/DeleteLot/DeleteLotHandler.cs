@@ -6,7 +6,7 @@ namespace Auktionshuset.Application.Admin.Lots.DeleteLot;
 public sealed class DeleteLotHandler(
     ILotRepository lotRepository,
     IOutboxWriter outboxWriter,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork, TimeProvider clock)
 {
     /// <summary>
     /// Deletes the lot referenced by the specified command.
@@ -30,7 +30,7 @@ public sealed class DeleteLotHandler(
         var integrationEvent = new LotDeletedIntegrationEvent(
             EventId: Guid.NewGuid(),
             LotId: command.LotId,
-            OccurredAt: DateTime.UtcNow);
+            OccurredAt: clock.GetUtcNow().UtcDateTime);
 
         await outboxWriter.AddAsync(
             integrationEvent,

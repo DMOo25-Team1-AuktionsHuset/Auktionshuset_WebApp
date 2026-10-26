@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Auktionshuset.Contracts.Time;
+using System.ComponentModel.DataAnnotations;
 
 namespace Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee
 {
@@ -53,7 +54,7 @@ namespace Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee
             {
                 yield return new ValidationResult("Fødselsdato er påkrævet.", [nameof(BirthDate)]);
             }
-            else if (BirthDate > DateOnly.FromDateTime(DateTime.Today))
+            else if (BirthDate > CopenhagenTime.Today(validationContext.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System))
             {
                 yield return new ValidationResult("Fødselsdato må ikke ligge i fremtiden.", [nameof(BirthDate)]);
             }

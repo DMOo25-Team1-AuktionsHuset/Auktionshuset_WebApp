@@ -23,8 +23,8 @@ public class UpdateAuctionRequestTests
     public void Validate_WithPastStart_IsAllowedForUpdate()
     {
         Assert.Empty(Validate(CreateValidRequest(
-            startsAt: DateTime.Now.AddDays(-1),
-            endsAt: DateTime.Now.AddDays(1))));
+            startsAt: DateTime.UtcNow.AddDays(-1),
+            endsAt: DateTime.UtcNow.AddDays(1))));
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ public class UpdateAuctionRequestTests
     [Fact]
     public void Validate_WithEndBeforeStart_ReturnsError()
     {
-        DateTime startsAt = DateTime.Now.AddDays(4);
+        DateTime startsAt = DateTime.UtcNow.AddDays(4);
 
         IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: startsAt, endsAt: startsAt.AddMinutes(-1)));
 
@@ -60,8 +60,8 @@ public class UpdateAuctionRequestTests
         UpdateAuctionRequest request = new UpdateAuctionRequest
         {
             Name = "Forårsauktion",
-            StartsAt = DateTime.Now.AddDays(3),
-            EndsAt = DateTime.Now.AddDays(4)
+            StartsAt = DateTime.UtcNow.AddDays(3),
+            EndsAt = DateTime.UtcNow.AddDays(4)
         };
 
         Assert.Empty(Validate(request));
@@ -92,8 +92,8 @@ public class UpdateAuctionRequestTests
         AuctionLotRequest[]? lots = null) => new()
         {
             Name = name,
-            StartsAt = startsAt ?? DateTime.Now.AddDays(3),
-            EndsAt = endsAt ?? DateTime.Now.AddDays(4),
+            StartsAt = startsAt ?? DateTime.UtcNow.AddDays(3),
+            EndsAt = endsAt ?? DateTime.UtcNow.AddDays(4),
             EmployeeId = Guid.NewGuid(),
             AuctionHouseId = TestData.AuctionHouseId,
             Lots = lots ?? [new AuctionLotRequest(Guid.NewGuid(), 1)]

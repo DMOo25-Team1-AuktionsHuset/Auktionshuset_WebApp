@@ -21,6 +21,8 @@ public partial class EmployeeAdmin : IAsyncDisposable
     [Inject] private EmployeeService EmployeeService { get; set; } = default!;
     [Inject] private EmployeeRealtimeService EmployeeRealtimeService { get; set; } = default!;
 
+    [Inject] private TimeProvider Clock { get; set; } = default!;
+
     private EmployeeFormModel model = new();
     private EditContext editContext = default!;
     private IReadOnlyList<EmployeeListItemResponse> employees = [];

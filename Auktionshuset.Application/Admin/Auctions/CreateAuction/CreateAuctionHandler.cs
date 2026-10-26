@@ -13,7 +13,8 @@ public sealed class CreateAuctionHandler(
     ILotRepository lotRepository,
     IEmployeeRepository employeeRepository,
     IOutboxWriter outboxWriter,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    TimeProvider clock)
 {
     public async Task<CreateAuctionResult> HandleAsync(
         CreateAuctionCommand command,
@@ -31,6 +32,7 @@ public sealed class CreateAuctionHandler(
             command.EndsAt,
             command.EmployeeId,
             employee,
+            nowUtc: clock.GetUtcNow().UtcDateTime,
             requireFutureStart: true,
             errors);
 
@@ -58,7 +60,7 @@ public sealed class CreateAuctionHandler(
             EmployeeId = employee?.EmployeeId,
             Employee = employee,
             AuctionHouseId = auctionHouseForAssignment,
-            AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now)
+            AuctionStatus = AuctionStatuses.Upcoming
         };
 
         IReadOnlyCollection<AuctionLot> auctionLots = [];
@@ -90,7 +92,7 @@ public sealed class CreateAuctionHandler(
             EndsAt: command.EndsAt,
             LotCount: auctionLots.Count,
             ItemCount: itemCount,
-            OccurredAt: DateTime.Now);
+            OccurredAt: clock.GetUtcNow().UtcDateTime);
 
         await outboxWriter.AddAsync(integrationEvent, cancellationToken);
         await unitOfWork.CommitBatchAsync(cancellationToken);

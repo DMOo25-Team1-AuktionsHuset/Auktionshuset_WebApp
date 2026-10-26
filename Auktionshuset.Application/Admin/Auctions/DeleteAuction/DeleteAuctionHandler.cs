@@ -7,7 +7,7 @@ namespace Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 public sealed class DeleteAuctionHandler(
     IAuctionRepository auctionRepository,
     IOutboxWriter outboxWriter,
-    IAuctionWriteSessionFactory sessions)
+    IAuctionWriteSessionFactory sessions, TimeProvider clock)
 {
     /// <summary>
     /// Deletes the auction referenced by the command and tells connected clients about it.
@@ -42,7 +42,7 @@ public sealed class DeleteAuctionHandler(
             new AuctionDeletedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 AuctionId: command.AuctionId,
-                OccurredAt: DateTime.Now),
+                OccurredAt: clock.GetUtcNow().UtcDateTime),
             cancellationToken);
 
         await session.CommitAsync(cancellationToken);

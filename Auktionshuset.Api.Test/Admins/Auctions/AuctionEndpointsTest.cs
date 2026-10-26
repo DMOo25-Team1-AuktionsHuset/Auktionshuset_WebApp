@@ -50,7 +50,7 @@ public class AuctionEndpointsTest
     {
         (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
 
-        CreateAuctionRequest request = CreateValidRequest(employee.EmployeeId, [], startsAt: DateTime.Now.AddDays(-1));
+        CreateAuctionRequest request = CreateValidRequest(employee.EmployeeId, [], startsAt: DateTime.UtcNow.AddDays(-1));
 
         Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             request,
@@ -129,7 +129,7 @@ public class AuctionEndpointsTest
     public async Task Create_WithEndBeforeStart_ReturnsValidationProblem()
     {
         (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
-        DateTime startsAt = DateTime.Now.AddDays(3);
+        DateTime startsAt = DateTime.UtcNow.AddDays(3);
 
         Results<Created<CreateAuctionResponse>, ValidationProblem> result = await CreateAuctionEndpoint.HandleAsync(
             CreateValidRequest(
@@ -340,7 +340,7 @@ public class AuctionEndpointsTest
         (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
         Guid auctionId = await CreateAuctionAsync(context, employee);
 
-        DateTime startsAt = DateTime.Now.AddDays(6);
+        DateTime startsAt = DateTime.UtcNow.AddDays(6);
         UpdateAuctionRequest request = CreateValidUpdateRequest(
             employee.EmployeeId,
             [],
@@ -369,7 +369,7 @@ public class AuctionEndpointsTest
         (TestContext? context, EmployeeRow? employee, Lot _) = await CreateContextAsync();
         Guid auctionId = await CreateAuctionAsync(context, employee);
         var handler = new DeleteAuctionHandler(context.Auctions, context.Publisher,
-            new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()));
+            new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System);
 
         Results<NoContent, NotFound, ProblemHttpResult> deleted = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
         Results<NoContent, NotFound, ProblemHttpResult> repeated = await DeleteAuctionEndpoint.HandleAsync(auctionId, handler, CancellationToken.None);
@@ -391,7 +391,7 @@ public class AuctionEndpointsTest
         await DeleteAuctionEndpoint.HandleAsync(
             auctionId,
             new DeleteAuctionHandler(context.Auctions, context.Publisher,
-                new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork())),
+                new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System),
             CancellationToken.None);
 
         AuctionDeletedIntegrationEvent published = Assert.Single(context.Publisher.Published.OfType<AuctionDeletedIntegrationEvent>());
@@ -412,8 +412,8 @@ public class AuctionEndpointsTest
             {
                 AuctionId = Guid.NewGuid(),
                 Name = "Gemt i lageret",
-                StartsAt = DateTime.Now.AddDays(3),
-                EndedAt = DateTime.Now.AddDays(4),
+                StartsAt = DateTime.UtcNow.AddDays(3),
+                EndedAt = DateTime.UtcNow.AddDays(4),
                 EmployeeId = employee.EmployeeId,
                 AuctionHouseId = employee.AuctionHouseId,
                 AuctionStatus = AuctionStatuses.Upcoming
@@ -429,7 +429,7 @@ public class AuctionEndpointsTest
     }
 
     private static CreateAuctionHandler CreateHandler(TestContext context) =>
-        new(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork());
+        new(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
     private static async Task<Guid> CreateAuctionAsync(
         TestContext context,
@@ -451,8 +451,8 @@ public class AuctionEndpointsTest
         DateTime? endsAt = null) => new()
         {
             Name = "Forårsauktion",
-            StartsAt = startsAt ?? DateTime.Now.AddDays(3),
-            EndsAt = endsAt ?? DateTime.Now.AddDays(4),
+            StartsAt = startsAt ?? DateTime.UtcNow.AddDays(3),
+            EndsAt = endsAt ?? DateTime.UtcNow.AddDays(4),
             EmployeeId = employeeId,
             Lots = [.. lots.Select(lot => new AuctionLotRequest(lot.LotId, lot.Quantity))]
         };
@@ -464,8 +464,8 @@ public class AuctionEndpointsTest
         DateTime? endsAt = null) => new()
         {
             Name = "Efterårsauktion",
-            StartsAt = startsAt ?? DateTime.Now.AddDays(6),
-            EndsAt = endsAt ?? DateTime.Now.AddDays(7),
+            StartsAt = startsAt ?? DateTime.UtcNow.AddDays(6),
+            EndsAt = endsAt ?? DateTime.UtcNow.AddDays(7),
             EmployeeId = employeeId,
             Lots = [.. lots.Select(lot => new AuctionLotRequest(lot.LotId, lot.Quantity))]
         };

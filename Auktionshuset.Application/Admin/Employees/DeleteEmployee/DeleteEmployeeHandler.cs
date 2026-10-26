@@ -6,7 +6,7 @@ namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
     public sealed class DeleteEmployeeHandler(
         IEmployeeRepository employeeRepository,
         IOutboxWriter outboxWriter,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork, TimeProvider clock)
     {
         /// <summary>
         /// Deletes the employee referenced by the specified command.
@@ -29,7 +29,7 @@ namespace Auktionshuset.Application.Admin.Employees.DeleteEmployee
             EmployeeDeletedIntegrationEvent integrationEvent = new EmployeeDeletedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 EmployeeId: command.EmployeeId,
-                OccurredAt: DateTime.UtcNow);
+                OccurredAt: clock.GetUtcNow().UtcDateTime);
 
             await outboxWriter.AddAsync(
                 integrationEvent,

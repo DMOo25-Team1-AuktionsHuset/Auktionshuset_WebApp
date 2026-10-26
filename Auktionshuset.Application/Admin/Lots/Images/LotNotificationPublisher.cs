@@ -13,6 +13,7 @@ internal static class LotNotificationPublisher
     internal static Task AddUpdatedAsync(
         Lot lot,
         IOutboxWriter outboxWriter,
+        DateTime occurredAtUtc,
         CancellationToken cancellationToken)
     {
         var integrationEvent = new LotUpdatedIntegrationEvent(
@@ -26,7 +27,7 @@ internal static class LotNotificationPublisher
                 Description: lot.Description,
                 Tags: lot.Tags,
                 ImageFileName: lot.ImageFileName,
-                OccurredAt: DateTime.Now);
+                OccurredAt: occurredAtUtc);
 
         return outboxWriter.AddAsync(integrationEvent, cancellationToken);
     }

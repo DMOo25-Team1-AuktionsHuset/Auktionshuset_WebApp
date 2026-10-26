@@ -10,13 +10,13 @@ using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 namespace Auktionshuset.Infrastructure.Service.Auctions
 {
     public class AuctionLifeCycleStore(
-        AHDBContext context, 
+        AHDBContext context,
         TimeProvider clock,
         IOutboxWriter outboxWriter,
         IAuctionWriteSessionFactory sessions) : IAuctionLifeCycleStore
     {
         public async Task<bool> StartAsync(
-            Guid auctionId, 
+            Guid auctionId,
             CancellationToken cancellationToken)
         {
             await using IAuctionWriteSession session =
@@ -40,10 +40,8 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 throw new AuctionStateConflictException("Auktionen skal have mindst en genstand.");
 
             DateTime nowUtc = clock.GetUtcNow().UtcDateTime;
-            DateTime businessNow =
-                AuctionDateTimeConverter.FromUtc(nowUtc);
 
-            if (businessNow < auction.StartsAt || (auction.EndedAt is DateTime end && businessNow >= end))
+            if (nowUtc < auction.StartsAt || (auction.EndedAt is DateTime end && nowUtc >= end))
                 throw new AuctionStateConflictException(
                     "Auktionen kan kun startes inden for sit planlagte tidsrum.");
 

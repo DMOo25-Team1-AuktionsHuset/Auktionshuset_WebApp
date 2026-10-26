@@ -19,7 +19,7 @@ public class LotImageHandlerTests
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore { NextFileName = "abc123.png" };
         var publisher = new RecordingEventPublisher();
-        var handler = new UploadLotImageHandler(repository, store, publisher, new RecordingUnitOfWork());
+        var handler = new UploadLotImageHandler(repository, store, publisher, new RecordingUnitOfWork(), TimeProvider.System);
         byte[] bytes = LotImageValidatorTests.ImageBytes("png");
 
         LotImageResult result = await handler.HandleAsync(
@@ -48,7 +48,7 @@ public class LotImageHandlerTests
         Lot lot = TestData.CreateLot("Vase", imageFileName: "tidligere.jpg");
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore { NextFileName = "nyt.webp" };
-        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork());
+        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(lot.LotId, LotImageValidatorTests.ImageBytes("webp"), "nyt.webp", "image/webp"),
@@ -68,7 +68,7 @@ public class LotImageHandlerTests
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync();
         var store = new FakeLotImageStore();
         var publisher = new RecordingEventPublisher();
-        var handler = new UploadLotImageHandler(repository, store, publisher, new RecordingUnitOfWork());
+        var handler = new UploadLotImageHandler(repository, store, publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
         LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(Guid.NewGuid(), LotImageValidatorTests.ImageBytes("png"), "billede.png", "image/png"),
@@ -89,7 +89,7 @@ public class LotImageHandlerTests
         Lot lot = TestData.CreateLot("Vase");
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork());
+        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         LotImageResult result = await handler.HandleAsync(
             CreateUploadCommand(lot.LotId, [], "tom.png", "image/png"),
@@ -109,7 +109,7 @@ public class LotImageHandlerTests
         Lot lot = TestData.CreateLot("Vase");
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork());
+        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         UploadLotImageCommand command = CreateUploadCommand(
             lot.LotId,
@@ -136,7 +136,7 @@ public class LotImageHandlerTests
         Lot lot = TestData.CreateLot("Vase");
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork());
+        var handler = new UploadLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
         byte[] bytes = "dette er ikke et billede"u8.ToArray();
 
         LotImageResult result = await handler.HandleAsync(
@@ -159,7 +159,7 @@ public class LotImageHandlerTests
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
         var publisher = new RecordingEventPublisher();
-        var handler = new RemoveLotImageHandler(repository, store, publisher, new RecordingUnitOfWork());
+        var handler = new RemoveLotImageHandler(repository, store, publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
         LotImageResult result = await handler.HandleAsync(lot.LotId, CancellationToken.None);
 
@@ -182,7 +182,7 @@ public class LotImageHandlerTests
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync(lot);
         var store = new FakeLotImageStore();
         var publisher = new RecordingEventPublisher();
-        var handler = new RemoveLotImageHandler(repository, store, publisher, new RecordingUnitOfWork());
+        var handler = new RemoveLotImageHandler(repository, store, publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
         LotImageResult result = await handler.HandleAsync(lot.LotId, CancellationToken.None);
 
@@ -200,7 +200,7 @@ public class LotImageHandlerTests
     {
         InMemoryLotRepository repository = await TestData.CreateLotRepositoryAsync();
         var store = new FakeLotImageStore();
-        var handler = new RemoveLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork());
+        var handler = new RemoveLotImageHandler(repository, store, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         LotImageResult result = await handler.HandleAsync(Guid.NewGuid(), CancellationToken.None);
 
