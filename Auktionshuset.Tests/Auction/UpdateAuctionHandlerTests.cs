@@ -46,18 +46,21 @@ public class UpdateAuctionHandlerTests
     }
 
     /// <summary>
-    /// Verifies that editing an auction that already started is not blocked by the future-start rule.
+    /// Verifies that editing a started auction is rejected without changing it or publishing an event.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_ForAuctionThatAlreadyStarted_IsAllowed()
+    public async Task HandleAsync_ForAuctionThatAlreadyStarted_IsRejected()
     {
         Employee employee = TestData.CreateEmployee();
-        (UpdateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _, Guid auctionId) = await CreateStartedAuctionAsync(employee);
+        (UpdateAuctionHandler? handler, InMemoryAuctionRepository auctions, TestEmployeeRepository _, RecordingEventPublisher publisher, Guid auctionId) = await CreateStartedAuctionAsync(employee);
+        Auction original = (await auctions.GetByIdAsync(auctionId, CancellationToken.None))!;
+        string originalName = original.Name;
+        DateTime? originalEndsAt = original.EndedAt;
 
         UpdateAuctionResult result = await handler.HandleAsync(
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
-                Name: "Igangværende auktion",
+                Name: "Ændret auktion",
                 StartsAt: DateTime.Now.AddDays(-2),
                 EndsAt: DateTime.Now.AddDays(3),
                 EmployeeId: employee.EmployeeId,
@@ -65,7 +68,15 @@ public class UpdateAuctionHandlerTests
                 Lots: []),
             CancellationToken.None);
 
-        Assert.True(result.Succeeded);
+        Assert.False(result.Succeeded);
+        Assert.False(result.NotFound);
+        Assert.Contains(result.Errors, error => error.Contains("kan ikke redigeres"));
+        Auction? stored = await auctions.GetByIdAsync(auctionId, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Equal(originalName, stored.Name);
+        Assert.Equal(originalEndsAt, stored.EndedAt);
+        Assert.Equal(AuctionStatuses.Live, stored.AuctionStatus);
+        Assert.Empty(publisher.Published);
     }
 
     /// <summary>
@@ -321,7 +332,8 @@ public class UpdateAuctionHandlerTests
         Assert.True(created.Succeeded);
 
         return (
-            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork()),
+            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher,
+                new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System),
             auctionRepository,
             employeeRepository,
             publisher,
@@ -350,13 +362,15 @@ public class UpdateAuctionHandlerTests
             EmployeeId = employee.EmployeeId,
             Employee = employee,
             AuctionHouseId = TestData.AuctionHouseId,
-            AuctionStatus = AuctionStatuses.Live
+            AuctionStatus = AuctionStatuses.Live,
+            StartedAtTime = DateTime.UtcNow.AddDays(-2)
         };
 
         await auctionRepository.AddAsync(auction, [], CancellationToken.None);
 
         return (
-            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork()),
+            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher,
+                new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System),
             auctionRepository,
             employeeRepository,
             publisher,

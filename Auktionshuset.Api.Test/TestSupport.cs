@@ -1,5 +1,6 @@
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Auction;
 
 namespace Auktionshuset.Api.Test;
 
@@ -40,5 +41,28 @@ public sealed class RecordingUnitOfWork : IUnitOfWork
         cancellationToken.ThrowIfCancellationRequested();
         CommitCount++;
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Provides sessions for in-memory endpoint tests; it does not simulate database locks or rollback.
+/// </summary>
+internal sealed class RecordingAuctionWriteSessionFactory(IUnitOfWork unitOfWork)
+    : IAuctionWriteSessionFactory
+{
+    public Task<IAuctionWriteSession> BeginAsync(
+        Guid auctionId,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IAuctionWriteSession>(new Session(unitOfWork));
+    }
+
+    private sealed class Session(IUnitOfWork unitOfWork) : IAuctionWriteSession
+    {
+        public Task CommitAsync(CancellationToken cancellationToken) =>
+            unitOfWork.CommitBatchAsync(cancellationToken);
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }

@@ -99,7 +99,8 @@ public class DeleteAuctionHandlerTests
             TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(3), DateTime.Now.AddDays(4)),
             CancellationToken.None);
 
-        return (new DeleteAuctionHandler(auctions, publisher, new RecordingUnitOfWork()), auctions, first.AuctionId, second.AuctionId);
+        return (new DeleteAuctionHandler(auctions, publisher,
+            new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork())), auctions, first.AuctionId, second.AuctionId);
     }
 
     private static async Task<(DeleteAuctionHandler Handler, InMemoryAuctionRepository Auctions, Guid AuctionId, RecordingEventPublisher Publisher)> CreateHandlerWithPublisherAsync(
@@ -124,6 +125,7 @@ public class DeleteAuctionHandlerTests
 
         Assert.True(created.Succeeded);
 
-        return (new DeleteAuctionHandler(auctionRepository, publisher, new RecordingUnitOfWork()), auctionRepository, created.AuctionId, publisher);
+        return (new DeleteAuctionHandler(auctionRepository, publisher,
+            new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork())), auctionRepository, created.AuctionId, publisher);
     }
 }
