@@ -17,20 +17,20 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.HasKey(credential => credential.DeviceId);
 
             entity.Property(credential => credential.SecretHash)
-                .isRequired();
+                .IsRequired();
 
             entity.Property(credential => credential.IsEnabled)
-                .isRequired();
+                .IsRequired();
 
             entity.Property(credential => credential.CredentialVersion)
-                .isRequired()
-                .isConcurrencyToken();
+                .IsRequired()
+                .IsConcurrencyToken();
 
             entity.HasOne(credential => credential.Device)
                 .WithOne()
                 .HasForeignKey<DeviceCredential>(
                     credential => credential.DeviceId)
-                .OnDelete(DeleteBehaviour.Restrict);
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

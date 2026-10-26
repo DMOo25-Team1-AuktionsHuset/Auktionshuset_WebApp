@@ -4,6 +4,7 @@ using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Lots;
+using Auktionshuset.Infrastructure.Service.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,7 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddRabbitMq(configuration);
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
+            services.AddScoped<IDeviceSecretService, DeviceSecretService>();
 
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 

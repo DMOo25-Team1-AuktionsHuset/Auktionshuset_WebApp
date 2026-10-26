@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Auktionshuset.Domain.Entities
 {
-    internal class DeviceCredential
+    public sealed class DeviceCredential
     {
 
         public required Guid DeviceId { get; set; }
