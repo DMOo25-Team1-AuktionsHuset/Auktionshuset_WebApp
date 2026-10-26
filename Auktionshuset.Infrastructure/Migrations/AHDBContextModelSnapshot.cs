@@ -36,6 +36,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<DateTime?>("ClosedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("EmployeeId")
                         .HasColumnType("uuid");
 
@@ -46,6 +49,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime?>("StartedAtTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("StartsAt")
                         .HasColumnType("timestamp with time zone");
@@ -97,6 +103,9 @@ namespace Auktionshuset.Infrastructure.Migrations
 
                     b.Property<Guid>("AuctionId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ClosedAtTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CurrentHighestBidId")
                         .HasColumnType("uuid");
