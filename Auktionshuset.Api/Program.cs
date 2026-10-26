@@ -1,10 +1,12 @@
+using Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction;
+using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
-using Auktionshuset.Api.Events.Admin.Auction;
-using Auktionshuset.Api.Endpoints.Auth;
-using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
-using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
+using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Auth;
+using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
@@ -30,17 +32,11 @@ builder.Services.AddSecurityServices(builder.Configuration);
 
 
 // needs its own service class
-builder.Services.AddScoped<CreateAuctionHandler>();
-
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
 
 //API Services
 builder.Services.AddApiServices();
-
-builder.Services.AddScoped<
-    IIntegrationEventHandler<AuctionCreatedIntegrationEvent>,
-    CreateAuctionRealTimeHandler>();
 
 //Infrastructure Services
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -68,6 +64,8 @@ app.MapLotEndpoints();
 app.MapStoredLotImages();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
+app.MapBidEndpoints();
+app.MapCloseAuctionLotEndpoint();
 
 app.MapHub<AuctionHub>("/hubs/auction", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.CanViewAuctions);

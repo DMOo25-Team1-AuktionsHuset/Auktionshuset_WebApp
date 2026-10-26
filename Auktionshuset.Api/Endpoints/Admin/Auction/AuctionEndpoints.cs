@@ -2,6 +2,7 @@ using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
 using Auktionshuset.Api.Endpoints.Admin.Auction.GetAuctions;
 using Auktionshuset.Api.Endpoints.Admin.Auction.CreateAuction;
+using Auktionshuset.Api.Endpoints.Admin.Auction.Lifecycle;
 using Auktionshuset.Api.Endpoints.Admin.UpdateAuction;
 
 namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
@@ -24,6 +25,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.CreateAuction
             group.MapCreateAuction();
             group.MapUpdateAuction();
             group.MapDeleteAuction();
+            group.MapAuctionLifecycle();
 
             return endpoints;
         }

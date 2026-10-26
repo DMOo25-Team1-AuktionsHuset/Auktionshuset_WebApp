@@ -2,6 +2,7 @@
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
+using Auktionshuset.Application.Admin.Auctions.CloseAuction;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
@@ -35,6 +36,8 @@ namespace Auktionshuset.Infrastructure.Messaging
             EventContract<AuctionCreatedIntegrationEvent>("auction.created.v1"),
             EventContract<AuctionUpdatedIntegrationEvent>("auction.updated.v1"),
             EventContract<AuctionDeletedIntegrationEvent>("auction.deleted.v1"),
+
+            EventContract<AuctionLotClosedIntegrationEvent>("auction-lot.closed.v1"),
 
             EventContract<EmployeeCreatedIntegrationEvent>("employee.created.v1"),
             EventContract<EmployeeUpdatedIntegrationEvent>("employee.updated.v1"),

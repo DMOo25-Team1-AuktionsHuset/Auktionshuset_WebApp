@@ -50,6 +50,7 @@ namespace Auktionshuset.Infrastructure.Repositories
             return await context.AuctionLot
                 .AsNoTracking()
                 .Include(auctionLot => auctionLot.Lot)
+                .Include(auctionLot => auctionLot.CurrentHighestBid)
                 .Where(auctionLot => auctionLot.AuctionId == auctionId)
                 .OrderBy(auctionLot => auctionLot.Lot.Name)
                 .ToListAsync(cancellationToken);

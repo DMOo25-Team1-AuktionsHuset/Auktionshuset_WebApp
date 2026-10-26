@@ -1,4 +1,5 @@
-﻿using Auktionshuset.Application.Admin.Auctions.CloseAuction;
+﻿using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Application.Admin.Auctions.CloseAuction;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction
@@ -19,11 +20,22 @@ namespace Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction
             [FromServices] CloseAuctionLotHandler handler,
             CancellationToken cancellationToken)
         {
-            Guid? winningBidId = await handler.HandleAsync(auctionLotId, cancellationToken);
-
-            return winningBidId == null
-                ? Results.Ok(new { WinningBidId = (Guid?)null })
-                : Results.Ok(new { WinningBidId = winningBidId });
+            try
+            {
+                Guid? winningBidId = await handler.HandleAsync(auctionLotId, cancellationToken);
+                return Results.Ok(new { WinningBidId = winningBidId });
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (AuctionStateConflictException exception)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    detail: exception.Message
+                );
+            }
         }
     }
 }

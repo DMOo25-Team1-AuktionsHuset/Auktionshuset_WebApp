@@ -208,8 +208,8 @@ public partial class AuctionAdmin : IDisposable
     {
         isDisposed = true;
 
-        AuctionRealtimeService.Invalidated += RefreshAuctionsAsync;
-        AuctionRealtimeService.ConnectionChanged += OnAuctionConnectionChangedAsync;
+        AuctionRealtimeService.Invalidated -= RefreshAuctionsAsync;
+        AuctionRealtimeService.ConnectionChanged -= OnAuctionConnectionChangedAsync;
     }
 
     private Task RefreshAuctionsAsync()
@@ -221,7 +221,7 @@ public partial class AuctionAdmin : IDisposable
 
         return InvokeAsync(async () =>
         {
-            if (!isDisposed)
+            if (isDisposed)
                 return;
 
             await LoadAuctionsAsync();

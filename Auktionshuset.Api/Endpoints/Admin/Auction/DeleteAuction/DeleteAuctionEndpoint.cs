@@ -1,6 +1,7 @@
 using Auktionshuset.Api.Security;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Auktionshuset.Application.Abstraction.Auction;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Auction.DeleteAuction;
 
@@ -18,6 +19,7 @@ public static class DeleteAuctionEndpoint
             .WithSummary("Deletes an auction")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireAuthorization(SecurityPolicies.CanDeleteAuction);
 
         return group;
@@ -30,13 +32,27 @@ public static class DeleteAuctionEndpoint
     /// <param name="handler">The handler that deletes the auction.</param>
     /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>204 when the auction was deleted, otherwise 404.</returns>
-    public static async Task<Results<NoContent, NotFound>> HandleAsync(
+    public static async Task<Results<NoContent, NotFound, ProblemHttpResult>> HandleAsync(
         Guid auctionId,
         DeleteAuctionHandler handler,
         CancellationToken cancellationToken)
     {
-        bool deleted = await handler.HandleAsync(new DeleteAuctionCommand(auctionId), cancellationToken);
+        try
+        {
+            bool deleted = await handler.HandleAsync(
+                new DeleteAuctionCommand(auctionId),
+                cancellationToken);
 
-        return deleted ? TypedResults.NoContent() : TypedResults.NotFound();
+            return deleted
+                ? TypedResults.NoContent()
+                : TypedResults.NotFound();
+        }
+        catch (AuctionStateConflictException exception)
+        {
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Auktionen kan ikke slettes.",
+                detail: exception.Message);
+        }
     }
 }

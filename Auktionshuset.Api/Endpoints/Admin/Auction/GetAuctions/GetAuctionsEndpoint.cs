@@ -44,13 +44,12 @@ public static class GetAuctionsEndpoint
         CancellationToken cancellationToken)
     {
         IReadOnlyList<AuctionOverview> auctions = await handler.HandleAsync(cancellationToken);
-        DateTime now = DateTime.Now;
-
+       
         AuctionListItemResponse[] response = auctions
             .Select(overview => new AuctionListItemResponse(
                 AuctionId: overview.Auction.AuctionId,
                 Name: overview.Auction.Name,
-                Status: AuctionStatuses.Derive(overview.Auction.StartsAt, overview.Auction.EndedAt, now),
+                Status: overview.Auction.AuctionStatus,
                 StartsAt: overview.Auction.StartsAt,
                 EndsAt: overview.Auction.EndedAt,
                 EmployeeId: overview.Auction.EmployeeId,
@@ -85,7 +84,7 @@ public static class GetAuctionsEndpoint
         AuctionDetailResponse response = new AuctionDetailResponse(
             AuctionId: detail.Auction.AuctionId,
             Name: detail.Auction.Name,
-            Status: AuctionStatuses.Derive(detail.Auction.StartsAt, detail.Auction.EndedAt, DateTime.Now),
+            Status: detail.Auction.AuctionStatus,
             StartsAt: detail.Auction.StartsAt,
             EndsAt: detail.Auction.EndedAt,
             EmployeeId: detail.Auction.EmployeeId,
@@ -99,7 +98,13 @@ public static class GetAuctionsEndpoint
                     Category: line.Category,
                     Quantity: line.Quantity,
                     EstimatedValue: line.EstimatedValue,
-                    ImageUrl: LotImagePaths.ToUrl(line.ImageFileName)))
+                    ImageUrl: LotImagePaths.ToUrl(line.ImageFileName),
+                    AuctionLotId: line.AuctionLotId,
+                    OpenForBids: line.OpenForBids,
+                    CurrentPrice: line.CurrentPrice,
+                    SequenceNumber: line.SequenceNumber,
+                    CurrentHighestBidId: line.CurrentHighestBidId,
+                    ClosedAtTime: line.ClosedAtTime))
                 .ToArray());
 
         return TypedResults.Ok(response);

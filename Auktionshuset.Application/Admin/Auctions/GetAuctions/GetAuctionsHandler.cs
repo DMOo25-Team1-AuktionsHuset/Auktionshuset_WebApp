@@ -67,7 +67,16 @@ public sealed class GetAuctionsHandler(
                 Category: auctionLot.Lot.Category,
                 Quantity: auctionLot.Quantity,
                 EstimatedValue: auctionLot.Lot.EstimatedValue,
-                ImageFileName: auctionLot.Lot.ImageFileName))
+                ImageFileName: auctionLot.Lot.ImageFileName,
+                AuctionLotId: auctionLot.AuctionLotId,
+                OpenForBids: auctionLot.OpenForBids,
+                CurrentPrice:
+                    auctionLot.CurrentHighestBid?.Amount
+                    ?? auctionLot.StartingPrice,
+                SequenceNumber:
+                    auctionLot.CurrentHighestBid?.SequenceNumber ?? 0,
+                CurrentHighestBidId: auctionLot.CurrentHighestBidId,
+                ClosedAtTime: auctionLot.ClosedAtTime))
             .ToArray();
 
         return new AuctionDetail(
