@@ -8,15 +8,20 @@ using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
-//using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service;
+using Auktionshuset.Infrastructure.Service.Vault;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Npgsql;
+using RabbitMQ.Client;
+using VaultSharp;
+using VaultSharp.V1.AuthMethods.AppRole;
 
 namespace Auktionshuset.Api.Test;
 
@@ -28,11 +33,12 @@ public sealed class InfrastructureRegistrationTests
         IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(
             new Dictionary<string, string?>
             {
-                ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Database=registration-test;Username=test;Password=test",
+                ["Database:Host"] = "localhost",
+                ["Database:Name"] = "registration-test",
                 ["RabbitMQ:HostName"] = "localhost",
                 ["RabbitMQ:Port"] = "5672",
-                ["RabbitMQ:UserName"] = "guest",
-                ["RabbitMQ:Password"] = "guest"
+                ["RabbitMQ:UserName"] = "stale-config-user",
+                ["RabbitMQ:Password"] = "stale-config-password"
             }).Build();
         IServiceCollection services = Host.CreateApplicationBuilder().Services;
         services.AddSingleton(configuration);
@@ -40,7 +46,15 @@ public sealed class InfrastructureRegistrationTests
         services.AddSignalR();
         services.AddSecurityServices(configuration);
         services.AddApiServices();
-        await services.AddInfrastructureAsync(configuration); ;
+        IVaultClient vaultClient = new VaultClient(new VaultClientSettings(
+            "https://vault.example.test",
+            new AppRoleAuthMethodInfo("test-role", "test-secret")));
+        InfrastructureServiceExtensions.AddInfrastructure(
+            services,
+            configuration,
+            new DatabaseCredentials("vault-database-user", "vault-database-password"),
+            new RabbitMqCredentials("vault-rabbit-user", "vault-rabbit-password"),
+            vaultClient);
         await using ServiceProvider provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
@@ -54,16 +68,27 @@ public sealed class InfrastructureRegistrationTests
         Assert.IsType<EFAuctionRepository>(scope.ServiceProvider.GetRequiredService<IAuctionRepository>());
         Assert.IsType<EFEmployeeRepository>(scope.ServiceProvider.GetRequiredService<IEmployeeRepository>());
         Assert.IsType<EfUnitOfWork>(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
-        //       Assert.IsType<DbInboxStore>(scope.ServiceProvider.GetRequiredService<IInboxStore>());
+        Assert.IsType<DbInboxStore>(scope.ServiceProvider.GetRequiredService<IInboxStore>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IOutboxWriter>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<VaultSecretProvider>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<CreateAuctionHandler>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<UpdateAuctionHandler>());
+
+        AHDBContext context = scope.ServiceProvider.GetRequiredService<AHDBContext>();
+        NpgsqlConnectionStringBuilder connectionString =
+            new(context.Database.GetConnectionString());
+        Assert.Equal("vault-database-user", connectionString.Username);
+        Assert.Equal("vault-database-password", connectionString.Password);
+
+        ConnectionFactory rabbitMq = scope.ServiceProvider.GetRequiredService<ConnectionFactory>();
+        Assert.Equal("vault-rabbit-user", rabbitMq.UserName);
+        Assert.Equal("vault-rabbit-password", rabbitMq.Password);
+
         IHostedService[] workers = provider.GetServices<IHostedService>().ToArray();
         Assert.Contains(workers, worker => worker.GetType().Name == "OutboxProcessor");
         Assert.Contains(workers, worker => worker.GetType().Name == "AdminEventsConsumer");
 
-        AHDBContext context = scope.ServiceProvider.GetRequiredService<AHDBContext>();
         Assert.False(context.Database.HasPendingModelChanges());
         Assert.Equal("InboxMessages", context.Model.FindEntityType(typeof(InboxMessage))!.GetTableName());
         Assert.Equal("OutboxMessages", context.Model.FindEntityType(typeof(OutboxMessage))!.GetTableName());

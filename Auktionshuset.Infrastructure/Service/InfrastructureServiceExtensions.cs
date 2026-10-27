@@ -46,12 +46,6 @@ namespace Auktionshuset.Infrastructure.Service
             var authMethod = new AppRoleAuthMethodInfo(roleId, secretId);
             var vaultSettings = new VaultClientSettings(vaultAddress, authMethod);
 
-            services.AddSingleton<IVaultClient>(
-                _ => new VaultClient(vaultSettings));
-
-            services.AddSingleton<VaultSecretProvider>();
-
-            // Resolve Vault credentials during startup
             var vaultClient = new VaultClient(vaultSettings);
             var secretProvider = new VaultSecretProvider(vaultClient);
 
@@ -60,6 +54,23 @@ namespace Auktionshuset.Infrastructure.Service
 
             RabbitMqCredentials rabbitMqCredentials =
                 await secretProvider.GetRabbitMqCredentialsAsync();
+
+            return services.AddInfrastructure(
+                configuration,
+                credentials,
+                rabbitMqCredentials,
+                vaultClient);
+        }
+
+        internal static IServiceCollection AddInfrastructure(
+            this IServiceCollection services,
+            IConfiguration configuration,
+            DatabaseCredentials databaseCredentials,
+            RabbitMqCredentials rabbitMqCredentials,
+            IVaultClient vaultClient)
+        {
+            services.AddSingleton<IVaultClient>(vaultClient);
+            services.AddSingleton<VaultSecretProvider>();
 
             // Non-sensitive PostgreSQL configuration
             string host = configuration["Database:Host"]
@@ -75,8 +86,8 @@ namespace Auktionshuset.Infrastructure.Service
                 Host = host,
                 Port = port,
                 Database = database,
-                Username = credentials.Username,
-                Password = credentials.Password
+                Username = databaseCredentials.Username,
+                Password = databaseCredentials.Password
             };
 
             string connectionString = connectionStringBuilder.ConnectionString;
