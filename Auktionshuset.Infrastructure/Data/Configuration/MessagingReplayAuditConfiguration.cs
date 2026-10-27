@@ -36,4 +36,5 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
                 x.RequestedAtTime
             });
         }
+    }
 }

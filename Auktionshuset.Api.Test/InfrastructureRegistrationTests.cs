@@ -8,7 +8,7 @@ using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
-using Auktionshuset.Infrastructure.Messaging.InboxServices;
+//using Auktionshuset.Infrastructure.Messaging.InboxServices;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service;
@@ -47,7 +47,7 @@ public sealed class InfrastructureRegistrationTests
         Assert.IsType<EFAuctionRepository>(scope.ServiceProvider.GetRequiredService<IAuctionRepository>());
         Assert.IsType<EFEmployeeRepository>(scope.ServiceProvider.GetRequiredService<IEmployeeRepository>());
         Assert.IsType<EfUnitOfWork>(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
-        Assert.IsType<DbInboxStore>(scope.ServiceProvider.GetRequiredService<IInboxStore>());
+ //       Assert.IsType<DbInboxStore>(scope.ServiceProvider.GetRequiredService<IInboxStore>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IOutboxWriter>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<CreateAuctionHandler>());

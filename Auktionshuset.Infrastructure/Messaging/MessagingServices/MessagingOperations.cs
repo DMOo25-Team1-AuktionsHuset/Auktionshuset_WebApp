@@ -1,4 +1,5 @@
-﻿using Auktionshuset.Application.Abstraction;
+﻿using System.Runtime.CompilerServices;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Messaging.InboxServices;
@@ -24,7 +25,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
             CancellationToken cancellationToken)
         {
             List<QueueStatus> rows = await db.Database
-                .SqlQuery<QueueStatus>($"""
+                .SqlQuery<QueueStatus>(FormattableStringFactory.Create($"""
                 WITH messages AS (
                     SELECT
                         'outbox'::text AS "Pipeline",
@@ -91,7 +92,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
                     ) AS "OldestReadyAtTime"
                 FROM classified
                 GROUP BY "Pipeline"
-                """)
+                """))
                 .ToListAsync(cancellationToken);
 
             QueueStatus[] queues =
@@ -188,26 +189,26 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
                 await db.Database.BeginTransactionAsync(cancellationToken);
 
             FormattableString select = pipeline == "outbox"
-                ? $"""
-                SELECT
-                    "OutboxId" AS "MessageId",
-                    "OutboxId" AS "EventId",
-                    "EventType",
-                    "Payload" AS "JsonPayload",
-                    NULL::bytea AS "RawPayload",
-                    NULL::text AS "ConsumerName",
-                    NULL::text AS "MessageKey",
-                    NULL::text AS "TransportMessageId",
-                    "Attempts",
-                    "Error",
-                    "ProcessedAtTime",
-                    "QuarantinedAtTime",
-                    "LeaseExpiresAtTime",
-                    CURRENT_TIMESTAMP AS "DatabaseNow"
-                FROM "OutboxMessages"
-                WHERE "OutboxId" = {messageId}
-                FOR UPDATE
-                """
+                ? (FormattableString) $"""
+                                      SELECT
+                                          "OutboxId" AS "MessageId",
+                                          "OutboxId" AS "EventId",
+                                          "EventType",
+                                          "Payload" AS "JsonPayload",
+                                          NULL::bytea AS "RawPayload",
+                                          NULL::text AS "ConsumerName",
+                                          NULL::text AS "MessageKey",
+                                          NULL::text AS "TransportMessageId",
+                                          "Attempts",
+                                          "Error",
+                                          "ProcessedAtTime",
+                                          "QuarantinedAtTime",
+                                          "LeaseExpiresAtTime",
+                                          CURRENT_TIMESTAMP AS "DatabaseNow"
+                                      FROM "OutboxMessages"
+                                      WHERE "OutboxId" = {messageId}
+                                      FOR UPDATE
+                                      """
                 : $"""
                 SELECT
                     "InboxId" AS "MessageId",
@@ -255,23 +256,23 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
                 return new(422, validationError);
 
             FormattableString update = pipeline == "outbox"
-                ? $"""
-                UPDATE "OutboxMessages"
-                SET
-                    "Attempts" = 0,
-                    "NextAttemptAtTime" = CURRENT_TIMESTAMP,
-                    "QuarantinedAtTime" = NULL,
-                    "Error" = NULL,
-                    "LeaseToken" = NULL,
-                    "LeaseExpiresAtTime" = NULL
-                WHERE "OutboxId" = {messageId}
-                    AND "ProcessedAtTime" IS NULL
-                    AND "QuarantinedAtTime" = {expectedQuarantinedAtTime}
-                    AND (
-                        "LeaseExpiresAtTime" IS NULL
-                        OR "LeaseExpiresAtTime" <= CURRENT_TIMESTAMP
-                    )
-                """
+                ? (FormattableString)$"""
+                                      UPDATE "OutboxMessages"
+                                      SET
+                                          "Attempts" = 0,
+                                          "NextAttemptAtTime" = CURRENT_TIMESTAMP,
+                                          "QuarantinedAtTime" = NULL,
+                                          "Error" = NULL,
+                                          "LeaseToken" = NULL,
+                                          "LeaseExpiresAtTime" = NULL
+                                      WHERE "OutboxId" = {messageId}
+                                          AND "ProcessedAtTime" IS NULL
+                                          AND "QuarantinedAtTime" = {expectedQuarantinedAtTime}
+                                          AND (
+                                              "LeaseExpiresAtTime" IS NULL
+                                              OR "LeaseExpiresAtTime" <= CURRENT_TIMESTAMP
+                                          )
+                                      """
                 : $"""
                 UPDATE "InboxMessages"
                 SET
