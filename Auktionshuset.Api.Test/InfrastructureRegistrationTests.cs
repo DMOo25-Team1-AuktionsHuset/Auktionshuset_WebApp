@@ -16,6 +16,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 
 namespace Auktionshuset.Api.Test;
 
@@ -43,6 +45,12 @@ public sealed class InfrastructureRegistrationTests
         await using ServiceProvider provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
+
+        provider.GetRequiredService<IStartupValidator>().Validate();
+        Assert.NotNull(provider.GetRequiredService<HealthCheckService>());
+        HealthCheckServiceOptions healthChecks = provider.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value;
+        Assert.Contains(healthChecks.Registrations, check => check.Name == "database" && check.Tags.Contains("ready"));
+        Assert.Contains(healthChecks.Registrations, check => check.Name == "messaging" && check.Tags.Contains("messaging"));
 
         Assert.IsType<EFAuctionRepository>(scope.ServiceProvider.GetRequiredService<IAuctionRepository>());
         Assert.IsType<EFEmployeeRepository>(scope.ServiceProvider.GetRequiredService<IEmployeeRepository>());

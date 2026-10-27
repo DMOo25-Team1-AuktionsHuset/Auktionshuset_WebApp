@@ -8,6 +8,7 @@ using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
 using Auktionshuset.Infrastructure.Service.Lots;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -37,6 +38,7 @@ namespace Auktionshuset.Infrastructure.Service
 
             // Add infrastructure services here
             services.AddRabbitMq(configuration);
+            services.AddMessagingOperations(configuration);
 
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuctionWriteSessionFactory, PostgresAuctionWriteSessionFactory>();
