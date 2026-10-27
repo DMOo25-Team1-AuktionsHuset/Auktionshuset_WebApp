@@ -1,6 +1,6 @@
-using Xunit;
-using System.ComponentModel.DataAnnotations;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
+using System.ComponentModel.DataAnnotations;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 
@@ -34,10 +34,10 @@ public class CreateAuctionRequestTests
     [Fact]
     public void Validate_WithoutStart_ReturnsError()
     {
-        var request = new CreateAuctionRequest
+        CreateAuctionRequest request = new CreateAuctionRequest
         {
             Name = "Forårsauktion",
-            EndsAt = DateTime.Now.AddDays(4),
+            EndsAt = DateTime.UtcNow.AddDays(4),
             EmployeeId = Guid.NewGuid()
         };
 
@@ -47,14 +47,14 @@ public class CreateAuctionRequestTests
     }
 
     /// <summary>
-    /// Verifies that the start time has to lie in the future when an auction is created.
+    /// Future-start validation belongs to the application handler and its injected clock.
     /// </summary>
     [Fact]
-    public void Validate_WithPastStart_ReturnsError()
+    public void Validate_WithPastStart_LeavesClockValidationToHandler()
     {
-        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: DateTime.Now.AddDays(-1)));
+        IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: DateTime.UtcNow.AddDays(-1)));
 
-        Assert.Contains(errors, error => error.ErrorMessage?.Contains("fremtiden") == true);
+        Assert.Empty(errors);
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ public class CreateAuctionRequestTests
     [Fact]
     public void Validate_WithEndBeforeStart_ReturnsError()
     {
-        DateTime startsAt = DateTime.Now.AddDays(3);
+        DateTime startsAt = DateTime.UtcNow.AddDays(3);
 
         IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(startsAt: startsAt, endsAt: startsAt.AddHours(-2)));
 
@@ -71,21 +71,19 @@ public class CreateAuctionRequestTests
     }
 
     /// <summary>
-    /// Verifies that an auctionarius is required.
+    /// Verifies that assigning an auctionarius is optional.
     /// </summary>
     [Fact]
-    public void Validate_WithoutEmployee_ReturnsError()
+    public void Validate_WithoutEmployee_HasNoErrors()
     {
-        var request = new CreateAuctionRequest
+        CreateAuctionRequest request = new CreateAuctionRequest
         {
             Name = "Forårsauktion",
-            StartsAt = DateTime.Now.AddDays(3),
-            EndsAt = DateTime.Now.AddDays(4)
+            StartsAt = DateTime.UtcNow.AddDays(3),
+            EndsAt = DateTime.UtcNow.AddDays(4)
         };
 
-        Assert.Contains(
-            Validate(request),
-            error => error.MemberNames.Contains(nameof(CreateAuctionRequest.EmployeeId)));
+        Assert.Empty(Validate(request));
     }
 
     /// <summary>
@@ -94,7 +92,7 @@ public class CreateAuctionRequestTests
     [Fact]
     public void Validate_WithDuplicateLots_ReturnsError()
     {
-        var lotId = Guid.NewGuid();
+        Guid lotId = Guid.NewGuid();
 
         IReadOnlyList<ValidationResult> errors = Validate(CreateValidRequest(lots:
             [new AuctionLotRequest(lotId, 1), new AuctionLotRequest(lotId, 2)]));
@@ -125,8 +123,8 @@ public class CreateAuctionRequestTests
         AuctionLotRequest[]? lots = null) => new()
         {
             Name = name,
-            StartsAt = startsAt ?? DateTime.Now.AddDays(3),
-            EndsAt = endsAt ?? DateTime.Now.AddDays(4),
+            StartsAt = startsAt ?? DateTime.UtcNow.AddDays(3),
+            EndsAt = endsAt ?? DateTime.UtcNow.AddDays(4),
             EmployeeId = Guid.NewGuid(),
             AuctionHouseId = TestData.AuctionHouseId,
             Lots = lots ?? [new AuctionLotRequest(Guid.NewGuid(), 2)]
@@ -137,7 +135,7 @@ public class CreateAuctionRequestTests
     /// </summary>
     private static IReadOnlyList<ValidationResult> Validate(CreateAuctionRequest request)
     {
-        var results = new List<ValidationResult>();
+        List<ValidationResult> results = new List<ValidationResult>();
         Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
         return results;
     }

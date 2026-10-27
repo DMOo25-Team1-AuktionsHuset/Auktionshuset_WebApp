@@ -1,10 +1,10 @@
+using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
+using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Auktionshuset.Contracts.Dto.Admin.Lot;
-using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
-using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
-using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 
 namespace Auktionshuset.Services;
 
@@ -150,8 +150,8 @@ public sealed class LotService(BackendApiClient httpClient)
         string contentType,
         CancellationToken cancellationToken = default)
     {
-        using var form = new MultipartFormDataContent();
-        var fileContent = new StreamContent(content);
+        using MultipartFormDataContent form = new MultipartFormDataContent();
+        StreamContent fileContent = new StreamContent(content);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
         form.Add(fileContent, "file", string.IsNullOrWhiteSpace(fileName) ? "billede" : fileName);

@@ -1,8 +1,8 @@
-using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Application.Admin.Lots.CreateLot;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.Image;
 using Microsoft.AspNetCore.SignalR;
 

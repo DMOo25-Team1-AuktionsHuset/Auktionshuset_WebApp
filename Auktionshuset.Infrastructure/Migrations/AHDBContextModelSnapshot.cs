@@ -36,7 +36,10 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
-                    b.Property<Guid>("EmployeeId")
+                    b.Property<DateTime?>("ClosedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("EmployeeId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("EndedAt")
@@ -46,6 +49,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime?>("StartedAtTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("StartsAt")
                         .HasColumnType("timestamp with time zone");
@@ -97,6 +103,9 @@ namespace Auktionshuset.Infrastructure.Migrations
 
                     b.Property<Guid>("AuctionId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ClosedAtTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CurrentHighestBidId")
                         .HasColumnType("uuid");
@@ -410,6 +419,176 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.ToTable("RefreshTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Auktionshuset.Infrastructure.Data.BidCommandKey", b =>
+                {
+                    b.Property<Guid>("BidCommandKeyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("AuctionLotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BidId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("CurrentPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DeviceSessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("RequestedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int?>("SequenceNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("BidCommandKeyId");
+
+                    b.HasIndex("CustomerId", "RequestId")
+                        .IsUnique();
+
+                    b.ToTable("BidCommandKeys");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Infrastructure.Data.InboxMessage", b =>
+                {
+                    b.Property<Guid>("InboxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("ConsumerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("InboxQuarantinedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LeaseExpiresAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MessageKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("NextAttemptAtTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTime?>("ProcessedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ReceivedAtTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("TransportMessageId")
+                        .HasColumnType("text");
+
+                    b.HasKey("InboxId");
+
+                    b.HasIndex("ConsumerName", "MessageKey")
+                        .IsUnique()
+                        .HasDatabaseName("InboxMessages_Identity");
+
+                    b.HasIndex("ConsumerName", "NextAttemptAtTime", "ReceivedAtTime", "InboxId")
+                        .HasDatabaseName("InboxMessages_Ready")
+                        .HasFilter("\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
+
+                    b.ToTable("InboxMessages");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Infrastructure.Data.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("OutboxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LeaseExpiresAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("NextAttemptAtTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime>("OccurredAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProcessedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("QuarantinedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("OutboxId");
+
+                    b.HasIndex("NextAttemptAtTime", "OccurredAtTime", "OutboxId")
+                        .HasDatabaseName("OutboxMessages_Ready")
+                        .HasFilter("\"ProcessedAtTime\" IS NULL AND \"QuarantinedAtTime\" IS NULL");
+
+                    b.ToTable("OutboxMessages");
+                });
+
             modelBuilder.Entity("Auktionshuset.Infrastructure.Database.StoredLotImage", b =>
                 {
                     b.Property<string>("FileName")
@@ -637,8 +816,7 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.HasOne("Auktionshuset.Domain.Entities.Employee", "Employee")
                         .WithMany("Auctions")
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("AuctionHouse");
 
@@ -782,6 +960,15 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("AuctionHouse");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Infrastructure.Data.BidCommandKey", b =>
+                {
+                    b.HasOne("Auktionshuset.Domain.Entities.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

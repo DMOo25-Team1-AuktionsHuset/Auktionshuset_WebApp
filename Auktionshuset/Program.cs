@@ -23,6 +23,9 @@ builder.Services.AddSingleton<ITicketStore>(services => services.GetRequiredServ
 builder.Services.AddScoped<AuthenticationStateProvider, SessionRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<BackendTokenAccessor>();
 builder.Services.AddScoped<FrontendRedirectState>();
+builder.Services.AddScoped<AuctionRealtimeService>();
+builder.Services.AddScoped<EmployeeRealtimeService>();
+builder.Services.AddScoped<LotRealtimeService>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -67,17 +70,25 @@ builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDef
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(FrontendPolicies.Admin, policy =>
-        policy.RequireAuthenticatedUser().RequireRole(AdminRoles.SuperAdmin));
+        policy.RequireAuthenticatedUser().RequireRole(RoleNames.Admin));
     options.AddPolicy(FrontendPolicies.CanViewLots, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanReadLots(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission));
     options.AddPolicy(FrontendPolicies.CanCreateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission));
     options.AddPolicy(FrontendPolicies.CanUpdateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission));
     options.AddPolicy(FrontendPolicies.CanDeleteLot, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageLots(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission));
+    options.AddPolicy(FrontendPolicies.CanViewAuctions, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewAuctionsPermission));
     options.AddPolicy(FrontendPolicies.CanCreateAuction, policy =>
-        policy.RequireAuthenticatedUser().RequireAssertion(context => AdminRoles.CanManageAuctions(context.User)));
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateAuctionPermission));
+    options.AddPolicy(FrontendPolicies.CanUpdateAuction, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateAuctionPermission));
+    options.AddPolicy(FrontendPolicies.CanDeleteAuction, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteAuctionPermission));
+    options.AddPolicy(FrontendPolicies.CanViewEmployees, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewEmployeesPermission));
 });
 
 string apiBaseUrl = builder.Configuration["Api:BaseUrl"]

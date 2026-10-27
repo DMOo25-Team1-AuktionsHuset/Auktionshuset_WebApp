@@ -8,12 +8,15 @@ namespace Auktionshuset.Infrastructure.Repositories;
 public sealed class EFLotRepo(AHDBContext dbContext)
     : ILotRepository
 {
-    public async Task AddAsync(
+    public Task AddAsync(
         Lot lot,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         dbContext.Lot.Add(lot);
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Task.CompletedTask;
     }
 
     public async Task<IReadOnlyList<Lot>> GetAllAsync(
@@ -34,12 +37,15 @@ public sealed class EFLotRepo(AHDBContext dbContext)
             cancellationToken);
     }
 
-    public async Task UpdateAsync(
+    public Task UpdateAsync(
         Lot lot,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         dbContext.Lot.Update(lot);
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Task.CompletedTask;
     }
 
     public async Task<bool> DeleteAsync(
@@ -62,7 +68,6 @@ public sealed class EFLotRepo(AHDBContext dbContext)
         }
 
         dbContext.Lot.Remove(lot);
-        await dbContext.SaveChangesAsync(cancellationToken);
 
         return true;
     }

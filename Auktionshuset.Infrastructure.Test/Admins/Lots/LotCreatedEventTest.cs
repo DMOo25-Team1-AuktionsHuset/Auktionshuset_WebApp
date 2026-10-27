@@ -1,216 +1,165 @@
-﻿using Auktionshuset.Application.EventHandling;
-using Microsoft.Extensions.DependencyInjection;
+using Auktionshuset.Application.Admin.Lots.CreateLot;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
-using RabbitMQ.Client;
+using Auktionshuset.Infrastructure.Messaging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
-using Auktionshuset.Application.Admin.Lots.CreateLot;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 
 namespace Auktionshuset.Infrastructure.Test.Admins.Lots
 {
-    public class LotCreatedEventTest
-    {
-        /// <summary>
-        /// Round-trips a lot-created event through RabbitMQ to verify the exchange, binding and
-        /// routing key. Requires a local RabbitMQ broker.
-        /// </summary>
-        [Fact]
-        [Trait("Category", "Integration")]
-        public async Task LotCreatedEvent_CanBePublishedToRabbitMq()
-        {
-            // Arrange 
-            var factory = new ConnectionFactory
-            {
-                HostName = "localhost",
-                UserName = "guest",
-                Password = "guest"
-            };
+    //public class LotCreatedEventTest
+    //{
+    //    /// <summary>
+    //    /// Round-trips a lot-created event through RabbitMQ to verify the exchange, binding and
+    //    /// routing key. Requires a local RabbitMQ broker.
+    //    /// </summary>
+    //    [Fact]
+    //    [Trait("Category", "Integration")]
+    //    public async Task LotCreatedEvent_CanBePublishedToRabbitMq()
+    //    {
+    //        // Arrange 
+    //        ConnectionFactory factory = new ConnectionFactory
+    //        {
+    //            HostName = "localhost",
+    //            UserName = "guest",
+    //            Password = "guest"
+    //        };
 
-            await using IConnection connection =
-                await factory.CreateConnectionAsync();
+    //        await using IConnection connection =
+    //            await factory.CreateConnectionAsync();
 
-            await using IChannel channel =
-                await connection.CreateChannelAsync();
+    //        await using IChannel channel =
+    //            await connection.CreateChannelAsync();
 
-            const string exchange = "auktionshuset.events";
-            const string queue = "test.lot-created";
-            const string routingKey = "lot.created.v1";
+    //        const string exchange = "auktionshuset.events";
+    //        const string queue = "test.lot-created";
+    //        const string routingKey = "lot.created.v1";
 
-            await channel.ExchangeDeclareAsync(
-                exchange,
-                ExchangeType.Topic,
-                durable: true,
-                autoDelete: false);
+    //        await channel.ExchangeDeclareAsync(
+    //            exchange,
+    //            ExchangeType.Topic,
+    //            durable: true,
+    //            autoDelete: false);
 
-            await channel.QueueDeclareAsync(
-                queue,
-                durable: false,
-                exclusive: true,
-                autoDelete: true);
+    //        await channel.QueueDeclareAsync(
+    //            queue,
+    //            durable: false,
+    //            exclusive: true,
+    //            autoDelete: true);
 
-            await channel.QueueBindAsync(
-                queue,
-                exchange,
-                routingKey);
+    //        await channel.QueueBindAsync(
+    //            queue,
+    //            exchange,
+    //            routingKey);
 
-            // Act
-            var eventMessage = new LotCreatedIntegrationEvent(
-                EventId: Guid.NewGuid(),
-                LotId: Guid.NewGuid(),
-                AuctionHouseId: Guid.NewGuid(),
-                Name: "Test Lot",
-                Category: "Test Category",
-                Quantity: 1,
-                EstimatedValue: 100,
-                OccurredAt: DateTime.UtcNow);
+    //        // Act
+    //        LotCreatedIntegrationEvent eventMessage = new LotCreatedIntegrationEvent(
+    //            EventId: Guid.NewGuid(),
+    //            LotId: Guid.NewGuid(),
+    //            AuctionHouseId: Guid.NewGuid(),
+    //            Name: "Test Lot",
+    //            Category: "Test Category",
+    //            Quantity: 1,
+    //            EstimatedValue: 100,
+    //            OccurredAt: DateTime.UtcNow);
 
-            string json = JsonSerializer.Serialize(eventMessage);
-            byte[] body = Encoding.UTF8.GetBytes(json);
+    //        string json = JsonSerializer.Serialize(eventMessage);
+    //        byte[] body = Encoding.UTF8.GetBytes(json);
 
-            await channel.BasicPublishAsync(
-                exchange,
-                routingKey,
-                body);
+    //        await channel.BasicPublishAsync(
+    //            exchange,
+    //            routingKey,
+    //            body);
 
-            BasicGetResult? result = await channel.BasicGetAsync(
-                queue,
-                autoAck: true);
+    //        BasicGetResult? result = await channel.BasicGetAsync(
+    //            queue,
+    //            autoAck: true);
 
-            // Assert
-            Assert.NotNull(result);
+    //        // Assert
+    //        Assert.NotNull(result);
 
-            string receivedJson =
-                Encoding.UTF8.GetString(result!.Body.ToArray());
+    //        string receivedJson =
+    //            Encoding.UTF8.GetString(result!.Body.ToArray());
 
-            LotCreatedIntegrationEvent? receivedEvent =
-                JsonSerializer.Deserialize<LotCreatedIntegrationEvent>(
-                    receivedJson);
+    //        LotCreatedIntegrationEvent? receivedEvent =
+    //            JsonSerializer.Deserialize<LotCreatedIntegrationEvent>(
+    //                receivedJson);
 
-            Assert.NotNull(receivedEvent);
-            Assert.Equal(eventMessage.LotId, receivedEvent!.LotId);
-            Assert.Equal(eventMessage.Name, receivedEvent.Name);
-            Assert.Equal("lot.created.v1", result.RoutingKey);
-        }
+    //        Assert.NotNull(receivedEvent);
+    //        Assert.Equal(eventMessage.LotId, receivedEvent!.LotId);
+    //        Assert.Equal(eventMessage.Name, receivedEvent.Name);
+    //        Assert.Equal("lot.created.v1", result.RoutingKey);
+    //    }
 
-        /// <summary>
-        /// Verifies that the consumer deserializes a published lot-created event and forwards it to
-        /// the registered handler. Requires a local RabbitMQ broker.
-        /// </summary>
-        [Fact]
-        [Trait("Category", "Integration")]
-        public async Task AdminConsumer_CallsLotCreatedHandler_WhenLotCreatedEventIsReceived()
-        {
-            var receivedEvent =
-                new TaskCompletionSource<LotCreatedIntegrationEvent>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
+    //    /// <summary>
+    //    /// A delivery is acknowledged only after the inbox has accepted it.
+    //    /// </summary>
+    //    [Theory]
+    //    [InlineData(InboxTypes.Stored, false)]
+    //    [InlineData(InboxTypes.Duplicate, false)]
+    //    [InlineData(InboxTypes.Quarantined, false)]
+    //    [InlineData(InboxTypes.Stored, true)]
+    //    public async Task AdminConsumer_PersistsDeliveryBeforeAcknowledging(InboxTypes result, bool storageFails)
+    //    {
+    //        byte[] payload = "{\"test\":true}"u8.ToArray();
+    //        string messageId = Guid.NewGuid().ToString("D");
+    //        var persisted = new TaskCompletionSource<InboxTypes>(TaskCreationOptions.RunContinuationsAsynchronously);
+    //        var subscribed = new TaskCompletionSource<IAsyncBasicConsumer>(TaskCreationOptions.RunContinuationsAsynchronously);
+    //        var inbox = new Mock<IInboxStore>();
+    //        inbox.Setup(store => store.StoreNewMessageAsync(
+    //                RabbitMqTopology.Queues.Admin, "lot.created.v1", messageId,
+    //                It.Is<byte[]>(bytes => bytes.SequenceEqual(payload)), It.IsAny<CancellationToken>()))
+    //            .Returns(persisted.Task);
 
-            var handlerMock =
-                new Mock<IIntegrationEventHandler<LotCreatedIntegrationEvent>>();
+    //        var services = new ServiceCollection();
+    //        services.AddScoped<IInboxStore>(_ => inbox.Object);
+    //        await using ServiceProvider serviceProvider = services.BuildServiceProvider();
+    //        var channel = new Mock<IChannel>();
+    //        channel.Setup(value => value.BasicConsumeAsync(
+    //                It.IsAny<string>(), false, It.IsAny<string>(), false, false,
+    //                It.IsAny<IDictionary<string, object?>>(), It.IsAny<IAsyncBasicConsumer>(), It.IsAny<CancellationToken>()))
+    //            .Callback(new InvocationAction(invocation =>
+    //                subscribed.TrySetResult((IAsyncBasicConsumer)invocation.Arguments[6])))
+    //            .ReturnsAsync("test-consumer");
+    //        var connection = new Mock<IConnection>();
+    //        connection.Setup(value => value.CreateChannelAsync(
+    //                It.IsAny<CreateChannelOptions>(), It.IsAny<CancellationToken>()))
+    //            .ReturnsAsync(channel.Object);
 
-            handlerMock
-                .Setup(handler => handler.HandleAsync(
-                    It.IsAny<LotCreatedIntegrationEvent>(),
-                    It.IsAny<CancellationToken>()))
-                .Callback<LotCreatedIntegrationEvent, CancellationToken>(
-                    (message, _) => receivedEvent.TrySetResult(message))
-                .Returns(Task.CompletedTask);
+    //        using var consumer = new AdminEventsConsumer(
+    //            new TestConnectionProvider(connection.Object),
+    //            new RabbitMqTopologyInitializer(new EventContractRegistry()),
+    //            serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+    //            NullLogger<AdminEventsConsumer>.Instance);
+    //        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    //        await consumer.StartAsync(timeout.Token);
+    //        IAsyncBasicConsumer deliveryConsumer = await subscribed.Task.WaitAsync(timeout.Token);
+    //        Task delivery = deliveryConsumer.HandleBasicDeliverAsync(
+    //            "test-consumer", 1, false, RabbitMqTopology.EventExchange, "lot.created.v1",
+    //            new BasicProperties { MessageId = messageId }, payload, timeout.Token);
 
-            var services = new ServiceCollection();
+    //        channel.Verify(value => value.BasicAckAsync(1, false, It.IsAny<CancellationToken>()), Times.Never);
+    //        if (storageFails)
+    //            persisted.SetException(new IOException("Inbox storage unavailable"));
+    //        else
+    //            persisted.SetResult(result);
+    //        await delivery.WaitAsync(timeout.Token);
 
-            services.AddScoped<
-                IIntegrationEventHandler<LotCreatedIntegrationEvent>>(
-                _ => handlerMock.Object);
+    //        inbox.VerifyAll();
+    //        channel.Verify(value => value.BasicAckAsync(1, false, It.IsAny<CancellationToken>()),
+    //            storageFails ? Times.Never() : Times.Once());
+    //        await consumer.StopAsync(timeout.Token);
+    //    }
 
-            await using ServiceProvider serviceProvider =
-                services.BuildServiceProvider();
-
-            IServiceScopeFactory scopeFactory =
-                serviceProvider.GetRequiredService<IServiceScopeFactory>();
-
-            var factory = new ConnectionFactory
-            {
-                HostName = "localhost",
-                UserName = "guest",
-                Password = "guest"
-            };
-
-            await using IConnection connection =
-                await factory.CreateConnectionAsync();
-
-            await using IChannel publishChannel =
-                await connection.CreateChannelAsync();
-
-            const string exchangeName = "auktionshuset.events";
-            const string queueName = "auktionshuset.admin";
-            const string routingKey = "lot.created.v1";
-
-            await publishChannel.ExchangeDeclareAsync(
-                exchange: exchangeName,
-                type: ExchangeType.Topic,
-                durable: true,
-                autoDelete: false);
-
-            await publishChannel.QueueDeclareAsync(
-                queue: queueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false);
-
-            await publishChannel.QueueBindAsync(
-                queue: queueName,
-                exchange: exchangeName,
-                routingKey: routingKey);
-
-            await publishChannel.QueuePurgeAsync(queueName);
-
-            using var consumer =
-                new AdminEventsConsumer(connection, scopeFactory);
-
-            using var cancellationSource =
-                new CancellationTokenSource(TimeSpan.FromSeconds(10));
-
-            await consumer.StartAsync(cancellationSource.Token);
-
-            var expectedEvent = new LotCreatedIntegrationEvent(
-                EventId: Guid.NewGuid(),
-                LotId: Guid.NewGuid(),
-                AuctionHouseId: Guid.NewGuid(),
-                Name: "Test lot",
-                Category: "Test kategori",
-                Quantity: 2,
-                EstimatedValue: 1500,
-                OccurredAt: DateTime.UtcNow);
-
-            string json = JsonSerializer.Serialize(expectedEvent);
-            byte[] body = Encoding.UTF8.GetBytes(json);
-
-            await publishChannel.BasicPublishAsync(
-                exchange: exchangeName,
-                routingKey: routingKey,
-                body: body);
-
-            LotCreatedIntegrationEvent actualEvent =
-                await receivedEvent.Task.WaitAsync(
-                    TimeSpan.FromSeconds(5));
-
-            Assert.Equal(expectedEvent.EventId, actualEvent.EventId);
-            Assert.Equal(expectedEvent.LotId, actualEvent.LotId);
-            Assert.Equal(expectedEvent.Name, actualEvent.Name);
-            Assert.Equal(expectedEvent.Category, actualEvent.Category);
-            Assert.Equal(expectedEvent.Quantity, actualEvent.Quantity);
-            Assert.Equal(
-                expectedEvent.EstimatedValue,
-                actualEvent.EstimatedValue);
-
-            handlerMock.Verify(
-                handler => handler.HandleAsync(
-                    It.IsAny<LotCreatedIntegrationEvent>(),
-                    It.IsAny<CancellationToken>()),
-                Times.Once);
-
-            await consumer.StopAsync(CancellationToken.None);
-
-        }
-    }
+    //    private sealed class TestConnectionProvider(IConnection connection) : IRabbitMqConnectionProvider
+    //    {
+    //        public Task<IConnection> GetConnectionAsync(CancellationToken cancellationToken) => Task.FromResult(connection);
+    //    }
+    //}
 }

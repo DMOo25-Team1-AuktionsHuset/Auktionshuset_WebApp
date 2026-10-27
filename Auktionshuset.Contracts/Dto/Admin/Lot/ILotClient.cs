@@ -1,6 +1,6 @@
-﻿using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
-using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
+﻿using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 
 
 namespace Auktionshuset.Contracts.Dto.Admin.Lot

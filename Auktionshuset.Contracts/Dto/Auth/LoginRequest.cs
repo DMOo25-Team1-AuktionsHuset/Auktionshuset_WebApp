@@ -7,7 +7,7 @@ namespace Auktionshuset.Contracts.Dto.Auth
         /// <summary>
         /// The email address of the user.
         /// the password of the user.
-        
+
         [Required]
         [EmailAddress]
         [StringLength(254)]

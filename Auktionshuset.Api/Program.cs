@@ -1,9 +1,12 @@
+using Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction;
+using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
-using Auktionshuset.Api.Events.Admin.Auction;
-using Auktionshuset.Api.Endpoints.Auth;
-using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
+using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Auth;
+using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
@@ -13,7 +16,11 @@ using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Service;
-
+using Auktionshuset.Infrastructure.Messaging;
+using Auktionshuset.Api.Endpoints.Admin.Messaging;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -26,23 +33,27 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
 
-
-
 // needs its own service class
-builder.Services.AddScoped<CreateAuctionHandler>();
-
 builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
 
 //API Services
 builder.Services.AddApiServices();
 
-builder.Services.AddScoped<
-    IIntegrationEventHandler<AuctionCreatedIntegrationEvent>,
-    CreateAuctionRealTimeHandler>();
-
 //Infrastructure Services
-await builder.Services.AddInfrastructureAsync(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration);
+
+if (builder.Configuration.GetValue<bool>(
+        "Observability:EnableOtlp"))
+{
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(resource => resource.AddService(
+            serviceName: "Auktionshuset.Api",
+            serviceInstanceId: Guid.NewGuid().ToString("N")))
+        .WithMetrics(metrics => metrics
+            .AddMeter("Auktionshuset.Messaging")
+            .AddOtlpExporter());
+}
 
 WebApplication app = builder.Build();
 
@@ -67,11 +78,38 @@ app.MapLotEndpoints();
 app.MapStoredLotImages();
 app.MapAuctionEndpoints();
 app.MapEmployeeEndpoints();
+app.MapBidEndpoints();
+app.MapCloseAuctionLotEndpoint();
+
+app.MapMessagingEndpoints();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = registration => registration.Tags.Contains("ready") }).AllowAnonymous();
+
+app.MapHealthChecks("/health/messaging", new HealthCheckOptions { Predicate = registration => registration.Tags.Contains("messaging"),
+    ResponseWriter = async (context, report) =>
+        {
+            await context.Response.WriteAsJsonAsync(new
+            {
+                status = report.Status.ToString(),
+
+                checks = report.Entries.Select(entry => new
+                {
+                    name = entry.Key,
+                    status = entry.Value.Status.ToString(),
+                    description = entry.Value.Description,
+                    data = entry.Value.Data
+                })
+            }, cancellationToken: context.RequestAborted);
+        }
+    }).RequireAuthorization(SecurityPolicies.Admin);
+
 
 app.MapHub<AuctionHub>("/hubs/auction", options => options.CloseOnAuthenticationExpiration = true)
-    .RequireAuthorization(SecurityPolicies.CanCreateAuction);
+    .RequireAuthorization(SecurityPolicies.CanViewAuctions);
 app.MapHub<EmployeeHub>("/hubs/employee", options => options.CloseOnAuthenticationExpiration = true)
-    .RequireAuthorization(SecurityPolicies.CanReadEmployees);
+    .RequireAuthorization(SecurityPolicies.CanViewEmployees);
 app.MapHub<LotHub>("/hubs/lot", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.CanViewLots);
 

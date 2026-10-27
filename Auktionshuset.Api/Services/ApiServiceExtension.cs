@@ -1,4 +1,9 @@
-﻿namespace Auktionshuset.Api.Services
+﻿using Auktionshuset.Api.Events.Admin.Auction;
+using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Application.Admin.Auctions.Bids;
+using Auktionshuset.Application.EventHandling;
+
+namespace Auktionshuset.Api.Services
 {
     public static class ApiServiceExtension
     {
@@ -13,6 +18,9 @@
             services.AddLotHandler();
             services.AddEmployeeHandler();
             services.AddAuctionHandlers();
+            services.AddScoped<PlaceBidHandler>();
+            services.AddScoped<IIntegrationEventHandler<BidPlacedIntegrationEvent>,
+                BidPlacedRealTimeHandler>();
 
             return services;
         }

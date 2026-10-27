@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using Auktionshuset.Contracts.Time;
+using System.Text.Json.Serialization;
 
 namespace Auktionshuset.Contracts.Dto.Admin.Auction;
 
@@ -9,15 +11,15 @@ public sealed class UpdateAuctionRequest : IValidatableObject
     public string Name { get; init; } = string.Empty;
 
     [Required(ErrorMessage = "Startdato og starttidspunkt er påkrævet.")]
-    public DateTime? StartsAt { get; init; }
+    [JsonConverter(typeof(OffsetDateTimeConverter))]
+    public DateTimeOffset? StartsAt { get; init; }
 
-    [Required(ErrorMessage = "Slutdato og sluttidspunkt er påkrævet.")]
-    public DateTime? EndsAt { get; init; }
+    [JsonConverter(typeof(OffsetDateTimeConverter))]
+    public DateTimeOffset? EndsAt { get; init; }
 
     /// <summary>
-    /// Gets the required identifier of the auctionarius assigned to the auction.
+    /// Gets the optional identifier of the auctionarius assigned to the auction.
     /// </summary>
-    [Required(ErrorMessage = "Vælg en auktionarius.")]
     public Guid? EmployeeId { get; init; }
 
     public Guid? AuctionHouseId { get; init; }

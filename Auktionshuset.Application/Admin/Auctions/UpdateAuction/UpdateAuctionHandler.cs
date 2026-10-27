@@ -1,8 +1,10 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Domain.Entities;
+using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 
@@ -10,18 +12,30 @@ public sealed class UpdateAuctionHandler(
     IAuctionRepository auctionRepository,
     ILotRepository lotRepository,
     IEmployeeRepository employeeRepository,
-    IIntegrationEventPublisher eventPublisher)
+    IOutboxWriter outboxWriter,
+    IAuctionWriteSessionFactory sessions,
+    TimeProvider clock)
 {
     public async Task<UpdateAuctionResult> HandleAsync(
         UpdateAuctionCommand command,
         CancellationToken cancellationToken)
     {
-        Auction? auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
+        await using IAuctionWriteSession session = await sessions.BeginAsync(command.AuctionId, cancellationToken);
+
+        AuctionEntity? auction = await auctionRepository.GetByIdAsync(command.AuctionId, cancellationToken);
 
         if (auction is null)
         {
             return UpdateAuctionResult.Missing();
         }
+
+        if (auction.StartedAtTime is not null
+            || auction.ClosedAtTime is not null
+            || auction.AuctionStatus != AuctionStatuses.Upcoming)
+            return UpdateAuctionResult.Invalid(
+            [
+                "En startet eller afsluttet auktion kan ikke redigeres."
+            ]);
 
         var errors = new List<string>();
 
@@ -35,6 +49,7 @@ public sealed class UpdateAuctionHandler(
             command.EndsAt,
             command.EmployeeId,
             employee,
+            nowUtc: clock.GetUtcNow().UtcDateTime,
             requireFutureStart: false,
             errors);
 
@@ -50,8 +65,8 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Invalid(errors);
         }
 
-        IReadOnlyList<Lot> lots = await lotRepository.GetAllAsync(cancellationToken);
-        IReadOnlyCollection<AuctionLot> auctionLots = AuctionValidation.BuildAuctionLots(
+        var lots = await lotRepository.GetAllAsync(cancellationToken);
+        var auctionLots = AuctionValidation.BuildAuctionLots(
             command.Lots,
             lots.ToDictionary(lot => lot.LotId),
             auction,
@@ -62,14 +77,51 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Invalid(errors);
         }
 
-        Employee assignedEmployee = employee!;
-        auction.Name = command.Name.Trim();
+        string newName = command.Name.Trim();
+
+        Guid? newEmployeeId = employee?.EmployeeId;
+
+        Guid newAuctionHouseId =
+            command.AuctionHouseId
+            ?? employee?.AuctionHouseId
+            ?? auction.AuctionHouseId;
+
+        IReadOnlyList<AuctionLot> existingLots =
+            await auctionRepository.GetAuctionLotsAsync(
+                auction.AuctionId,
+                cancellationToken);
+
+        var selectedQuantities = auctionLots.ToDictionary(
+            item => item.LotId,
+            item => item.Quantity);
+
+        bool sameLots =
+            existingLots.Count == auctionLots.Count
+            && existingLots.All(item =>
+                selectedQuantities.TryGetValue(
+                    item.LotId, 
+                    out int quantity)
+                && item.Quantity == quantity);
+
+        bool unchanged =
+            auction.Name == newName
+            && auction.StartsAt == command.StartsAt
+            && auction.EndedAt == command.EndsAt
+            && auction.EmployeeId == newEmployeeId
+            && auction.AuctionHouseId == newAuctionHouseId
+            && sameLots;
+
+        if (unchanged) return UpdateAuctionResult.Updated(
+            auction.AuctionId,
+            existingLots.Count,
+            existingLots.Sum(item => item.Quantity));
+
+        auction.Name = newName;
         auction.StartsAt = command.StartsAt;
         auction.EndedAt = command.EndsAt;
-        auction.EmployeeId = assignedEmployee.EmployeeId;
-        auction.Employee = assignedEmployee;
-        auction.AuctionHouseId = assignedEmployee.AuctionHouseId;
-        auction.AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now);
+        auction.EmployeeId = newEmployeeId;
+        auction.Employee = employee;
+        auction.AuctionHouseId = newAuctionHouseId;
 
         int itemCount = AuctionValidation.CountItems(auctionLots);
 
@@ -80,7 +132,7 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Missing();
         }
 
-        await eventPublisher.PublishAsync(
+        await outboxWriter.AddAsync(
             new AuctionUpdatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 AuctionId: auction.AuctionId,
@@ -90,8 +142,10 @@ public sealed class UpdateAuctionHandler(
                 EndsAt: command.EndsAt,
                 LotCount: auctionLots.Count,
                 ItemCount: itemCount,
-                OccurredAt: DateTime.Now),
+                OccurredAt: clock.GetUtcNow().UtcDateTime),
             cancellationToken);
+
+        await session.CommitAsync(cancellationToken);
 
         return UpdateAuctionResult.Updated(auction.AuctionId, auctionLots.Count, itemCount);
     }

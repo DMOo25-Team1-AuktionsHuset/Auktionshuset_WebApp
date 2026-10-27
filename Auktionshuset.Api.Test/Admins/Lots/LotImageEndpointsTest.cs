@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.Images;
@@ -7,6 +6,7 @@ using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Net.Http.Headers;
 
 namespace Auktionshuset.Api.Test.Admins.Lots;
 
@@ -42,7 +42,7 @@ public class LotImageEndpointsTest
         var handler = new UploadLotImageHandler(
             repository,
             new FakeLotImageStore { NextFileName = "abc123.png" },
-            new RecordingEventPublisher());
+            new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -62,7 +62,7 @@ public class LotImageEndpointsTest
     public async Task Upload_WithUnknownLot_ReturnsNotFound()
     {
         InMemoryLotRepository repository = await CreateRepositoryAsync();
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             Guid.NewGuid(),
@@ -81,7 +81,7 @@ public class LotImageEndpointsTest
     {
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -100,9 +100,9 @@ public class LotImageEndpointsTest
     {
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
-        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
-        var context = new DefaultHttpContext();
+        DefaultHttpContext context = new DefaultHttpContext();
         context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream("{}"u8.ToArray());
 
@@ -124,7 +124,7 @@ public class LotImageEndpointsTest
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var imageStore = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -148,7 +148,7 @@ public class LotImageEndpointsTest
         Lot lot = CreateLot();
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
         var imageStore = new FakeLotImageStore();
-        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher());
+        var handler = new UploadLotImageHandler(repository, imageStore, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<LotImageResponse>, NotFound, ValidationProblem> result = await LotImageEndpoints.HandleUploadAsync(
             lot.LotId,
@@ -168,7 +168,7 @@ public class LotImageEndpointsTest
     {
         Lot lot = CreateLot(imageFileName: "billede.jpg");
         InMemoryLotRepository repository = await CreateRepositoryAsync(lot);
-        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<LotImageResponse>, NotFound> result = await LotImageEndpoints.HandleRemoveAsync(lot.LotId, handler, CancellationToken.None);
 
@@ -183,7 +183,7 @@ public class LotImageEndpointsTest
     public async Task Remove_WithUnknownLot_ReturnsNotFound()
     {
         InMemoryLotRepository repository = await CreateRepositoryAsync();
-        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher());
+        var handler = new RemoveLotImageHandler(repository, new FakeLotImageStore(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<LotImageResponse>, NotFound> result = await LotImageEndpoints.HandleRemoveAsync(Guid.NewGuid(), handler, CancellationToken.None);
 
@@ -205,11 +205,11 @@ public class LotImageEndpointsTest
     /// </summary>
     private static HttpRequest CreateMultipartRequest(byte[]? content, string? fileName, string? contentType)
     {
-        using var multipart = new MultipartFormDataContent();
+        using MultipartFormDataContent multipart = new MultipartFormDataContent();
 
         if (content is not null)
         {
-            var file = new ByteArrayContent(content);
+            ByteArrayContent file = new ByteArrayContent(content);
             file.Headers.ContentType = new MediaTypeHeaderValue(contentType!);
             multipart.Add(file, "file", fileName!);
         }
@@ -220,7 +220,7 @@ public class LotImageEndpointsTest
 
         byte[] body = multipart.ReadAsByteArrayAsync().GetAwaiter().GetResult();
 
-        var context = new DefaultHttpContext();
+        DefaultHttpContext context = new DefaultHttpContext();
         context.Request.ContentType = multipart.Headers.ContentType!.ToString();
         context.Request.ContentLength = body.Length;
         context.Request.Body = new MemoryStream(body);
@@ -249,7 +249,7 @@ public class LotImageEndpointsTest
 
     private static async Task<InMemoryLotRepository> CreateRepositoryAsync(params Lot[] lots)
     {
-        var repository = new InMemoryLotRepository();
+        InMemoryLotRepository repository = new InMemoryLotRepository();
 
         foreach (Lot lot in lots)
         {

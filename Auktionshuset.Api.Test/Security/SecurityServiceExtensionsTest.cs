@@ -24,7 +24,7 @@ public class SecurityServiceExtensionsTest
     }
 
     [Fact]
-    public async Task AddSecurityServices_ConfiguresAuctionRolePolicy()
+    public async Task AddSecurityServices_ConfiguresAuctionPermissionPolicy()
     {
         using ServiceProvider provider = CreateServiceProvider();
         IAuthorizationPolicyProvider policyProvider = provider.GetRequiredService<IAuthorizationPolicyProvider>();
@@ -36,13 +36,20 @@ public class SecurityServiceExtensionsTest
             policy.Requirements,
             requirement => requirement is DenyAnonymousAuthorizationRequirement);
 
-        IAuthorizationService authorization = provider.GetRequiredService<IAuthorizationService>();
-        foreach (string role in new[] { SecurityRoles.AuctionAdmin, SecurityRoles.SuperAdmin, SecurityRoles.LotAdmin, SecurityRoles.Customer })
+        var authorization = provider.GetRequiredService<IAuthorizationService>();
+        foreach (string role in new[] { SecurityRoles.AuctionAdmin, SecurityRoles.Admin, SecurityRoles.LotAdmin, SecurityRoles.Customer })
         {
-            var user = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Role, role)], "test"));
-            AuthorizationResult result = await authorization.AuthorizeAsync(user, null, policy);
-            Assert.Equal(role is SecurityRoles.AuctionAdmin or SecurityRoles.SuperAdmin, result.Succeeded);
+            var claims = SecurityRolePermissions.GetPermissions(role)
+                .Select(permission => new Claim(SecurityPermissions.ClaimType, permission))
+                .Append(new Claim(ClaimTypes.Role, role));
+            var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
+            var result = await authorization.AuthorizeAsync(user, null, policy);
+            Assert.Equal(role is SecurityRoles.AuctionAdmin or SecurityRoles.Admin, result.Succeeded);
         }
+
+        var roleWithoutPermission = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Role, SecurityRoles.Admin)], "test"));
+        Assert.False((await authorization.AuthorizeAsync(roleWithoutPermission, null, policy)).Succeeded);
     }
 
     [Fact]
@@ -97,7 +104,7 @@ public class SecurityServiceExtensionsTest
             })
             .Build();
 
-        var services = new ServiceCollection();
+        ServiceCollection services = new ServiceCollection();
         services.AddLogging();
         services.AddSecurityServices(configuration);
 

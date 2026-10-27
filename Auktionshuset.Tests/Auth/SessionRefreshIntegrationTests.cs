@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
 using Auktionshuset.Contracts.Dto.Auth;
 using Auktionshuset.Contracts.Security;
+using Auktionshuset.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -17,17 +18,17 @@ namespace Auktionshuset.Tests.Auth;
 public sealed class SessionRefreshIntegrationTests
 {
     [Theory]
-    [InlineData(AdminRoles.SuperAdmin)]
-    [InlineData(AdminRoles.AuctionAdmin)]
-    public async Task AuctionRolesCanSeeEditAndDeleteWithoutPermissionClaims(string role)
+    [InlineData(RoleNames.Admin)]
+    [InlineData(RoleNames.AuctionAdmin)]
+    public async Task AuctionRolesCanSeeEditAndDeleteWithMappedPermissions(string role)
     {
         using var factory = new FrontendFactory(role);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
-        using HttpResponseMessage login = await LoginAsync(client);
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var login = await LoginAsync(client);
         Assert.Equal("/", login.Headers.Location!.OriginalString);
-        using HttpResponseMessage page = await client.GetAsync("/admin/auctions");
+        using var page = await client.GetAsync("/admin/auctions");
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
-        string html = await page.Content.ReadAsStringAsync();
+        var html = await page.Content.ReadAsStringAsync();
         Assert.Contains("Audit auction", html);
         Assert.DoesNotContain("Ingen handlinger", html);
         Assert.Contains("Rediger", html);
@@ -36,14 +37,14 @@ public sealed class SessionRefreshIntegrationTests
     }
 
     [Theory]
-    [InlineData(AdminRoles.SuperAdmin)]
-    [InlineData(AdminRoles.LotAdmin)]
-    public async Task LotRolesCanSeeCreateFormWithoutPermissionClaims(string role)
+    [InlineData(RoleNames.Admin)]
+    [InlineData(RoleNames.LotAdmin)]
+    public async Task LotRolesCanSeeCreateFormWithMappedPermissions(string role)
     {
         using var factory = new FrontendFactory(role);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
-        using HttpResponseMessage login = await LoginAsync(client);
-        using HttpResponseMessage page = await client.GetAsync("/warehouse");
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var login = await LoginAsync(client);
+        using var page = await client.GetAsync("/warehouse");
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
         Assert.Contains("lot-form-heading", await page.Content.ReadAsStringAsync());
     }
@@ -51,50 +52,50 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task ExpiredAccessTokenIsRotatedOnPageReloadAndLogoutRevokesReplacement()
     {
-        using var factory = new FrontendFactory(AdminRoles.AuctionAdmin);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
-        using HttpResponseMessage login = await LoginAsync(client);
+        using var factory = new FrontendFactory(RoleNames.AuctionAdmin);
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var login = await LoginAsync(client);
         string cookie = string.Join(";", login.Headers.GetValues("Set-Cookie"));
         Assert.DoesNotContain("audit-access", cookie);
         Assert.DoesNotContain("audit-refresh", cookie);
         factory.Clock.Advance(TimeSpan.FromMinutes(31));
 
-        using HttpResponseMessage page = await client.GetAsync("/admin/auctions");
+        using var page = await client.GetAsync("/admin/auctions");
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
         Assert.Equal(1, factory.Backend.RefreshCalls);
         Assert.Equal("audit-access-1", factory.Backend.LastAccessToken);
         string html = await page.Content.ReadAsStringAsync();
-        using HttpResponseMessage logout = await client.PostAsync("/auth/logout", new FormUrlEncodedContent(new Dictionary<string, string>
+        using var logout = await client.PostAsync("/auth/logout", new FormUrlEncodedContent(new Dictionary<string, string>
         { ["__RequestVerificationToken"] = ReadAntiforgeryToken(html) }));
         Assert.Equal("/login", logout.Headers.Location!.OriginalString);
         Assert.Equal("audit-refresh-1", factory.Backend.LoggedOutToken);
-        using HttpResponseMessage afterLogout = await client.GetAsync("/");
+        using var afterLogout = await client.GetAsync("/");
         Assert.Equal("/login", afterLogout.Headers.Location!.OriginalString);
     }
 
     [Fact]
     public async Task RefreshedRolesApplyBeforePageAuthorization()
     {
-        using var factory = new FrontendFactory(AdminRoles.SuperAdmin);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
-        using HttpResponseMessage login = await LoginAsync(client);
-        factory.Backend.Role = AdminRoles.LotAdmin;
+        using var factory = new FrontendFactory(RoleNames.Admin);
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var login = await LoginAsync(client);
+        factory.Backend.Role = RoleNames.LotAdmin;
         factory.Clock.Advance(TimeSpan.FromMinutes(31));
-        using HttpResponseMessage denied = await client.GetAsync("/admin/auctions");
+        using var denied = await client.GetAsync("/admin/auctions");
         Assert.Equal("/?access=denied", denied.Headers.Location!.OriginalString);
-        using HttpResponseMessage allowed = await client.GetAsync("/warehouse");
+        using var allowed = await client.GetAsync("/warehouse");
         Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
     }
 
     [Fact]
     public async Task RejectedRefreshEndsCookieSession()
     {
-        using var factory = new FrontendFactory(AdminRoles.AuctionAdmin);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
-        using HttpResponseMessage login = await LoginAsync(client);
+        using var factory = new FrontendFactory(RoleNames.AuctionAdmin);
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var login = await LoginAsync(client);
         factory.Backend.RejectRefresh = true;
         factory.Clock.Advance(TimeSpan.FromMinutes(31));
-        using HttpResponseMessage page = await client.GetAsync("/");
+        using var page = await client.GetAsync("/");
         Assert.Equal("/login", page.Headers.Location!.OriginalString);
         Assert.Equal(1, factory.Backend.RefreshCalls);
     }
@@ -102,11 +103,11 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task AbsoluteRefreshExpiryEndsSessionWithoutAnotherRotation()
     {
-        using var factory = new FrontendFactory(AdminRoles.AuctionAdmin);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
-        using HttpResponseMessage login = await LoginAsync(client);
+        using var factory = new FrontendFactory(RoleNames.AuctionAdmin);
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var login = await LoginAsync(client);
         factory.Clock.Advance(TimeSpan.FromDays(8));
-        using HttpResponseMessage page = await client.GetAsync("/");
+        using var page = await client.GetAsync("/");
         Assert.Equal("/login", page.Headers.Location!.OriginalString);
         Assert.Equal(0, factory.Backend.RefreshCalls);
     }
@@ -114,28 +115,28 @@ public sealed class SessionRefreshIntegrationTests
     [Fact]
     public async Task RateLimitedLoginShowsDanishError()
     {
-        using var factory = new FrontendFactory(AdminRoles.SuperAdmin);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var factory = new FrontendFactory(RoleNames.Admin);
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         factory.Backend.LimitLogin = true;
-        using HttpResponseMessage login = await LoginAsync(client);
+        using var login = await LoginAsync(client);
         Assert.Equal("/login?error=rate-limited", login.Headers.Location!.OriginalString);
-        using HttpResponseMessage page = await client.GetAsync(login.Headers.Location);
+        using var page = await client.GetAsync(login.Headers.Location);
         Assert.Contains("for mange loginforsøg", WebUtility.HtmlDecode(await page.Content.ReadAsStringAsync()));
     }
 
     [Fact]
     public async Task BrowserCannotSpoofForwardedAddressInBackendLogin()
     {
-        using var factory = new FrontendFactory(AdminRoles.SuperAdmin);
-        using HttpClient client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        using var factory = new FrontendFactory(RoleNames.Admin);
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         client.DefaultRequestHeaders.Add("X-Forwarded-For", "198.51.100.99");
-        using HttpResponseMessage login = await LoginAsync(client);
+        using var login = await LoginAsync(client);
         Assert.Equal("192.0.2.10", factory.Backend.ForwardedIp);
     }
 
     private static async Task<HttpResponseMessage> LoginAsync(HttpClient client)
     {
-        using HttpResponseMessage page = await client.GetAsync("/login");
+        using var page = await client.GetAsync("/login");
         return await client.PostAsync("/auth/login", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = ReadAntiforgeryToken(await page.Content.ReadAsStringAsync()),
@@ -145,7 +146,7 @@ public sealed class SessionRefreshIntegrationTests
 
     private static string ReadAntiforgeryToken(string html)
     {
-        Match match = Regex.Match(html, "name=\"__RequestVerificationToken\" value=\"([^\"]+)\"");
+        var match = Regex.Match(html, "name=\"__RequestVerificationToken\" value=\"([^\"]+)\"");
         Assert.True(match.Success);
         return WebUtility.HtmlDecode(match.Groups[1].Value);
     }
@@ -204,7 +205,7 @@ public sealed class SessionRefreshIntegrationTests
             string path = request.RequestUri!.AbsolutePath.TrimEnd('/');
             if (path.StartsWith("/api/auth/"))
             {
-                ForwardedIp = request.Headers.TryGetValues("X-Forwarded-For", out IEnumerable<string>? addresses) ? addresses.Single() : null;
+                ForwardedIp = request.Headers.TryGetValues("X-Forwarded-For", out var addresses) ? addresses.Single() : null;
                 if (path.EndsWith("/login"))
                 {
                     if (LimitLogin) return new(HttpStatusCode.TooManyRequests);
@@ -212,7 +213,7 @@ public sealed class SessionRefreshIntegrationTests
                 }
                 else
                 {
-                    RefreshTokenRequest? body = await request.Content!.ReadFromJsonAsync<RefreshTokenRequest>(ct);
+                    var body = await request.Content!.ReadFromJsonAsync<RefreshTokenRequest>(ct);
                     if (path.EndsWith("/logout"))
                     {
                         LoggedOutToken = body!.RefreshToken;
@@ -224,7 +225,7 @@ public sealed class SessionRefreshIntegrationTests
                 }
                 return new(HttpStatusCode.OK) { Content = JsonContent.Create(new LoginResponse(
                     $"audit-access-{RefreshCalls}", "Bearer", clock.GetUtcNow().AddMinutes(30),
-                    new AuthenticatedUserResponse(userId, "audit@example.test", [Role], []),
+                    new AuthenticatedUserResponse(userId, "audit@example.test", [Role], PermissionsForRole(Role)),
                     $"audit-refresh-{RefreshCalls}", absoluteExpiry)) };
             }
             LastAccessToken = request.Headers.Authorization?.Parameter;
@@ -234,5 +235,19 @@ public sealed class SessionRefreshIntegrationTests
                 : Array.Empty<object>();
             return new(HttpStatusCode.OK) { Content = JsonContent.Create(bodyContent) };
         }
+
+        private static string[] PermissionsForRole(string role) => role switch
+        {
+            RoleNames.Admin => [PermissionNames.LotsRead, PermissionNames.LotsCreate, PermissionNames.LotsUpdate,
+                PermissionNames.LotsDelete, PermissionNames.AuctionsRead, PermissionNames.AuctionsCreate,
+                PermissionNames.AuctionsUpdate, PermissionNames.AuctionsDelete, PermissionNames.EmployeesRead,
+                PermissionNames.EmployeesCreate, PermissionNames.EmployeesUpdate, PermissionNames.EmployeesDelete],
+            RoleNames.AuctionAdmin => [PermissionNames.LotsRead, PermissionNames.LotsCreate, PermissionNames.LotsUpdate,
+                PermissionNames.LotsDelete, PermissionNames.AuctionsRead, PermissionNames.AuctionsCreate,
+                PermissionNames.AuctionsUpdate, PermissionNames.AuctionsDelete],
+            RoleNames.LotAdmin => [PermissionNames.LotsRead, PermissionNames.LotsCreate, PermissionNames.LotsUpdate,
+                PermissionNames.LotsDelete],
+            _ => []
+        };
     }
 }

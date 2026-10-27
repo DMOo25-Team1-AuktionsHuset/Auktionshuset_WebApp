@@ -1,4 +1,5 @@
 using Auktionshuset.Domain.Entities;
+using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions;
 
@@ -17,7 +18,7 @@ internal static class AuctionValidation
     /// <param name="name">The auction name supplied by the caller.</param>
     /// <param name="startsAt">The supplied start time.</param>
     /// <param name="endsAt">The supplied end time.</param>
-    /// <param name="employeeId">The required auctionarius identifier supplied by the caller.</param>
+    /// <param name="employeeId">The optional auctionarius identifier supplied by the caller.</param>
     /// <param name="employee">The employee looked up for the supplied employee identifier.</param>
     /// <param name="requireFutureStart">
     /// When <see langword="true"/>, the start time has to lie in the future. Updating an auction that
@@ -27,9 +28,10 @@ internal static class AuctionValidation
     internal static void CollectErrors(
         string? name,
         DateTime startsAt,
-        DateTime endsAt,
+        DateTime? endsAt,
         Guid? employeeId,
         Employee? employee,
+        DateTime nowUtc,
         bool requireFutureStart,
         List<string> errors)
     {
@@ -40,21 +42,22 @@ internal static class AuctionValidation
             errors.Add($"Auktionsnavn skal være mellem {MinNameLength} og {MaxNameLength} tegn.");
         }
 
-        if (requireFutureStart && startsAt <= DateTime.Now)
-        {
+        bool startIsUtc = startsAt.Kind == DateTimeKind.Utc;
+        bool endIsUtc = endsAt == null || endsAt.Value.Kind == DateTimeKind.Utc;
+
+        if (!startIsUtc)
+            errors.Add("Starttidspunktet skal være angivet som UTC.");
+
+        if (!endIsUtc)
+            errors.Add("Sluttidspunktet skal være angivet som UTC.");
+
+        if (requireFutureStart && startIsUtc && startsAt <= nowUtc)
             errors.Add("Starttidspunktet skal ligge i fremtiden.");
-        }
 
-        if (endsAt <= startsAt)
-        {
+        if (startIsUtc && endIsUtc && endsAt is DateTime end && end <= startsAt)
             errors.Add("Sluttidspunktet skal ligge efter starttidspunktet.");
-        }
 
-        if (employeeId is null)
-        {
-            errors.Add("En auktion skal have en tilknyttet auktionarius.");
-        }
-        else if (employee is null)
+        if (employeeId is not null && employee is null)
         {
             errors.Add("Den valgte auktionarius findes ikke.");
         }
@@ -72,7 +75,7 @@ internal static class AuctionValidation
     internal static IReadOnlyCollection<AuctionLot> BuildAuctionLots(
         IReadOnlyCollection<AuctionLotSelection> selections,
         IReadOnlyDictionary<Guid, Lot> lotsById,
-        Auction auction,
+        AuctionEntity auction,
         List<string> errors)
     {
         if (selections.Select(selection => selection.LotId).Distinct().Count() != selections.Count)
@@ -80,7 +83,7 @@ internal static class AuctionValidation
             errors.Add("Den samme genstand kan ikke tilføjes mere end én gang.");
         }
 
-        var auctionLots = new List<AuctionLot>();
+        List<AuctionLot> auctionLots = new List<AuctionLot>();
 
         foreach (AuctionLotSelection selection in selections)
         {
@@ -110,7 +113,9 @@ internal static class AuctionValidation
                 Auction = auction,
                 LotId = lot.LotId,
                 Lot = lot,
-                Quantity = selection.Quantity
+                Quantity = selection.Quantity,
+                OpenForBids = false,
+                CurrentHighestBid = null
             });
         }
 

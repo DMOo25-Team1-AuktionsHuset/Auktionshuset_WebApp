@@ -1,7 +1,8 @@
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Domain;
 using Auktionshuset.Domain.Entities;
 using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
@@ -11,7 +12,9 @@ public sealed class CreateAuctionHandler(
     IAuctionRepository auctionRepository,
     ILotRepository lotRepository,
     IEmployeeRepository employeeRepository,
-    IIntegrationEventPublisher eventPublisher)
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork,
+    TimeProvider clock)
 {
     public async Task<CreateAuctionResult> HandleAsync(
         CreateAuctionCommand command,
@@ -29,6 +32,7 @@ public sealed class CreateAuctionHandler(
             command.EndsAt,
             command.EmployeeId,
             employee,
+            nowUtc: clock.GetUtcNow().UtcDateTime,
             requireFutureStart: true,
             errors);
 
@@ -44,17 +48,19 @@ public sealed class CreateAuctionHandler(
             return CreateAuctionResult.Invalid(errors);
         }
 
-        Employee assignedEmployee = employee!;
+        Guid auctionHouseForAssignment = command.AuctionHouseId
+            ?? employee?.AuctionHouseId
+            ?? AuctionHouseDefaults.DefaultAuctionHouseId;
         var auction = new AuctionEntity
         {
             AuctionId = Guid.NewGuid(),
             Name = command.Name.Trim(),
             StartsAt = command.StartsAt,
             EndedAt = command.EndsAt,
-            EmployeeId = assignedEmployee.EmployeeId,
-            Employee = assignedEmployee,
-            AuctionHouseId = assignedEmployee.AuctionHouseId,
-            AuctionStatus = AuctionStatuses.Derive(command.StartsAt, command.EndsAt, DateTime.Now)
+            EmployeeId = employee?.EmployeeId,
+            Employee = employee,
+            AuctionHouseId = auctionHouseForAssignment,
+            AuctionStatus = AuctionStatuses.Upcoming
         };
 
         IReadOnlyCollection<AuctionLot> auctionLots = [];
@@ -86,9 +92,10 @@ public sealed class CreateAuctionHandler(
             EndsAt: command.EndsAt,
             LotCount: auctionLots.Count,
             ItemCount: itemCount,
-            OccurredAt: DateTime.Now);
+            OccurredAt: clock.GetUtcNow().UtcDateTime);
 
-        await eventPublisher.PublishAsync(integrationEvent, cancellationToken);
+        await outboxWriter.AddAsync(integrationEvent, cancellationToken);
+        await unitOfWork.CommitBatchAsync(cancellationToken);
 
         return CreateAuctionResult.Created(auction.AuctionId, auctionLots.Count, itemCount);
     }

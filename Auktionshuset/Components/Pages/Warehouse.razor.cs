@@ -1,16 +1,16 @@
 using Auktionshuset.Contracts.Dto.Admin.Lot;
-using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
-using Auktionshuset.Contracts.Security;
-using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.CreateLot;
-using Auktionshuset.Models;
+using Auktionshuset.Contracts.Dto.Admin.Lot.DeleteLot;
+using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
+using Auktionshuset.Contracts.Security;
 using Auktionshuset.Domain;
-using Auktionshuset.Services;
+using Auktionshuset.Domain.Entities;
+using Auktionshuset.Models;
 using Auktionshuset.Security;
+using Auktionshuset.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.Components.Forms;
 using System.Globalization;
 using System.Security.Claims;
 
@@ -33,19 +33,17 @@ public partial class Warehouse : IAsyncDisposable
 
     private readonly HashSet<Guid> expandedLotIds = [];
 
-    [Inject] private IConfiguration Configuration { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
-    [Inject] private BackendTokenAccessor TokenAccessor { get; set; } = default!;
 
     [Inject] private LotService LotService { get; set; } = default!;
+    [Inject] private LotRealtimeService LotRealtimeService { get; set; } = default;
+
+    private bool isDisposed;
 
     private bool canCreateLots;
     private bool canUpdateLots;
     private bool canDeleteLots;
     private bool CanEditCurrentLot => editingLotId.HasValue ? canUpdateLots : canCreateLots;
-
-    private HubConnection? hubConnection;
-    private bool sessionIsValid = true;
 
     private LotFormModel model = new();
     private EditContext editContext = default!;
@@ -66,6 +64,7 @@ public partial class Warehouse : IAsyncDisposable
     private bool isDeleting;
     private bool submissionSucceeded;
     private string? statusMessage;
+    private int lotLoadVersion;
 
     private byte[]? pendingImage;
     private string? pendingImageFileName;
@@ -116,9 +115,9 @@ public partial class Warehouse : IAsyncDisposable
     protected override async Task OnInitializedAsync()
     {
         ClaimsPrincipal user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        canCreateLots = AdminRoles.CanManageLots(user);
-        canUpdateLots = AdminRoles.CanManageLots(user);
-        canDeleteLots = AdminRoles.CanManageLots(user);
+        canCreateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission);
+        canUpdateLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission);
+        canDeleteLots = user.HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission);
         ResetForm();
         await LoadLotsAsync();
     }
@@ -214,7 +213,7 @@ public partial class Warehouse : IAsyncDisposable
     {
         if (pendingImage is not null)
         {
-            using var stream = new MemoryStream(pendingImage, writable: false);
+            using MemoryStream stream = new MemoryStream(pendingImage, writable: false);
 
             await LotService.UploadImageAsync(
                 lotId,
@@ -433,29 +432,50 @@ public partial class Warehouse : IAsyncDisposable
     /// </summary>
     private async Task LoadLotsAsync()
     {
+        if (isDisposed)
+            return;
+
+        int version = ++lotLoadVersion;
+
         isLoadingLots = true;
         lotListError = null;
 
         try
         {
-            lots = await LotService.GetAllAsync();
-            page = Math.Clamp(page, 1, TotalPages);
+            var result = await LotService.GetAllAsync();
+
+            if (isDisposed || version != lotLoadVersion)
+                return;
+
+            lots = result;
+            page = Math.Clamp(
+                page,
+                1,
+                TotalPages);
         }
-        catch (LotApiException exception)
+        catch (Exception ex) when (ex
+            is LotApiException
+            or HttpRequestException
+            or TaskCanceledException)
         {
-            lotListError = exception.Message;
-        }
-        catch (HttpRequestException)
-        {
-            lotListError = "Listen over genstande kunne ikke hentes. Prøv igen om lidt.";
-        }
-        catch (TaskCanceledException)
-        {
-            lotListError = "Anmodningen om listen over genstande tog for lang tid. Prøv igen.";
+            if (isDisposed || version != lotLoadVersion)
+                return;
+
+            lotListError = ex switch
+            {
+                LotApiException apiException =>
+                    apiException.Message,
+
+                TaskCanceledException =>
+                    "Hentning af auktioner to for lang tid",
+
+                _ => "Auktioner kunne ikke hentes, prøv igen"
+            };
         }
         finally
         {
-            isLoadingLots = false;
+            if (!isDisposed && version == lotLoadVersion)
+                isLoadingLots = false;
         }
     }
 
@@ -506,12 +526,40 @@ public partial class Warehouse : IAsyncDisposable
     /// <summary>
     /// Reloads the list on the component's UI thread and re-renders it.
     /// </summary>
-    private Task RefreshLotsAsync() =>
-        InvokeAsync(async () =>
+    private Task RefreshLotsAsync()
+    {
+        if (isDisposed)
+            return Task.CompletedTask;
+
+        return InvokeAsync(async () =>
         {
+            if (isDisposed)
+                return;
+
             await LoadLotsAsync();
+
+            if (!isDisposed)
+                StateHasChanged();
+        });
+    }
+
+    private Task OnLotConnectionChangedAsync()
+    {
+        if (!isDisposed)
+            return Task.CompletedTask;
+
+        return InvokeAsync(() =>
+        {
+            if (isDisposed)
+                return;
+
+            realtimeError = LotRealtimeService.isConnected
+                ? null
+                : "Liveforbindelsen er ikke tilsluttet, listen opdateres ikke automatisk";
+
             StateHasChanged();
         });
+    }
 
     /// <summary>
     /// Starts the SignalR connection and subscribes to lot notifications after the first render.
@@ -523,38 +571,16 @@ public partial class Warehouse : IAsyncDisposable
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
-        {
             return;
-        }
 
-        string apiBaseUrl = Configuration["Api:BaseUrl"]
-                         ?? throw new InvalidOperationException(
-                             "Configuration Value 'Api:BaseUrl' is required.");
-
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/hubs/lot", options =>
-                options.AccessTokenProvider = GetAccessTokenAsync)
-            .WithAutomaticReconnect(new SessionReconnectPolicy(() => sessionIsValid))
-            .Build();
-
-        hubConnection.On<CreateLotNotification>(
-            nameof(ILotClient.LotCreatedAsync),
-            _ => RefreshLotsAsync());
-
-        hubConnection.On<UpdateLotNotification>(
-            nameof(ILotClient.LotUpdatedAsync),
-            _ => RefreshLotsAsync());
-
-        hubConnection.On<DeleteLotNotification>(
-            nameof(ILotClient.LotDeletedAsync),
-            _ => RefreshLotsAsync());
-
-        hubConnection.Reconnected +=
-            _ => RefreshLotsAsync();
+        LotRealtimeService.Invalidated += RefreshLotsAsync;
+        LotRealtimeService.ConnectionChanged += OnLotConnectionChangedAsync;
 
         try
         {
-            await hubConnection.StartAsync();
+            await LotRealtimeService.StartAsync();
+
+            await OnLotConnectionChangedAsync();
 
             // Hent igen efter tilslutning, så listen er ajour.
             await RefreshLotsAsync();
@@ -568,22 +594,16 @@ public partial class Warehouse : IAsyncDisposable
         }
     }
 
-    private async Task<string?> GetAccessTokenAsync()
-    {
-        string? accessToken = await TokenAccessor.GetAccessTokenAsync();
-        sessionIsValid = !string.IsNullOrWhiteSpace(accessToken);
-        return accessToken;
-    }
-
     /// <summary>
     /// Disposes the SignalR connection used for live lot updates.
     /// </summary>
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        if (hubConnection is not null)
-        {
-            await hubConnection.DisposeAsync();
-            hubConnection = null;
-        }
+        isDisposed = true;
+
+        LotRealtimeService.Invalidated -= RefreshLotsAsync;
+        LotRealtimeService.ConnectionChanged -= OnLotConnectionChangedAsync;
+
+        return ValueTask.CompletedTask;
     }
 }

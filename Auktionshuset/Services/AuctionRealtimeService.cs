@@ -10,92 +10,131 @@ namespace Auktionshuset.Services;
 /// auctions changed on another server instance, since the events are fanned out
 /// via the message bus.
 /// </summary>
-public sealed class AuctionRealtimeService : IAsyncDisposable
+//public sealed class AuctionRealtimeService : IAsyncDisposable
+//{
+//    private readonly string hubUrl;
+//    private readonly SemaphoreSlim startGate = new(1, 1);
+//    private HubConnection? connection;
+//    private bool sessionIsValid = true;
+
+//    private readonly BackendTokenAccessor tokenAccessor;
+
+//    public AuctionRealtimeService(IConfiguration configuration, BackendTokenAccessor tokenAccessor)
+//    {
+//        this.tokenAccessor = tokenAccessor;
+//        string apiBaseUrl = configuration["Api:BaseUrl"]
+//            ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
+
+//        hubUrl = $"{apiBaseUrl.TrimEnd('/')}/hubs/auction";
+//    }
+
+//    public event Func<CreateAuctionNotification, Task>? AuctionCreated;
+
+//    public event Func<UpdateAuctionNotification, Task>? AuctionUpdated;
+
+//    public event Func<DeleteAuctionNotification, Task>? AuctionDeleted;
+
+//    public async Task StartAsync(CancellationToken cancellationToken = default)
+//    {
+//        await startGate.WaitAsync(cancellationToken);
+
+//        try
+//        {
+//            if (connection is not null)
+//            {
+//                return;
+//            }
+
+//            HubConnection hubConnection = new HubConnectionBuilder()
+//                .WithUrl(hubUrl, options =>
+//                    options.AccessTokenProvider = GetAccessTokenAsync)
+//                .WithAutomaticReconnect(new SessionReconnectPolicy(() => sessionIsValid))
+//                .Build();
+
+//            hubConnection.On<CreateAuctionNotification>(
+//                nameof(IAuctionClient.AuctionCreatedAsync),
+//                notification => AuctionCreated?.Invoke(notification) ?? Task.CompletedTask);
+
+//            hubConnection.On<UpdateAuctionNotification>(
+//                nameof(IAuctionClient.AuctionUpdatedAsync),
+//                notification => AuctionUpdated?.Invoke(notification) ?? Task.CompletedTask);
+
+//            hubConnection.On<DeleteAuctionNotification>(
+//                nameof(IAuctionClient.AuctionDeletedAsync),
+//                notification => AuctionDeleted?.Invoke(notification) ?? Task.CompletedTask);
+
+//            try
+//            {
+//                await hubConnection.StartAsync(cancellationToken);
+//            }
+//            catch
+//            {
+//                await hubConnection.DisposeAsync();
+//                throw;
+//            }
+
+//            connection = hubConnection;
+//        }
+//        finally
+//        {
+//            startGate.Release();
+//        }
+//    }
+
+//    private async Task<string?> GetAccessTokenAsync()
+//    {
+//        string? accessToken = await tokenAccessor.GetAccessTokenAsync();
+//        sessionIsValid = !string.IsNullOrWhiteSpace(accessToken);
+//        return accessToken;
+//    }
+
+//    public async ValueTask DisposeAsync()
+//    {
+//        if (connection is not null)
+//        {
+//            await connection.DisposeAsync();
+//            connection = null;
+//        }
+
+//        startGate.Dispose();
+//    }
+//}
+
+public sealed class AuctionRealtimeService : RealtimeServiceBase
 {
-    private readonly string hubUrl;
-    private readonly SemaphoreSlim startGate = new(1, 1);
-    private HubConnection? connection;
-    private bool sessionIsValid = true;
-
-    private readonly BackendTokenAccessor tokenAccessor;
-
-    public AuctionRealtimeService(IConfiguration configuration, BackendTokenAccessor tokenAccessor)
+    public AuctionRealtimeService(
+        IConfiguration configuration,
+        BackendTokenAccessor tokenAccessor,
+        ILogger<AuctionRealtimeService> logger)
+        : base(
+            "hubs/auction",
+            configuration,
+            tokenAccessor,
+            logger)
     {
-        this.tokenAccessor = tokenAccessor;
-        string apiBaseUrl = configuration["Api:BaseUrl"]
-            ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
-
-        hubUrl = $"{apiBaseUrl.TrimEnd('/')}/hubs/auction";
     }
 
-    public event Func<CreateAuctionNotification, Task>? AuctionCreated;
-
-    public event Func<UpdateAuctionNotification, Task>? AuctionUpdated;
-
-    public event Func<DeleteAuctionNotification, Task>? AuctionDeleted;
-
-    public async Task StartAsync(CancellationToken cancellationToken = default)
+    protected override void ConfigureSubscriptions(
+        HubConnection hubConnection)
     {
-        await startGate.WaitAsync(cancellationToken);
+        InvalidateOn<CreateAuctionNotification>(
+            hubConnection,
+            nameof(IAuctionClient.AuctionCreatedAsync));
 
-        try
-        {
-            if (connection is not null)
-            {
-                return;
-            }
+        InvalidateOn<UpdateAuctionNotification>(
+            hubConnection,
+            nameof(IAuctionClient.AuctionUpdatedAsync));
 
-            HubConnection hubConnection = new HubConnectionBuilder()
-                .WithUrl(hubUrl, options =>
-                    options.AccessTokenProvider = GetAccessTokenAsync)
-                .WithAutomaticReconnect(new SessionReconnectPolicy(() => sessionIsValid))
-                .Build();
+        InvalidateOn<DeleteAuctionNotification>(
+            hubConnection,
+            nameof(IAuctionClient.AuctionDeletedAsync));
 
-            hubConnection.On<CreateAuctionNotification>(
-                nameof(IAuctionClient.AuctionCreatedAsync),
-                notification => AuctionCreated?.Invoke(notification) ?? Task.CompletedTask);
+        InvalidateOn<BidPlacedNotification>(
+            hubConnection,
+            nameof(IAuctionClient.BidPlacedAsync));
 
-            hubConnection.On<UpdateAuctionNotification>(
-                nameof(IAuctionClient.AuctionUpdatedAsync),
-                notification => AuctionUpdated?.Invoke(notification) ?? Task.CompletedTask);
-
-            hubConnection.On<DeleteAuctionNotification>(
-                nameof(IAuctionClient.AuctionDeletedAsync),
-                notification => AuctionDeleted?.Invoke(notification) ?? Task.CompletedTask);
-
-            try
-            {
-                await hubConnection.StartAsync(cancellationToken);
-            }
-            catch
-            {
-                await hubConnection.DisposeAsync();
-                throw;
-            }
-
-            connection = hubConnection;
-        }
-        finally
-        {
-            startGate.Release();
-        }
-    }
-
-    private async Task<string?> GetAccessTokenAsync()
-    {
-        string? accessToken = await tokenAccessor.GetAccessTokenAsync();
-        sessionIsValid = !string.IsNullOrWhiteSpace(accessToken);
-        return accessToken;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (connection is not null)
-        {
-            await connection.DisposeAsync();
-            connection = null;
-        }
-
-        startGate.Dispose();
+        InvalidateOn<AuctionLotClosedNotification>(
+            hubConnection,
+            nameof(IAuctionClient.AuctionLotClosedAsync));
     }
 }

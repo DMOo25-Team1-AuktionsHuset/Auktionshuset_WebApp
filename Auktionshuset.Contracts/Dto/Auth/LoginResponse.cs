@@ -15,7 +15,7 @@
         IReadOnlyCollection<string> Roles,
         IReadOnlyCollection<string> Permissions
         );
-    
 
-    
+
+
 }

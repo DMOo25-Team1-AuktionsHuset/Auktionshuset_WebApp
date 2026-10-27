@@ -1,59 +1,96 @@
 using Microsoft.AspNetCore.Identity;
-using System.Security.Cryptography;
-using System.Text;
 
-namespace Auktionshuset.Api.Security
+namespace Auktionshuset.Api.Security;
+
+public sealed class ConfiguredAuthUserStore : IAuthUserStore
 {
-    public sealed class ConfiguredAuthUserStore : IAuthUserStore
+    private const string BootstrapAdminSection = "Authentication:BootstrapAdmin";
+    private const string UsersSection = "Authentication:Users";
+
+    private readonly IReadOnlyDictionary<string, AuthUser> users;
+
+    public ConfiguredAuthUserStore(IConfiguration configuration, IPasswordHasher<AuthUser> passwordHasher)
     {
-        private const string BootstrapAdminSection = "Authentication:BootstrapAdmin";
+        var configuredUsers = new Dictionary<string, AuthUser>(StringComparer.OrdinalIgnoreCase);
+        IConfigurationSection bootstrap = configuration.GetSection(BootstrapAdminSection);
+        string? bootstrapEmail = bootstrap["Email"]?.Trim();
+        string? bootstrapPassword = bootstrap["Password"];
 
-        private readonly IReadOnlyDictionary<string, AuthUser> users;
-
-        public ConfiguredAuthUserStore(IConfiguration configuration, IPasswordHasher<AuthUser> passwordHasher)
+        if (!string.IsNullOrWhiteSpace(bootstrapEmail) || !string.IsNullOrWhiteSpace(bootstrapPassword))
         {
-            string? email = configuration[$"{BootstrapAdminSection}:Email"]?.Trim();
-            string? password = configuration[$"{BootstrapAdminSection}:Password"];
-
-            if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(password))
-            {
-                users = new Dictionary<string, AuthUser>(StringComparer.OrdinalIgnoreCase);
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(bootstrapEmail) || string.IsNullOrWhiteSpace(bootstrapPassword))
             {
                 throw new InvalidOperationException(
-                    $"Both '{BootstrapAdminSection}:Email' and '{BootstrapAdminSection}:Password' must be configured. ");
+                    $"Both '{BootstrapAdminSection}:Email' and '{BootstrapAdminSection}:Password' must be configured.");
             }
 
-            var user = new AuthUser
-            {
-                UserId = new Guid(SHA256.HashData(Encoding.UTF8.GetBytes("bootstrap:" + email.ToUpperInvariant())).AsSpan(0, 16)),
-                Email = email,
-                PasswordHash = string.Empty,
-                Roles = [SecurityRoles.SuperAdmin],
-                Permissions = SecurityPermissions.All
-            };
-
-            user.PasswordHash = passwordHasher.HashPassword(user, password);
-            users = new Dictionary<string, AuthUser>(StringComparer.OrdinalIgnoreCase)
-            {
-                [user.Email] = user
-            };
+            AddUser(configuredUsers, passwordHasher, bootstrapEmail, bootstrapPassword, SecurityRoles.Admin,
+                BootstrapAdminSection);
         }
 
-        public Task <AuthUser?> FindByEmailAsync(string email, CancellationToken cancellationToken)
+        foreach (IConfigurationSection section in configuration.GetSection(UsersSection).GetChildren())
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            users.TryGetValue(email.Trim(), out AuthUser? user);
-            return Task.FromResult(user);
+            string? email = section["Email"]?.Trim();
+            string? password = section["Password"];
+            string? role = section["Role"]?.Trim();
+
+            if (string.IsNullOrWhiteSpace(email)
+                || string.IsNullOrWhiteSpace(password)
+                || string.IsNullOrWhiteSpace(role))
+            {
+                throw new InvalidOperationException(
+                    $"'{UsersSection}:{section.Key}' must configure Email, Password, and Role.");
+            }
+
+            if (!SecurityRolePermissions.IsKnownRole(role))
+            {
+                throw new InvalidOperationException(
+                    $"'{UsersSection}:{section.Key}:Role' contains unknown role '{role}'.");
+            }
+
+            AddUser(configuredUsers, passwordHasher, email, password, role, $"{UsersSection}:{section.Key}");
         }
 
-        public Task<AuthUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
+        users = configuredUsers;
+    }
+
+    public Task<AuthUser?> FindByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        users.TryGetValue(email.Trim(), out AuthUser? user);
+        return Task.FromResult(user);
+    }
+
+    public Task<AuthUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(users.Values.FirstOrDefault(user => user.UserId == userId));
+    }
+
+    private static void AddUser(
+        IDictionary<string, AuthUser> configuredUsers,
+        IPasswordHasher<AuthUser> passwordHasher,
+        string email,
+        string password,
+        string role,
+        string configurationPath)
+    {
+        if (configuredUsers.ContainsKey(email))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(users.Values.SingleOrDefault(user => user.UserId == userId));
+            throw new InvalidOperationException(
+                $"Authentication configuration contains duplicate email '{email}' at '{configurationPath}'.");
         }
+
+        var user = new AuthUser
+        {
+            UserId = Guid.NewGuid(),
+            Email = email,
+            PasswordHash = string.Empty,
+            Roles = [role],
+            Permissions = SecurityRolePermissions.GetPermissions(role)
+        };
+
+        user.PasswordHash = passwordHasher.HashPassword(user, password);
+        configuredUsers.Add(user.Email, user);
     }
 }

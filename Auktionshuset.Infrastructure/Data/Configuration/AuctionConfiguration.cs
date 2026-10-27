@@ -20,9 +20,13 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         {
             entity.HasKey(a => a.AuctionId);
             entity.Property(a => a.Name).IsRequired().HasMaxLength(120);
-            entity.Property(a => a.StartsAt).IsRequired();
-            entity.Property(a => a.EndedAt);
+            entity.Property(a => a.StartsAt).HasColumnType("timestamp with time zone").IsRequired();
+            entity.Property(a => a.EndedAt).HasColumnType("timestamp with time zone");
             entity.Property(a => a.AuctionStatus).IsRequired().HasMaxLength(32);
+            entity.Property(auction => auction.StartedAtTime)
+                .HasColumnType("timestamp with time zone");
+            entity.Property(auction => auction.ClosedAtTime)
+                .HasColumnType("timestamp with time zone");
 
             entity.HasOne(a => a.AuctionHouse)
                 .WithMany(auctionHouse => auctionHouse.Auctions)
@@ -32,7 +36,8 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.HasOne(a => a.Employee)
                 .WithMany(employee => employee.Auctions)
                 .HasForeignKey(a => a.EmployeeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
         }
     }
 }

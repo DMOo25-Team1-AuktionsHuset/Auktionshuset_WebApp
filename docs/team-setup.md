@@ -228,6 +228,10 @@ hentes derimod automatisk ved opstart og skal ikke stå i din User Secrets-fil.
 
 ```json
 {
+  "RabbitMQ:HostName": "RABBITMQ-HOST-FRA-PROJEKTANSVARLIG",
+  "RabbitMQ:Port": 5672,
+  "RabbitMQ:UserName": "DIT-UDLEVEREDE-RABBITMQ-BRUGERNAVN",
+  "RabbitMQ:Password": "DIN-UDLEVEREDE-RABBITMQ-ADGANGSKODE",
   "Authentication:SigningKey": "DIN-GENEREREDE-NØGLE-FRA-NÆSTE-AFSNIT",
   "Authentication:BootstrapAdmin:Email": "DIN-VALGTE-LOGIN-EMAIL",
   "Authentication:BootstrapAdmin:Password": "DIN-VALGTE-LOGIN-ADGANGSKODE"

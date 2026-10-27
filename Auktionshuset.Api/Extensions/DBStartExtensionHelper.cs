@@ -1,6 +1,6 @@
+using Auktionshuset.Application.Admin.Lots.Images;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Service.Lots;
-using Auktionshuset.Application.Admin.Lots.Images;
 using Microsoft.EntityFrameworkCore;
 
 namespace Auktionshuset.Api.Extensions;

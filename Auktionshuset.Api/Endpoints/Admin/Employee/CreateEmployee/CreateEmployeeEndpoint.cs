@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
-using Auktionshuset.Application.Admin.Employees.CreateEmployee;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Auktionshuset.Api.Security;
 
@@ -15,7 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee
                 .WithSummary("Creates a new employee")
                 .Produces<CreateEmployeeResponse>(StatusCodes.Status201Created)
                 .ProducesValidationProblem()
-                .RequireAuthorization(SecurityPolicies.Admin);
+                .RequireAuthorization(SecurityPolicies.CanCreateEmployee);
             return group;
         }
 
@@ -24,7 +24,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee
             [FromServices] CreateEmployeeHandler handler,
             CancellationToken cancellationToken)
         {
-            var command = new CreateEmployeeCommand(
+            CreateEmployeeCommand command = new CreateEmployeeCommand(
                 FirstName: request.FirstName.Trim(),
                 LastName: request.LastName.Trim(),
                 BirthDate: request.BirthDate,

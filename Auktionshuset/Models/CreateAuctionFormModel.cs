@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using Auktionshuset.Contracts.Time;
 
 namespace Auktionshuset.Models;
 
@@ -25,14 +26,12 @@ public sealed class CreateAuctionFormModel : IValidatableObject
     [RegularExpression(TimePattern, ErrorMessage = "Starttidspunktet skal angives som tt:mm.")]
     public string StartTime { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Angiv et sluttidspunkt.")]
     [RegularExpression(TimePattern, ErrorMessage = "Sluttidspunktet skal angives som tt:mm.")]
     public string EndTime { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the required identifier of the auctionarius assigned to the auction.
     /// </summary>
-    [Required(ErrorMessage = "Vælg en auktionarius.")]
     public Guid? EmployeeId { get; set; }
 
     /// <summary>
@@ -43,23 +42,43 @@ public sealed class CreateAuctionFormModel : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (RequireFutureStart
-            && TryCombine(StartDate, StartTime, out DateTime upcomingStart)
-            && upcomingStart <= DateTime.Now)
+        var clock = validationContext.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
+
+        if (GetStartsAt() is not DateTime localStart)
+            yield break;
+
+        if (!CopenhagenTime.TryToUtc(localStart, out DateTime startUtc, out string? startError))
         {
             yield return new ValidationResult(
-                "Starttidspunktet skal ligge i fremtiden.",
-                [nameof(StartDate)]);
+                startError,
+                [nameof(StartDate), nameof(StartTime)]);
+
+            yield break;
         }
 
-        // An auction runs on one date, so the end moment is the start date plus the end time.
-        if (TryCombine(StartDate, StartTime, out DateTime start)
-            && TryCombine(StartDate, EndTime, out DateTime end)
-            && end <= start)
+        if (RequireFutureStart && startUtc <= clock.GetUtcNow().UtcDateTime)
         {
-            yield return new ValidationResult(
-                "Sluttidspunktet skal ligge efter starttidspunktet på den valgte dato. Auktioner hen over midnat understøttes ikke.",
-                [nameof(EndTime)]);
+            yield return new ValidationResult("Starttidspunktet skal ligge i fremtiden.",
+                [nameof(StartDate), nameof(StartTime)]);
+        }
+
+        if (!string.IsNullOrWhiteSpace(EndTime) && GetEndsAt() is DateTime localEnd)
+        {
+            if (!CopenhagenTime.TryToUtc(localEnd, out DateTime endUtc, out string? endError))
+            {
+                yield return new ValidationResult(
+                    endError,
+                    [nameof(EndTime)]);
+
+                yield break;
+            }
+
+            if (endUtc <= startUtc)
+            {
+                yield return new ValidationResult(
+                    "Sluttidspunktet skal ligge efter starttidspunktet på den valgte dato.",
+                    [nameof(EndTime)]);
+            }
         }
     }
 
@@ -85,7 +104,7 @@ public sealed class CreateAuctionFormModel : IValidatableObject
             return false;
         }
 
-        value = date.Value.Date.Add(parsed.ToTimeSpan());
+        value = DateOnly.FromDateTime(date.Value).ToDateTime(parsed, DateTimeKind.Unspecified);
         return true;
     }
 }

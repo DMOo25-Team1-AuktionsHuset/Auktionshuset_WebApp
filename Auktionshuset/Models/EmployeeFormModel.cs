@@ -1,3 +1,4 @@
+using Auktionshuset.Contracts.Time;
 using System.ComponentModel.DataAnnotations;
 
 namespace Auktionshuset.Models;
@@ -19,7 +20,7 @@ public sealed class EmployeeFormModel : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (BirthDate is DateOnly birthDate && birthDate > DateOnly.FromDateTime(DateTime.Today))
+        if (BirthDate is DateOnly birthDate && birthDate > CopenhagenTime.Today(validationContext.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System))
         {
             yield return new ValidationResult("Fødselsdato må ikke ligge i fremtiden.", [nameof(BirthDate)]);
         }

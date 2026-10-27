@@ -52,7 +52,7 @@ namespace Auktionshuset.Infrastructure.Service.Lots
                 content.Position = 0;
             }
 
-            await using var target = new FileStream(
+            await using FileStream target = new FileStream(
                 path,
                 FileMode.CreateNew,
                 FileAccess.Write,

@@ -1,8 +1,8 @@
 ﻿using Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee;
-using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
-using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployeeById;
-using Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployeeById;
+using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
+using Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee;
 
 
 namespace Auktionshuset.Api.Endpoints.Admin.Employee
@@ -25,6 +25,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee
             group.MapUpdateEmployee();
             group.MapGetEmployees();
             group.MapGetEmployeeById();
+            group.MapEmployeeOptions();
             group.MapDeleteEmployee();
 
             return endpoints;

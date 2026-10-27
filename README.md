@@ -128,8 +128,32 @@ Udvalgte klasser er testet på baggrund af, hvor meget funktionalitet, der minde
 ```
 
 ---
-## Security
-Der er i projektet implementeret login med ASP.Net Identity, hvor der er rollebaseret authentication. Der er brugt SHA512 til password hashing med 210.000 iterationer for sikkerhed. Projektet er derudover sammenlignet med OWASP top 10 sikkerhedsbrister og der er lavet Sonarqube analyser med jævne mellemrum. 
+## Login og administratorroller
+API'et udsteder JWT'er med roller og permissions afledt af den betroede rolle i `Authentication:Users`. Frontend-login bruger fortsat en HttpOnly-cookie og en serveropbevaret backend-token.
+
+Administratorrollerne er:
+
+| Rolle | Lager/genstande | Auktioner | Medarbejdere |
+| --- | --- | --- | --- |
+| `LotAdmin` | Fuld adgang | Ingen adgang | Ingen adgang |
+| `AuctionAdmin` | Fuld adgang | Fuld adgang | Ingen adgang |
+| `Admin` | Fuld adgang | Fuld adgang | Fuld adgang |
+
+Den eksisterende `Authentication:BootstrapAdmin`-konfiguration opretter fortsat en `Admin`. Supplerende loginbrugere konfigureres på API-projektet med .NET user-secrets; eksempelværdierne herunder er pladsholdere, ikke credentials:
+
+```powershell
+dotnet user-secrets set "Authentication:BootstrapAdmin:Email" "admin@example.test" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:BootstrapAdmin:Password" "<vælg-en-adgangskode>" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:Users:0:Email" "lager@example.test" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:Users:0:Password" "<vælg-en-adgangskode>" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:Users:0:Role" "LotAdmin" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:Users:1:Email" "auktion@example.test" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:Users:1:Password" "<vælg-en-adgangskode>" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:Users:1:Role" "AuctionAdmin" --project .\Auktionshuset.Api
+dotnet user-secrets set "Authentication:SigningKey" "<tilfældig-hemmelig-nøgle-på-mindst-32-bytes>" --project .\Auktionshuset.Api
+```
+
+`Authentication:Users` er en liste med `Email`, `Password` og `Role`. Passwords hashes med ASP.NET Core's eksisterende `IPasswordHasher<AuthUser>`. Ukendte roller, ufuldstændige brugere og emailadresser med dubletter (uanset store/små bogstaver, også på tværs af bootstrap-admin) afvises ved opstart. Rollen og permissions kan ikke vælges eller overskrives i loginanmodningen. Brug user-secrets lokalt eller secret store/miljøvariabler i deployment; læg aldrig credentials eller signing keys i versionsstyrede filer.
 
 ---
 ## Roadmap

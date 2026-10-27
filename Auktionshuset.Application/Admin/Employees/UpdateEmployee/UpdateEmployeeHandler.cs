@@ -1,10 +1,10 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
 {
-    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IIntegrationEventPublisher eventPublisher)
+    public class UpdateEmployeeHandler(IEmployeeRepository employeeRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         public async Task<UpdateEmployeeResult?> HandleAsync(UpdateEmployeeCommand command, CancellationToken cancellationToken)
         {
@@ -23,7 +23,7 @@ namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
 
             await employeeRepository.UpdateAsync(employee, cancellationToken);
 
-            var integrationEvent = new EmployeeUpdatedIntegrationEvent(
+            EmployeeUpdatedIntegrationEvent integrationEvent = new EmployeeUpdatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: employee.AuctionHouseId,
@@ -31,9 +31,11 @@ namespace Auktionshuset.Application.Admin.Employees.UpdateEmployee
                 LastName: employee.LastName,
                 BirthDate: employee.BirthDate,
                 Address: employee.Address,
-                OccurredAt: DateTime.Now);
+                OccurredAt: clock.GetUtcNow().UtcDateTime);
 
-            await eventPublisher.PublishAsync(integrationEvent, cancellationToken);
+            await outboxWriter.AddAsync(integrationEvent, cancellationToken);
+
+            await unitOfWork.CommitBatchAsync(cancellationToken);
 
             return new UpdateEmployeeResult(employee.EmployeeId);
         }

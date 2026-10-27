@@ -1,9 +1,9 @@
-using Xunit;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 
@@ -24,8 +24,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Efterårsauktion",
-                StartsAt: DateTime.Now.AddDays(10),
-                EndsAt: DateTime.Now.AddDays(11),
+                StartsAt: DateTime.UtcNow.AddDays(10),
+                EndsAt: DateTime.UtcNow.AddDays(11),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(second.LotId, 5)]),
@@ -46,26 +46,37 @@ public class UpdateAuctionHandlerTests
     }
 
     /// <summary>
-    /// Verifies that editing an auction that already started is not blocked by the future-start rule.
+    /// Verifies that editing a started auction is rejected without changing it or publishing an event.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_ForAuctionThatAlreadyStarted_IsAllowed()
+    public async Task HandleAsync_ForAuctionThatAlreadyStarted_IsRejected()
     {
         Employee employee = TestData.CreateEmployee();
-        (UpdateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _, Guid auctionId) = await CreateStartedAuctionAsync(employee);
+        (UpdateAuctionHandler? handler, InMemoryAuctionRepository auctions, TestEmployeeRepository _, RecordingEventPublisher publisher, Guid auctionId) = await CreateStartedAuctionAsync(employee);
+        Auction original = (await auctions.GetByIdAsync(auctionId, CancellationToken.None))!;
+        string originalName = original.Name;
+        DateTime? originalEndsAt = original.EndedAt;
 
         UpdateAuctionResult result = await handler.HandleAsync(
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
-                Name: "Igangværende auktion",
-                StartsAt: DateTime.Now.AddDays(-2),
-                EndsAt: DateTime.Now.AddDays(3),
+                Name: "Ændret auktion",
+                StartsAt: DateTime.UtcNow.AddDays(-2),
+                EndsAt: DateTime.UtcNow.AddDays(3),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
             CancellationToken.None);
 
-        Assert.True(result.Succeeded);
+        Assert.False(result.Succeeded);
+        Assert.False(result.NotFound);
+        Assert.Contains(result.Errors, error => error.Contains("kan ikke redigeres"));
+        Auction? stored = await auctions.GetByIdAsync(auctionId, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Equal(originalName, stored.Name);
+        Assert.Equal(originalEndsAt, stored.EndedAt);
+        Assert.Equal(AuctionStatuses.Live, stored.AuctionStatus);
+        Assert.Empty(publisher.Published);
     }
 
     /// <summary>
@@ -81,8 +92,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: Guid.NewGuid(),
                 Name: "Ukendt",
-                StartsAt: DateTime.Now.AddDays(1),
-                EndsAt: DateTime.Now.AddDays(2),
+                StartsAt: DateTime.UtcNow.AddDays(1),
+                EndsAt: DateTime.UtcNow.AddDays(2),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
@@ -100,7 +111,7 @@ public class UpdateAuctionHandlerTests
     {
         Employee employee = TestData.CreateEmployee();
         (UpdateAuctionHandler? handler, InMemoryAuctionRepository _, TestEmployeeRepository _, RecordingEventPublisher _, Guid auctionId) = await CreateExistingAuctionAsync(employee);
-        DateTime startsAt = DateTime.Now.AddDays(4);
+        DateTime startsAt = DateTime.UtcNow.AddDays(4);
 
         UpdateAuctionResult result = await handler.HandleAsync(
             new UpdateAuctionCommand(
@@ -130,8 +141,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: Guid.NewGuid(),
                 AuctionHouseId: null,
                 Lots: []),
@@ -142,10 +153,10 @@ public class UpdateAuctionHandlerTests
     }
 
     /// <summary>
-    /// Verifies that an existing auction cannot be updated without its required auctionarius.
+    /// Verifies that an existing auction can be left without an assigned auctionarius.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_WithoutEmployee_ReturnsInvalid()
+    public async Task HandleAsync_WithoutEmployee_ClearsAssignment()
     {
         Employee employee = TestData.CreateEmployee();
         (UpdateAuctionHandler? handler, InMemoryAuctionRepository? auctions, TestEmployeeRepository _, RecordingEventPublisher _, Guid auctionId) = await CreateExistingAuctionAsync(employee);
@@ -154,19 +165,19 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: null,
                 AuctionHouseId: null,
                 Lots: []),
             CancellationToken.None);
 
-        Assert.False(result.Succeeded);
-        Assert.Contains(result.Errors, error => error.Contains("tilknyttet auktionarius"));
+        Assert.True(result.Succeeded);
 
         Auction? auction = await auctions.GetByIdAsync(auctionId, CancellationToken.None);
         Assert.NotNull(auction);
-        Assert.Equal(employee.EmployeeId, auction.EmployeeId);
+        Assert.Null(auction.EmployeeId);
+        Assert.Null(auction.Employee);
     }
 
     /// <summary>
@@ -182,8 +193,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(Guid.NewGuid(), 1)]),
@@ -207,8 +218,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(lot.LotId, 1), new AuctionLotSelection(lot.LotId, 2)]),
@@ -234,8 +245,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(3),
-                EndsAt: DateTime.Now.AddDays(4),
+                StartsAt: DateTime.UtcNow.AddDays(3),
+                EndsAt: DateTime.UtcNow.AddDays(4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: [new AuctionLotSelection(lot.LotId, quantity)]),
@@ -258,8 +269,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Vinterauktion",
-                StartsAt: DateTime.Now.AddDays(6),
-                EndsAt: DateTime.Now.AddDays(7),
+                StartsAt: DateTime.UtcNow.AddDays(6),
+                EndsAt: DateTime.UtcNow.AddDays(7),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
@@ -284,8 +295,8 @@ public class UpdateAuctionHandlerTests
             new UpdateAuctionCommand(
                 AuctionId: auctionId,
                 Name: "Forårsauktion",
-                StartsAt: DateTime.Now.AddDays(4),
-                EndsAt: DateTime.Now.AddDays(-4),
+                StartsAt: DateTime.UtcNow.AddDays(4),
+                EndsAt: DateTime.UtcNow.AddDays(-4),
                 EmployeeId: employee.EmployeeId,
                 AuctionHouseId: null,
                 Lots: []),
@@ -307,21 +318,22 @@ public class UpdateAuctionHandlerTests
         var employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
 
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,
-                    DateTime.Now.AddDays(5),
-                    DateTime.Now.AddDays(6),
+                    DateTime.UtcNow.AddDays(5),
+                    DateTime.UtcNow.AddDays(6),
                     [.. lots.Select(lot => new AuctionLotSelection(lot.LotId, 1))]),
                 CancellationToken.None);
 
         Assert.True(created.Succeeded);
 
         return (
-            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher),
+            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher,
+                new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System),
             auctionRepository,
             employeeRepository,
             publisher,
@@ -339,24 +351,26 @@ public class UpdateAuctionHandlerTests
         var auctionRepository = new InMemoryAuctionRepository();
         var employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        var auction = new Auction
+        Auction auction = new Auction
         {
             AuctionId = Guid.NewGuid(),
             Name = "Igangværende auktion",
-            StartsAt = DateTime.Now.AddDays(-2),
-            EndedAt = DateTime.Now.AddDays(2),
+            StartsAt = DateTime.UtcNow.AddDays(-2),
+            EndedAt = DateTime.UtcNow.AddDays(2),
             EmployeeId = employee.EmployeeId,
             Employee = employee,
             AuctionHouseId = TestData.AuctionHouseId,
-            AuctionStatus = AuctionStatuses.Live
+            AuctionStatus = AuctionStatuses.Live,
+            StartedAtTime = DateTime.UtcNow.AddDays(-2)
         };
 
         await auctionRepository.AddAsync(auction, [], CancellationToken.None);
 
         return (
-            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher),
+            new UpdateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher,
+                new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System),
             auctionRepository,
             employeeRepository,
             publisher,

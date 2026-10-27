@@ -1,4 +1,9 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Infrastructure.Data;
+using Auktionshuset.Infrastructure.Service.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Infrastructure.Database;
@@ -80,9 +85,22 @@ namespace Auktionshuset.Infrastructure.Service
 
             // Existing infrastructure registrations
             services.AddRabbitMq(configuration, rabbitMqCredentials);
+            // Add infrastructure services here
+            services.AddRabbitMq(configuration);
+
+            services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+            services.AddScoped<IAuctionWriteSessionFactory, PostgresAuctionWriteSessionFactory>();
+            services.AddScoped<IAuctionLifeCycleStore, AuctionLifeCycleStore>();
+
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
             services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
+
+            services.AddScoped<IEmployeeRepository, EFEmployeeRepository>();
+            services.AddScoped<IAuctionRepository, EFAuctionRepository>();
+            services.AddScoped<IPlaceBidStore, AuctionLotBiddingStore>();
+            services.AddScoped<ICloseAuctionLotStore, AuctionLotBiddingStore>();
+
             services.AddScoped<ILotImageStore, PostgresLotImageStore>();
 
             return services;

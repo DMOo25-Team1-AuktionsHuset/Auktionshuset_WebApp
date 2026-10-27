@@ -1,6 +1,6 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Domain.Entities;
 using Auktionshuset.Domain;
+using Auktionshuset.Domain.Entities;
 using System.Collections.Concurrent;
 
 namespace Auktionshuset.Infrastructure.Service
@@ -21,6 +21,16 @@ namespace Auktionshuset.Infrastructure.Service
         /// </summary>
         public InMemoryEmployeeRepository()
         {
+            AuctionHouse auctionHouse = new AuctionHouse
+            {
+                AuctionHouseId = AuctionHouseId,
+                AuctionHouseName = "Haderslev Auktionshus",
+                Address = "Auktionsvej 1, 6100 Haderslev",
+                CVRNumber = 31415926,
+                PhoneNumber = "+45 74 52 10 00",
+                Email = "kontakt@haderslev-auktionshus.dk"
+            };
+
             Add(new Employee
             {
                 EmployeeId = Guid.Parse("8c0f5b21-4d6e-4a90-b3c7-1e2f3a4b5c60"),

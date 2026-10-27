@@ -1,8 +1,8 @@
-using System.ComponentModel.DataAnnotations;
-using Xunit;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Domain;
+using System.ComponentModel.DataAnnotations;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 
@@ -45,13 +45,19 @@ public class EmployeeRequestValidationTests
     {
         CreateEmployeeRequest create = new()
         {
-            FirstName = "Anna", LastName = "Jensen", BirthDate = default,
-            Address = "Testvej 1", AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
+            FirstName = "Anna",
+            LastName = "Jensen",
+            BirthDate = default,
+            Address = "Testvej 1",
+            AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
         };
         UpdateEmployeeRequest update = new()
         {
-            FirstName = "Anna", LastName = "Jensen", BirthDate = default,
-            Address = "Testvej 1", AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
+            FirstName = "Anna",
+            LastName = "Jensen",
+            BirthDate = default,
+            Address = "Testvej 1",
+            AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
         };
 
         Assert.Contains(Validate(create), result => result.MemberNames.Contains("BirthDate"));

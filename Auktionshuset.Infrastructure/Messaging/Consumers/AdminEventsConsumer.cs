@@ -1,181 +1,163 @@
-using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
-using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
-using Auktionshuset.Application.Admin.Lots.CreateLot;
-using Auktionshuset.Application.Admin.Lots.DeleteLot;
-using Auktionshuset.Application.Admin.Lots.UpdateLot;
-using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Text;
-using System.Text.Json;
-using Auktionshuset.Application.Admin.Employees.CreateEmployee;
-using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
-using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 
 namespace Auktionshuset.Infrastructure.Messaging.Consumers;
 
-internal sealed class AdminEventsConsumer : BackgroundService
+internal sealed class AdminEventsConsumer(
+    IRabbitMqConnectionProvider connections,
+    RabbitMqTopologyInitializer topology,
+    IServiceScopeFactory scopeFactory,
+    ILogger<AdminEventsConsumer> logger,
+    MessagingRuntime runtime)
+    : BackgroundService
 {
-    private const string QueueName = RabbitMqTopology.Queues.Admin;
-
-    private readonly IConnection _connection;
-    private readonly IServiceScopeFactory _scopeFactory;
-
-    public AdminEventsConsumer(
-        IConnection connection,
-        IServiceScopeFactory scopeFactory)
-    {
-        _connection = connection;
-        _scopeFactory = scopeFactory;
-    }
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
 
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        await using IChannel channel =
-            await _connection.CreateChannelAsync(
-                cancellationToken: stoppingToken);
-
-        string exchangeName = RabbitMqTopology.EventExchange;
-
-        await channel.ExchangeDeclareAsync(
-            exchange: exchangeName,
-            type: ExchangeType.Topic,
-            durable: true,
-            autoDelete: false,
-            cancellationToken: stoppingToken);
-
-        await channel.QueueDeclareAsync(
-            queue: QueueName,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            cancellationToken: stoppingToken);
-
-        foreach (string? routingKey in new[]
+        while (!stoppingToken.IsCancellationRequested)
         {
-            RabbitMqTopology.RoutingKeys.LotCreated,
-            RabbitMqTopology.RoutingKeys.LotUpdated,
-            RabbitMqTopology.RoutingKeys.LotDeleted,
-            RabbitMqTopology.RoutingKeys.AuctionCreated,
-            RabbitMqTopology.RoutingKeys.EmployeeCreated,
-            RabbitMqTopology.RoutingKeys.EmployeeUpdated,
-            RabbitMqTopology.RoutingKeys.EmployeeDeleted,
-            RabbitMqTopology.RoutingKeys.AuctionCreated,
-            RabbitMqTopology.RoutingKeys.AuctionUpdated,
-            RabbitMqTopology.RoutingKeys.AuctionDeleted
-        })
-        {
-            await channel.QueueBindAsync(
-                queue: QueueName,
-                exchange: exchangeName,
-                routingKey: routingKey,
-                cancellationToken: stoppingToken);
-        }
-
-        var consumer = new AsyncEventingBasicConsumer(channel);
-
-        consumer.ReceivedAsync += async (_, eventArgs) =>
-        {
-            string json = Encoding.UTF8.GetString(eventArgs.Body.ToArray());
-
-            switch (eventArgs.RoutingKey)
+            try
             {
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.LotCreated:
-                    await HandleAsync<LotCreatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.LotUpdated:
-                    await HandleAsync<LotUpdatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.LotDeleted:
-                    await HandleAsync<LotDeletedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionCreated:
-                    await HandleAsync<AuctionCreatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeCreated:
-                    await HandleAsync<EmployeeCreatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeDeleted:
-                    await HandleAsync<EmployeeDeletedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.EmployeeUpdated:
-                    await HandleAsync<EmployeeUpdatedIntegrationEvent>(
-                        json, stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionUpdated:
-                    await HandleAsync<AuctionUpdatedIntegrationEvent>(
-                        json,
-                        stoppingToken);
-                    break;
-
-                case var routingKey
-                    when routingKey == RabbitMqTopology.RoutingKeys.AuctionDeleted:
-                    await HandleAsync<AuctionDeletedIntegrationEvent>(
-                        json,
-                        stoppingToken);
-                    break;
-
-                default:
-                    throw new InvalidOperationException(
-                        $"No handler mapping exists for routing key '{eventArgs.RoutingKey}'.");
+                await RunSessionAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "RabbitMq consumer stopped. New retry in {RetrySeconds} seconds", RetryDelay.TotalSeconds);
             }
 
-            await channel.BasicAckAsync(
-                deliveryTag: eventArgs.DeliveryTag,
-                multiple: false,
-                cancellationToken: stoppingToken);
-        };
-
-        await channel.BasicConsumeAsync(
-            queue: QueueName,
-            autoAck: false,
-            consumer: consumer,
-            cancellationToken: stoppingToken);
-
-        await Task.Delay(
-            Timeout.Infinite,
-            stoppingToken);
+            try
+            {
+                await Task.Delay(RetryDelay, stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+        }
     }
 
-    private async Task HandleAsync<TEvent>(
-        string json,
-        CancellationToken cancellationToken)
-        where TEvent : IIntegrationEvent
+    private async Task RunSessionAsync(CancellationToken stoppingToken)
     {
-        TEvent message = JsonSerializer.Deserialize<TEvent>(json)
-            ?? throw new InvalidOperationException(
-                $"Failed to deserialize {typeof(TEvent).Name}");
+        using var session = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
 
-        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
+        var ended = new TaskCompletionSource<Exception>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
 
-        IIntegrationEventHandler<TEvent> handler = scope.ServiceProvider
-            .GetRequiredService<IIntegrationEventHandler<TEvent>>();
+        IConnection connection = await connections.GetConnectionAsync(session.Token);
 
-        await handler.HandleAsync(message, cancellationToken);
+        await using IChannel channel = await connection.CreateChannelAsync(cancellationToken: session.Token);
+
+        try
+        {
+            channel.ChannelShutdownAsync += (_, reason) =>
+            {
+                ended.TrySetResult(new IOException(
+                    $"RabbitMq channel closed: {reason.ReplyCode} {reason.ReplyText}"));
+
+                return Task.CompletedTask;
+            };
+
+            channel.CallbackExceptionAsync += (_, args) =>
+            {
+                ended.TrySetResult(args.Exception);
+
+                return Task.CompletedTask;
+            };
+
+            await topology.EnsureAsync(
+                channel,
+                session.Token);
+
+            await channel.BasicQosAsync(
+                prefetchSize: 0,
+                prefetchCount: 1,
+                global: false,
+                cancellationToken: session.Token);
+
+            var consumer = new AsyncEventingBasicConsumer(channel);
+
+            consumer.UnregisteredAsync += (_, _) =>
+            {
+                ended.TrySetResult(new IOException(
+                    "RabbitMq consumer was unregistered"));
+
+                return Task.CompletedTask;
+            };
+
+            consumer.ReceivedAsync += async (_, eventArgs) =>
+            {
+                try
+                {
+                    using var delivery = CancellationTokenSource.CreateLinkedTokenSource(
+                        session.Token, eventArgs.CancellationToken);
+
+                    byte[] payload = eventArgs.Body.ToArray();
+
+                    await using AsyncServiceScope scope =
+                     scopeFactory.CreateAsyncScope();
+
+                    var inbox = scope.ServiceProvider.GetRequiredService<IInboxStore>();
+
+
+                    InboxTypes inboxResult = await inbox.StoreNewMessageAsync(
+                        consumerName: RabbitMqTopology.Queues.Admin,
+                        eventType: eventArgs.RoutingKey,
+                        transportMessageId: eventArgs.BasicProperties.MessageId,
+                        payload: payload,
+                        cancellationToken: delivery.Token);
+
+                    await channel.BasicAckAsync(
+                        deliveryTag: eventArgs.DeliveryTag,
+                        multiple: false,
+                        cancellationToken: delivery.Token);
+
+                    if (inboxResult == InboxTypes.Quarantined)
+                    {
+                        logger.LogWarning("Message quarantined: {MessageId}", eventArgs.BasicProperties.MessageId);
+                    }
+
+                    runtime.Received();
+                }
+                catch (Exception ex)
+                {
+                    // No ACK, the outer session ensures channel cleanup and restart
+                    ended.TrySetResult(ex);
+                }
+            };
+
+            await channel.BasicConsumeAsync(
+                queue: RabbitMqTopology.Queues.Admin,
+                autoAck: false,
+                consumer: consumer,
+                cancellationToken: session.Token);
+
+            runtime.SetConsumerActive(false);
+
+            logger.LogInformation(
+                "RabbitMq consumer listening to {QueueName}", RabbitMqTopology.Queues.Admin);
+
+            Exception failure = await ended.Task.WaitAsync(stoppingToken);
+
+            throw new IOException("RabbitMQ consumers session was interrupted", failure);
+        }
+        finally
+        {
+            runtime.Received();
+
+            // Stop eventual in processing before channel is disposed
+            await session.CancelAsync();
+        }
     }
 }

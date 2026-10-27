@@ -16,7 +16,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
                 .Produces<UpdateEmployeeResponse>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status404NotFound)
                 .ProducesValidationProblem()
-                .RequireAuthorization(SecurityPolicies.Admin);
+                .RequireAuthorization(SecurityPolicies.CanUpdateEmployee);
 
             return group;
         }
@@ -27,7 +27,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee
             [FromServices] UpdateEmployeeHandler handler,
             CancellationToken cancellationToken)
         {
-            var command = new UpdateEmployeeCommand(
+            UpdateEmployeeCommand command = new UpdateEmployeeCommand(
                 EmployeeId: employeeId,
                 FirstName: request.FirstName.Trim(),
                 LastName: request.LastName.Trim(),

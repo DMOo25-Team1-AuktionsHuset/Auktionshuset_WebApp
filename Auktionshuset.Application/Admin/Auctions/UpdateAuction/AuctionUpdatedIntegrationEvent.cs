@@ -8,7 +8,7 @@ public sealed record AuctionUpdatedIntegrationEvent(
     string Name,
     string Status,
     DateTime StartsAt,
-    DateTime EndsAt,
+    DateTime? EndsAt,
     int LotCount,
     int ItemCount,
     DateTime OccurredAt) : IIntegrationEvent;
