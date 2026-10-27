@@ -533,11 +533,58 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("InboxMessages_Identity");
 
+                    b.HasIndex("InboxQuarantinedAtTime", "InboxId")
+                        .HasDatabaseName("InboxMessages_Quarantine")
+                        .HasFilter("\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NOT NULL");
+
                     b.HasIndex("ConsumerName", "NextAttemptAtTime", "ReceivedAtTime", "InboxId")
                         .HasDatabaseName("InboxMessages_Ready")
                         .HasFilter("\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
 
                     b.ToTable("InboxMessages");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Infrastructure.Data.MessageReplayAudit", b =>
+                {
+                    b.Property<Guid>("ReplayId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Pipeline")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<int>("PreviousAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PreviousError")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("RequestedAtTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ReplayId");
+
+                    b.HasIndex("Pipeline", "MessageId", "RequestedAtTime");
+
+                    b.ToTable("MessageReplayAudits", (string)null);
                 });
 
             modelBuilder.Entity("Auktionshuset.Infrastructure.Data.OutboxMessage", b =>
@@ -581,6 +628,14 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("OutboxId");
+
+                    b.HasIndex("ProcessedAtTime", "OutboxId")
+                        .HasDatabaseName("OutboxMessages_Retention")
+                        .HasFilter("\"ProcessedAtTime\" IS NOT NULL AND \"QuarantinedAtTime\" IS NULL");
+
+                    b.HasIndex("QuarantinedAtTime", "OutboxId")
+                        .HasDatabaseName("OutboxMessages_Quarantine")
+                        .HasFilter("\"ProcessedAtTime\" IS NULL AND \"QuarantinedAtTime\" IS NOT NULL");
 
                     b.HasIndex("NextAttemptAtTime", "OccurredAtTime", "OutboxId")
                         .HasDatabaseName("OutboxMessages_Ready")

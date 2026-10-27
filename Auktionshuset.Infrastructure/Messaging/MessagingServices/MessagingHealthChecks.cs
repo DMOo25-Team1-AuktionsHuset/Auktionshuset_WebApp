@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
+﻿using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -24,9 +21,9 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
         }
     }
 
-    internal sealed class MessagingHealthCheck(IServiceScopeFactory scopeFactory, 
-        MessagingRuntime runtime, 
-        IOptions<MessagingOperationsOptions> options, 
+    internal sealed class MessagingHealthCheck(IServiceScopeFactory scopeFactory,
+        MessagingRuntime runtime,
+        IOptions<MessagingOperationsOptions> options,
         TimeProvider clock) : IHealthCheck
     {
         public async Task<HealthCheckResult> CheckHealthAsync(
@@ -37,8 +34,8 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
 
             var db = scope.ServiceProvider.GetRequiredService<AHDBContext>();
 
-            if(!await db.Database.CanConnectAsync(cancellationToken))
-              return HealthCheckResult.Unhealthy("Databasen er ikke tilgængelig.");
+            if (!await db.Database.CanConnectAsync(cancellationToken))
+                return HealthCheckResult.Unhealthy("Databasen er ikke tilgængelig.");
 
             var view = runtime.Read();
             var settings = options.Value;
@@ -58,10 +55,10 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
             {
                 double sampleAge = (now - view.Status.SampledAtTime).TotalSeconds;
 
-                if (sampleAge > settings.StatusSampleIntervalSeconds*3)
+                if (sampleAge > settings.StatusSampleIntervalSeconds * 3)
                     problems.Add("Statusmålingen er for gammel");
 
-                foreach (var queue in view.Status.Queues)
+                foreach (QueueStatus queue in view.Status.Queues)
                 {
                     if (queue.Quarantined > 0)
                         problems.Add($"{queue.Pipeline} har karantæne beskeder");
@@ -86,7 +83,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
                     problems.Add("RabbitMQ-consumeren er ikke aktiv.");
             }
 
-            if (!startupGrace 
+            if (!startupGrace
                 && settings.RunMaintenance
                 && IsStale(view.MaintenanceDbActivity))
                 problems.Add("Maintenance-workerens heartbeat mangler.");

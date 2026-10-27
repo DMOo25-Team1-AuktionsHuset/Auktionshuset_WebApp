@@ -8,6 +8,7 @@ using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
 using Auktionshuset.Infrastructure.Service.Lots;
 using Auktionshuset.Infrastructure.Service.Vault;
 using Microsoft.EntityFrameworkCore;

@@ -2,22 +2,17 @@ using Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction;
 using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
-using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
+using Auktionshuset.Api.Endpoints.Admin.Messaging;
 using Auktionshuset.Api.Endpoints.Auth;
-using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Application.Admin.Auctions.CreateAuction;
-using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Service;
-using Auktionshuset.Infrastructure.Messaging;
-using Auktionshuset.Api.Endpoints.Admin.Messaging;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -79,11 +74,14 @@ app.MapCloseAuctionLotEndpoint();
 
 app.MapMessagingEndpoints();
 
+
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
 
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = registration => registration.Tags.Contains("ready") }).AllowAnonymous();
 
-app.MapHealthChecks("/health/messaging", new HealthCheckOptions { Predicate = registration => registration.Tags.Contains("messaging"),
+app.MapHealthChecks("/health/messaging", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("messaging"),
     ResponseWriter = async (context, report) =>
         {
             await context.Response.WriteAsJsonAsync(new
@@ -99,7 +97,7 @@ app.MapHealthChecks("/health/messaging", new HealthCheckOptions { Predicate = re
                 })
             }, cancellationToken: context.RequestAborted);
         }
-    }).RequireAuthorization(SecurityPolicies.Admin);
+}).RequireAuthorization(SecurityPolicies.Admin);
 
 
 app.MapHub<AuctionHub>("/hubs/auction", options => options.CloseOnAuthenticationExpiration = true)
