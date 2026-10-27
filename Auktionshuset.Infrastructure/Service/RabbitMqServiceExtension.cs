@@ -33,10 +33,8 @@ namespace Auktionshuset.Infrastructure.Service
             {
                 HostName = GetRequiredConfigurationValue(
                     configuration, "RabbitMQ:HostName"),
-                UserName = GetRequiredConfigurationValue(
-                    configuration, "RabbitMQ:UserName"),
-                Password = GetRequiredConfigurationValue(
-                    configuration, "RabbitMQ:Password"),
+                UserName = credentials.Username,
+                Password = credentials.Password,
                 Port = GetRequiredRabbitMqPort(configuration),
                 VirtualHost = configuration["RabbitMQ:VirtualHost"] ?? "/",
                 ClientProvidedName = "auktionshuset-api",
