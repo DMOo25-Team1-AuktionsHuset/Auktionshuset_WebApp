@@ -20,7 +20,7 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<Auction> Auction => Set<Auction>();
         public DbSet<AuctionLot> AuctionLot => Set<AuctionLot>();
         public DbSet<Employee> Employee => Set<Employee>();
-        public DbSet<DeviceCredential> DeviceCredential => Set<DeviceCredential>();
+        public DbSet<DeviceCredential> DeviceCredentials => Set<DeviceCredential>();
         public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
         public DbSet<Bid> Bids => Set<Bid>();
         public DbSet<Customer> Customers => Set<Customer>();

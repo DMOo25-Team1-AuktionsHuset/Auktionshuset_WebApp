@@ -8,6 +8,6 @@ namespace Auktionshuset.Application.Abstraction.Auth
     {
         string GenerateSecret();
         string HashSecret(string secret);
-        bool VerifySecret(string secret, string? storedHash);
+        bool VerifySecret(string? secret, string? storedHash);
     }
 }
