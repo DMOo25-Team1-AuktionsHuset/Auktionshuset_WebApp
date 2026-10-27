@@ -1,9 +1,9 @@
-﻿using Auktionshuset.Application.EventHandling;
-using Microsoft.AspNetCore.SignalR;
-using Auktionshuset.Api.Hubs;
+﻿using Auktionshuset.Api.Hubs;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
+using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.DeleteEmployee;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Auktionshuset.Api.Events.Admin.Employee
 {
@@ -13,7 +13,7 @@ namespace Auktionshuset.Api.Events.Admin.Employee
     {
         public Task HandleAsync(EmployeeDeletedIntegrationEvent message, CancellationToken cancellationToken)
         {
-            var notification = new DeleteEmployeeNotification(
+            DeleteEmployeeNotification notification = new DeleteEmployeeNotification(
                 EmployeeId: message.EmployeeId);
             return hubContext.Clients.All.EmployeeDeletedAsync(notification);
         }

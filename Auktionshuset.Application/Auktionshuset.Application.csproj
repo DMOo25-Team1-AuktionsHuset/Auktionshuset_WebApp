@@ -13,4 +13,8 @@
     <ProjectReference Include="..\Auktionshuset.Domain\Auktionshuset.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Admin\Auctions\StartAuction\" />
+  </ItemGroup>
+
 </Project>

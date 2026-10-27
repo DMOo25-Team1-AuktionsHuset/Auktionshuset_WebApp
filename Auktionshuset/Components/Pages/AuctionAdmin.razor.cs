@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Globalization;
 using System.Security.Claims;
+using Auktionshuset.Contracts.Time;
 
 namespace Auktionshuset.Components.Pages;
 
@@ -46,6 +47,9 @@ public partial class AuctionAdmin : IDisposable
 
     [Inject]
     private AuctionRealtimeService AuctionRealtimeService { get; set; } = default!;
+
+    [Inject]
+    private TimeProvider Clock { get; set; } = default!;
 
 
     // --- Formular ---------------------------------------------------------
@@ -89,6 +93,7 @@ public partial class AuctionAdmin : IDisposable
     private bool canCreateAuctions;
     private bool canUpdateAuctions;
     private bool canDeleteAuctions;
+    private int auctionLoadVersion;
 
     /// <summary>
     /// One genstand chosen for the auction, with the number of units the auction includes.
@@ -127,22 +132,12 @@ public partial class AuctionAdmin : IDisposable
     /// <summary>
     /// Gets the status the form values currently imply, so the draft can be previewed before saving.
     /// </summary>
-    private string DerivedStatus
-    {
-        get
-        {
-            DateTime? startsAt = model.GetStartsAt();
-            DateTime? endsAt = model.GetEndsAt();
-
-            if (startsAt is null || endsAt is null)
-            {
-                return "Ikke fastsat";
-            }
-
-            return DeriveStatus(startsAt.Value, endsAt.Value);
-        }
-    }
-
+    private string DerivedStatus =>
+        model.GetStartsAt() is null
+            ? "Ikke fastsat"
+            : StatusUpcoming;
+    
+    
     private IReadOnlyList<AuctionListItemResponse> FilteredAuctions
     {
         get
@@ -192,18 +187,24 @@ public partial class AuctionAdmin : IDisposable
             return;
         }
 
-        AuctionRealtimeService.AuctionCreated += OnAuctionCreatedAsync;
-        AuctionRealtimeService.AuctionUpdated += OnAuctionUpdatedAsync;
-        AuctionRealtimeService.AuctionDeleted += OnAuctionDeletedAsync;
+        AuctionRealtimeService.Invalidated += RefreshAuctionsAsync;
+        AuctionRealtimeService.ConnectionChanged += OnAuctionConnectionChangedAsync;
 
         try
         {
             await AuctionRealtimeService.StartAsync();
+
+            await OnAuctionConnectionChangedAsync();
+
+            await RefreshAuctionsAsync();
         }
         catch (Exception)
         {
-            realtimeError = "Liveforbindelsen til auktioner kunne ikke startes. Siden kan stadig bruges, men listen opdateres ikke automatisk.";
-            StateHasChanged();
+            if(!isDisposed)
+            {
+                realtimeError = "Liveforbindelsen kunne ikke startes.";
+                StateHasChanged();
+            }
         }
     }
 
@@ -211,28 +212,9 @@ public partial class AuctionAdmin : IDisposable
     {
         isDisposed = true;
 
-        AuctionRealtimeService.AuctionCreated -= OnAuctionCreatedAsync;
-        AuctionRealtimeService.AuctionUpdated -= OnAuctionUpdatedAsync;
-        AuctionRealtimeService.AuctionDeleted -= OnAuctionDeletedAsync;
-
+        AuctionRealtimeService.Invalidated -= RefreshAuctionsAsync;
+        AuctionRealtimeService.ConnectionChanged -= OnAuctionConnectionChangedAsync;
     }
-
-    /// <summary>
-    /// Reloads the dashboard whenever an auction changes anywhere, so the list never shows stale or
-    /// duplicated rows.
-    /// </summary>
-    /// <returns>A task that completes once the list has been reloaded.</returns>
-    private Task OnAuctionCreatedAsync(CreateAuctionNotification notification) =>
-        RefreshAuctionsAsync();
-
-    /// <inheritdoc cref="OnAuctionCreatedAsync"/>
-    private Task OnAuctionUpdatedAsync(UpdateAuctionNotification notification) =>
-        RefreshAuctionsAsync();
-
-    /// <inheritdoc cref="OnAuctionCreatedAsync"/>
-    private Task OnAuctionDeletedAsync(DeleteAuctionNotification notification) =>
-        RefreshAuctionsAsync();
-
 
     private Task RefreshAuctionsAsync()
     {
@@ -243,7 +225,30 @@ public partial class AuctionAdmin : IDisposable
 
         return InvokeAsync(async () =>
         {
+            if (isDisposed)
+                return;
+
             await LoadAuctionsAsync();
+
+            if (!isDisposed)
+                StateHasChanged();
+        });
+    }
+
+    private Task OnAuctionConnectionChangedAsync()
+    {
+        if (isDisposed)
+            return Task.CompletedTask;
+
+        return InvokeAsync(() =>
+        {
+            if (isDisposed)
+                return;
+
+            realtimeError = AuctionRealtimeService.isConnected
+                ? null
+                : "Liveforbindelsen er ikke tilsluttet, listen opdateres ikke automatisk";
+
             StateHasChanged();
         });
     }
@@ -273,11 +278,35 @@ public partial class AuctionAdmin : IDisposable
         DateTime? startsAt = model.GetStartsAt();
         DateTime? endsAt = model.GetEndsAt();
 
-        if (startsAt is null || endsAt is null)
+        if (startsAt is null || (!string.IsNullOrWhiteSpace(model.EndTime) && endsAt is null))
         {
-            statusMessage = "Udfyld startdato, starttid og sluttid, før auktionen gemmes.";
+            statusMessage = "Udfyld en gyldig startdato og starttid før auktionen gemmes.";
             submissionSucceeded = false;
             return;
+        }
+
+        if (!CopenhagenTime.TryToUtc(startsAt.Value, out DateTime startsAtUtc, out string? conversionError))
+        {
+            statusMessage = conversionError;
+            submissionSucceeded = false;
+            return;
+        }
+
+        DateTime? endsAtUtc = null;
+
+        if (endsAt is DateTime localEnd)
+        {
+            if (!CopenhagenTime.TryToUtc(
+                localEnd,
+                out DateTime convertedEnd,
+                out conversionError))
+            {
+                statusMessage = conversionError;
+                submissionSucceeded = false;
+                return;
+            }
+
+            endsAtUtc = convertedEnd;
         }
 
         isSubmitting = true;
@@ -297,8 +326,8 @@ public partial class AuctionAdmin : IDisposable
                 await AuctionService.UpdateAsync(auctionId, new UpdateAuctionRequest
                 {
                     Name = model.Name.Trim(),
-                    StartsAt = startsAt,
-                    EndsAt = endsAt,
+                    StartsAt = new DateTimeOffset(startsAtUtc),
+                    EndsAt = endsAtUtc is DateTime endUtc ? new DateTimeOffset(endUtc) : null,
                     EmployeeId = model.EmployeeId,
                     Lots = requestLots
                 });
@@ -310,8 +339,8 @@ public partial class AuctionAdmin : IDisposable
                 CreateAuctionResponse response = await AuctionService.CreateAsync(new CreateAuctionRequest
                 {
                     Name = model.Name.Trim(),
-                    StartsAt = startsAt,
-                    EndsAt = endsAt,
+                    StartsAt = new DateTimeOffset(startsAtUtc),
+                    EndsAt = endsAtUtc is DateTime endUtc ? new DateTimeOffset(endUtc) : null,
                     EmployeeId = model.EmployeeId,
                     Lots = requestLots
                 });
@@ -368,16 +397,22 @@ public partial class AuctionAdmin : IDisposable
                 return;
             }
 
+            DateTime localStart = CopenhagenTime.FromUtc(detail.StartsAt);
+
+            DateTime? localEnd = detail.EndsAt is DateTime endUtc
+                ? CopenhagenTime.FromUtc(endUtc)
+                : null;
+
             editingAuctionId = detail.AuctionId;
 
             model = new CreateAuctionFormModel
             {
                 Name = detail.Name,
-                StartDate = detail.StartsAt.Date,
-                StartTime = detail.StartsAt.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EndTime = detail.EndsAt?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
+                StartDate = localStart.Date,
+                StartTime = localStart.ToString("HH:mm", CultureInfo.InvariantCulture),
+                EndTime = localEnd?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty,
                 EmployeeId = detail.EmployeeId,
-                RequireFutureStart = detail.StartsAt > DateTime.Now
+                RequireFutureStart = detail.StartsAt > Clock.GetUtcNow().UtcDateTime
             };
 
             editContext = new EditContext(model);
@@ -475,29 +510,50 @@ public partial class AuctionAdmin : IDisposable
 
     private async Task LoadAuctionsAsync()
     {
+        if (isDisposed)
+            return;
+
+        int version = ++auctionLoadVersion;
+
         isLoadingAuctions = true;
         auctionListError = null;
 
         try
         {
-            auctions = await AuctionService.GetAllAsync();
-            auctionPage = Math.Clamp(auctionPage, 1, TotalAuctionPages);
+            var result = await AuctionService.GetAllAsync();
+
+            if (isDisposed || version != auctionLoadVersion)
+                return;
+
+            auctions = result;
+            auctionPage = Math.Clamp(
+                auctionPage,
+                1,
+                TotalAuctionPages);
         }
-        catch (AuctionApiException exception)
+        catch (Exception ex) when (ex
+            is AuctionApiException
+            or HttpRequestException
+            or TaskCanceledException)
         {
-            auctionListError = exception.Message;
-        }
-        catch (HttpRequestException)
-        {
-            auctionListError = "Listen over auktioner kunne ikke hentes. Prøv igen om lidt.";
-        }
-        catch (TaskCanceledException)
-        {
-            auctionListError = "Anmodningen om auktionslisten tog for lang tid. Prøv igen.";
+            if (isDisposed || version != auctionLoadVersion)
+                return;
+
+            auctionListError = ex switch
+            {
+                AuctionApiException apiException =>
+                    apiException.Message,
+
+                TaskCanceledException =>
+                    "Hentning af auktioner to for lang tid",
+
+                _ => "Auktioner kunne ikke hentes, prøv igen"
+            };
         }
         finally
         {
-            isLoadingAuctions = false;
+            if (!isDisposed && version == auctionLoadVersion)
+                isLoadingAuctions = false;
         }
     }
 
@@ -652,18 +708,6 @@ public partial class AuctionAdmin : IDisposable
     // --- Hjælpere ---------------------------------------------------------
 
     private static string ShortId(Guid id) => id.ToString("N")[..8];
-
-    private static string DeriveStatus(DateTime startsAt, DateTime endsAt)
-    {
-        DateTime now = DateTime.Now;
-
-        if (now < startsAt)
-        {
-            return StatusUpcoming;
-        }
-
-        return now < endsAt ? StatusLive : StatusEnded;
-    }
 
     private static string StatusCssClass(string status) => status switch
     {

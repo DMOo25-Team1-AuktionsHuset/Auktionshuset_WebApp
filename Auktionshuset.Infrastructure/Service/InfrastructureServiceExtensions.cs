@@ -1,8 +1,14 @@
 using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Infrastructure.Data;
+using Auktionshuset.Infrastructure.Service.Auctions;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Repositories;
+using Auktionshuset.Infrastructure.Messaging.MessagingServices;
 using Auktionshuset.Infrastructure.Service.Lots;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +28,6 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
-
             var connectionString =
                 configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
@@ -33,10 +38,19 @@ namespace Auktionshuset.Infrastructure.Service
 
             // Add infrastructure services here
             services.AddRabbitMq(configuration);
+            services.AddMessagingOperations(configuration);
+
+            services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+            services.AddScoped<IAuctionWriteSessionFactory, PostgresAuctionWriteSessionFactory>();
+            services.AddScoped<IAuctionLifeCycleStore, AuctionLifeCycleStore>();
+
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
 
-            services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
+            services.AddScoped<IEmployeeRepository, EFEmployeeRepository>();
+            services.AddScoped<IAuctionRepository, EFAuctionRepository>();
+            services.AddScoped<IPlaceBidStore, AuctionLotBiddingStore>();
+            services.AddScoped<ICloseAuctionLotStore, AuctionLotBiddingStore>();
 
             services.AddScoped<ILotImageStore, PostgresLotImageStore>();
 

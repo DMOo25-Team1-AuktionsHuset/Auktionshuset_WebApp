@@ -6,7 +6,13 @@ public sealed record AuctionLotResponse(
     string Category,
     int Quantity,
     decimal EstimatedValue,
-    string? ImageUrl);
+    string? ImageUrl,
+    Guid AuctionLotId,
+    bool OpenForBids,
+    decimal CurrentPrice,
+    int SequenceNumber,
+    Guid? CurrentHighestBidId,
+    DateTime? ClosedAtTime);
 
 public sealed record AuctionDetailResponse(
     Guid AuctionId,

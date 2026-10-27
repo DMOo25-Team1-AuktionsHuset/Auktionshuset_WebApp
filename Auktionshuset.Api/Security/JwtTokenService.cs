@@ -1,7 +1,7 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Auktionshuset.Api.Security;
 
@@ -18,9 +18,9 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
 
     public IssuedAccessToken Issue(AuthUser user)
     {
-        var issuer = GetRequiredValue("Authentication:Issuer");
-        var audience = GetRequiredValue("Authentication:Audience");
-        var signingKey = GetRequiredValue("Authentication:SigningKey");
+        string issuer = GetRequiredValue("Authentication:Issuer");
+        string audience = GetRequiredValue("Authentication:Audience");
+        string signingKey = GetRequiredValue("Authentication:SigningKey");
 
         if (Encoding.UTF8.GetByteCount(signingKey) < 32)
         {
@@ -28,7 +28,7 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
                  "Configuration value 'Authentication:SigningKey' must contain at least 32 bytes.");
         }
 
-        var lifetimeMinutes = configuration.GetValue(
+        int lifetimeMinutes = configuration.GetValue(
         "Authentication:AccessTokenLifetimeMinutes",
             DefaultLifetimeMinutes);
 
@@ -38,9 +38,9 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
                 "Configuration value 'Authentication:AccessTokenLifetimeMinutes' must be between 1 and 30.");
         }
 
-        var issuedAt = timeProvider.GetUtcNow();
-        var expiresAt = issuedAt.AddMinutes(lifetimeMinutes);
-        var claims = CreateClaims(user);
+        DateTimeOffset issuedAt = timeProvider.GetUtcNow();
+        DateTimeOffset expiresAt = issuedAt.AddMinutes(lifetimeMinutes);
+        IEnumerable<Claim> claims = CreateClaims(user);
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
             SecurityAlgorithms.HmacSha256);
@@ -54,21 +54,21 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
             credentials);
 
         return new IssuedAccessToken(
-        new JwtSecurityTokenHandler().WriteToken(token),expiresAt);
+        new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
     }
-    
+
     private static IEnumerable<Claim> CreateClaims(AuthUser user)
     {
         yield return new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString());
         yield return new Claim(JwtRegisteredClaimNames.Email, user.Email);
         yield return new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString());
 
-        foreach (var role in user.Roles.Distinct(StringComparer.Ordinal))
+        foreach (string role in user.Roles.Distinct(StringComparer.Ordinal))
         {
             yield return new Claim(ClaimTypes.Role, role);
         }
 
-        foreach (var permission in user.Permissions.Distinct(StringComparer.Ordinal))
+        foreach (string permission in user.Permissions.Distinct(StringComparer.Ordinal))
         {
             yield return new Claim(SecurityPermissions.ClaimType, permission);
         }

@@ -1,9 +1,10 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
+﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction.Admin.Lots;
+using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Lots.CreateLot
 {
-    public class CreateLotHandler(ILotRepository lotRepository, IIntegrationEventPublisher eventPublisher)
+    public class CreateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         /// <summary>
         /// Creates a lot from the specified command, adds it to the repository, and publishes a
@@ -13,7 +14,7 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot
         /// <returns>A result containing the identifier of the newly created lot.</returns>
         public async Task<CreateLotResult> HandleAsync(CreateLotCommand command, CancellationToken cancellationToken)
         {
-            var lot = new Domain.Entities.Lot
+            Lot lot = new Lot
             {
                 LotId = Guid.NewGuid(),
                 Name = command.Name,
@@ -27,7 +28,7 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot
 
             await lotRepository.AddAsync(lot, cancellationToken);
 
-            var integrationEvent = new LotCreatedIntegrationEvent(
+            LotCreatedIntegrationEvent integrationEvent = new LotCreatedIntegrationEvent(
                 EventId: Guid.NewGuid(),
                 LotId: lot.LotId,
                 AuctionHouseId: lot.AuctionHouseId,
@@ -35,9 +36,11 @@ namespace Auktionshuset.Application.Admin.Lots.CreateLot
                 Category: lot.Category,
                 Quantity: lot.Quantity,
                 EstimatedValue: lot.EstimatedValue,
-                OccurredAt: DateTime.Now);
+                OccurredAt: clock.GetUtcNow().UtcDateTime);
 
-            await eventPublisher.PublishAsync(integrationEvent, cancellationToken);
+            await outboxWriter.AddAsync(integrationEvent, cancellationToken);
+
+            await unitOfWork.CommitBatchAsync(cancellationToken);
 
             return new CreateLotResult(lot.LotId);
         }

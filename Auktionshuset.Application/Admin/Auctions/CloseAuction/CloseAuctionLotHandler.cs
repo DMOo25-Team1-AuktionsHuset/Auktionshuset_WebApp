@@ -1,0 +1,10 @@
+﻿using Auktionshuset.Application.Abstraction.Auction;
+
+namespace Auktionshuset.Application.Admin.Auctions.CloseAuction
+{
+    public class CloseAuctionLotHandler(ICloseAuctionLotStore store)
+    {
+        public Task<Guid?> HandleAsync(Guid auctionLotId, CancellationToken cancellationToken) =>
+            store.CloseAuctionLotAsync(auctionLotId, cancellationToken);
+    }
+}

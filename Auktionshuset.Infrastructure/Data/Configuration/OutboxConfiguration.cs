@@ -1,0 +1,57 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace Auktionshuset.Infrastructure.Data.Configuration
+{
+    public class OutboxConfiguration : IEntityTypeConfiguration<OutboxMessage>
+    {
+        public void Configure(EntityTypeBuilder<OutboxMessage> builder)
+        {
+            builder.HasKey(o => o.OutboxId);
+            builder.Property(o => o.EventType).IsRequired();
+            builder.Property(o => o.Payload).IsRequired();
+            builder.Property(o => o.OccurredAtTime).IsRequired();
+            builder.Property(o => o.ProcessedAtTime).IsRequired(false);
+            builder.Property(o => o.Attempts).IsRequired();
+            builder.Property(o => o.NextAttemptAtTime)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .IsRequired();
+            builder.Property(o => o.Error).IsRequired(false);
+            builder.Property(o => o.ProcessedAtTime);
+            builder.Property(o => o.LeaseToken);
+            builder.Property(o => o.LeaseExpiresAtTime);
+            builder.Property(o => o.QuarantinedAtTime);
+
+            builder.HasIndex(o => new
+            {
+                o.NextAttemptAtTime,
+                o.OccurredAtTime,
+                o.OutboxId
+            })
+            .HasDatabaseName("OutboxMessages_Ready")
+            .HasFilter(
+                "\"ProcessedAtTime\" IS NULL " +
+                "AND \"QuarantinedAtTime\" IS NULL");
+
+            builder.HasIndex(x => new
+            {
+                x.ProcessedAtTime,
+                x.OutboxId
+            })
+            .HasDatabaseName("OutboxMessages_Retention")
+            .HasFilter(
+                "\"ProcessedAtTime\" IS NOT NULL " +
+                "AND \"QuarantinedAtTime\" IS NULL");
+
+            builder.HasIndex(x => new
+            {
+                x.QuarantinedAtTime,
+                x.OutboxId
+            })
+            .HasDatabaseName("OutboxMessages_Quarantine")
+            .HasFilter(
+                "\"ProcessedAtTime\" IS NULL " +
+                "AND \"QuarantinedAtTime\" IS NOT NULL");
+        }
+    }
+}

@@ -1,4 +1,5 @@
 using Auktionshuset.Domain.Entities;
+using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
 namespace Auktionshuset.Application.Admin.Auctions;
 
@@ -27,9 +28,10 @@ internal static class AuctionValidation
     internal static void CollectErrors(
         string? name,
         DateTime startsAt,
-        DateTime endsAt,
+        DateTime? endsAt,
         Guid? employeeId,
         Employee? employee,
+        DateTime nowUtc,
         bool requireFutureStart,
         List<string> errors)
     {
@@ -40,15 +42,20 @@ internal static class AuctionValidation
             errors.Add($"Auktionsnavn skal være mellem {MinNameLength} og {MaxNameLength} tegn.");
         }
 
-        if (requireFutureStart && startsAt <= DateTime.Now)
-        {
-            errors.Add("Starttidspunktet skal ligge i fremtiden.");
-        }
+        bool startIsUtc = startsAt.Kind == DateTimeKind.Utc;
+        bool endIsUtc = endsAt == null || endsAt.Value.Kind == DateTimeKind.Utc;
 
-        if (endsAt <= startsAt)
-        {
+        if (!startIsUtc)
+            errors.Add("Starttidspunktet skal være angivet som UTC.");
+
+        if (!endIsUtc)
+            errors.Add("Sluttidspunktet skal være angivet som UTC.");
+
+        if (requireFutureStart && startIsUtc && startsAt <= nowUtc)
+            errors.Add("Starttidspunktet skal ligge i fremtiden.");
+
+        if (startIsUtc && endIsUtc && endsAt is DateTime end && end <= startsAt)
             errors.Add("Sluttidspunktet skal ligge efter starttidspunktet.");
-        }
 
         if (employeeId is not null && employee is null)
         {
@@ -68,7 +75,7 @@ internal static class AuctionValidation
     internal static IReadOnlyCollection<AuctionLot> BuildAuctionLots(
         IReadOnlyCollection<AuctionLotSelection> selections,
         IReadOnlyDictionary<Guid, Lot> lotsById,
-        Auction auction,
+        AuctionEntity auction,
         List<string> errors)
     {
         if (selections.Select(selection => selection.LotId).Distinct().Count() != selections.Count)
@@ -76,7 +83,7 @@ internal static class AuctionValidation
             errors.Add("Den samme genstand kan ikke tilføjes mere end én gang.");
         }
 
-        var auctionLots = new List<AuctionLot>();
+        List<AuctionLot> auctionLots = new List<AuctionLot>();
 
         foreach (AuctionLotSelection selection in selections)
         {
@@ -106,7 +113,9 @@ internal static class AuctionValidation
                 Auction = auction,
                 LotId = lot.LotId,
                 Lot = lot,
-                Quantity = selection.Quantity
+                Quantity = selection.Quantity,
+                OpenForBids = false,
+                CurrentHighestBid = null
             });
         }
 

@@ -1,4 +1,5 @@
 using Auktionshuset.Api.Events.Admin.Auction;
+using Auktionshuset.Application.Admin.Auctions.CloseAuction;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Auktionshuset.Application.Admin.Auctions.GetAuctions;
@@ -22,7 +23,7 @@ namespace Auktionshuset.Api.Services
             services.AddScoped<UpdateAuctionHandler>();
             services.AddScoped<DeleteAuctionHandler>();
             services.AddScoped<GetAuctionsHandler>();
-
+            services.AddScoped<CloseAuctionLotHandler>();
 
             services.AddScoped<
                 IIntegrationEventHandler<AuctionCreatedIntegrationEvent>,
@@ -35,6 +36,10 @@ namespace Auktionshuset.Api.Services
             services.AddScoped<
                 IIntegrationEventHandler<AuctionDeletedIntegrationEvent>,
                 DeleteAuctionRealTimeHandler>();
+
+            services.AddScoped<
+            IIntegrationEventHandler<AuctionLotClosedIntegrationEvent>,
+            AuctionLotClosedRealTimeHandler>();
 
             return services;
         }

@@ -5,6 +5,7 @@
 @using Auktionshuset.Contracts.Dto.Admin.Auction
 @using Auktionshuset.Contracts.Dto.Admin.Employee
 @using Auktionshuset.Contracts.Dto.Admin.Lot
+@using Auktionshuset.Contracts.Time
 
 <PageTitle>Auktioner | Auktionshuset</PageTitle>
 
@@ -30,6 +31,7 @@
                             <text>Udfyld auktionens oplysninger og vælg eventuelt genstande.</text>
                         }
                     </p>
+                    <p>Alle tidspunkter angives i dansk tid.</p>
                     @if (editingAuctionId.HasValue)
                     {
                         <span class="badge badge-live mode-badge" role="status">Redigeringstilstand</span>
@@ -42,7 +44,7 @@
                     <p class="status-preview" role="status" aria-live="polite">
                         <span class="badge @StatusCssClass(DerivedStatus)">@DerivedStatus</span>
                     </p>
-                    <span class="help-text">Udledes automatisk af start- og sluttidspunktet.</span>
+                    @* <span class="help-text">Udledes automatisk af start- og sluttidspunktet.</span> *@
                 </div>
             </div>
 
@@ -71,12 +73,12 @@
                             </div>
 
                             <div class="field">
-                                <label for="auction-end-time">Sluttid</label>
+                                <label for="auction-end-time">Sluttid (valgfri)</label>
                                 <InputText id="auction-end-time" type="time" @bind-Value="model.EndTime" />
                                 <ValidationMessage For="@(() => model.EndTime)" />
                             </div>
                         </div>
-                        <span class="help-text">Auktionen afholdes på startdatoen, og sluttiden skal ligge efter starttiden samme dag.</span>
+                        <span class="help-text">Auktionen afholdes på startdatoen, og sluttid kan stå tom.</span>
                     </div>
 
                     <div class="field field-wide">
@@ -418,9 +420,9 @@
                                     &middot; @auction.ItemCount enhed@(auction.ItemCount == 1 ? string.Empty : "er")
                                 </td>
 
-                                <td class="cell-date" data-label="Start">@auction.StartsAt.ToString("g", DanishCulture)</td>
+                                <td class="cell-date" data-label="Start">@CopenhagenTime.FromUtc(auction.StartsAt).ToString("g", DanishCulture)</td>
 
-                                <td class="cell-date" data-label="Slut">@(auction.EndsAt?.ToString("g", DanishCulture) ?? "Ikke fastsat")</td>
+                                <td class="cell-date" data-label="Slut">@(auction.EndsAt is DateTime endUtc ? CopenhagenTime.FromUtc(endUtc).ToString("g", DanishCulture) : "Ikke fastsat")</td>
 
                                 <td class="cell-actions" data-label="Handlinger">
                                     @if (canDeleteAuctions && pendingDeleteId == auction.AuctionId)

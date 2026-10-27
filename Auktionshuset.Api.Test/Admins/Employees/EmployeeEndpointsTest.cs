@@ -2,12 +2,13 @@ using Auktionshuset.Api.Endpoints.Admin.Employee.CreateEmployee;
 using Auktionshuset.Api.Endpoints.Admin.Employee.DeleteEmployee;
 using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployeeById;
 using Auktionshuset.Api.Endpoints.Admin.Employee.GetEmployees;
-using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Api.Endpoints.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
+using Auktionshuset.Application.Admin.Employees;
 using Auktionshuset.Application.Admin.Employees.CreateEmployee;
 using Auktionshuset.Application.Admin.Employees.DeleteEmployee;
 using Auktionshuset.Application.Admin.Employees.UpdateEmployee;
+using Auktionshuset.Contracts.Dto.Admin.Employee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.CreateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Domain;
@@ -27,7 +28,7 @@ public class EmployeeEndpointsTest
         Results<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>, NotFound> result =
             await GetEmployeeByIdEndpoint.HandleAsync(employee.EmployeeId, handler, CancellationToken.None);
 
-        var response = Assert.IsType<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>>(result.Result).Value!;
+        EmployeeResponse response = Assert.IsType<Ok<Auktionshuset.Contracts.Dto.Admin.Employee.EmployeeResponse>>(result.Result).Value!;
         Assert.Equal(employee.EmployeeId, response.EmployeeId);
         Assert.Equal(employee.AuctionHouseId, response.AuctionHouseId);
     }
@@ -60,7 +61,7 @@ public class EmployeeEndpointsTest
     {
         var repository = new TestEmployeeRepository();
         var publisher = new RecordingEventPublisher();
-        var handler = new CreateEmployeeHandler(repository, publisher);
+        var handler = new CreateEmployeeHandler(repository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
         CreateEmployeeRequest request = CreateRequest(
             firstName: "  Anna  ",
             lastName: "  Jensen ",
@@ -88,7 +89,7 @@ public class EmployeeEndpointsTest
         Employee employee = CreateEmployee();
         var repository = new TestEmployeeRepository(employee);
         var publisher = new RecordingEventPublisher();
-        var handler = new UpdateEmployeeHandler(repository, publisher);
+        var handler = new UpdateEmployeeHandler(repository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
         var request = new UpdateEmployeeRequest
         {
             FirstName = "  Updated  ",
@@ -119,8 +120,8 @@ public class EmployeeEndpointsTest
     [Fact]
     public async Task Update_WithUnknownEmployee_ReturnsNotFound()
     {
-        var repository = new TestEmployeeRepository();
-        var handler = new UpdateEmployeeHandler(repository, new RecordingEventPublisher());
+        TestEmployeeRepository repository = new TestEmployeeRepository();
+        UpdateEmployeeHandler handler = new UpdateEmployeeHandler(repository, new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<Ok<UpdateEmployeeResponse>, NotFound> result = await UpdateEmployeeEndpoint.HandleAsync(
             Guid.NewGuid(),
@@ -137,7 +138,7 @@ public class EmployeeEndpointsTest
         Employee employee = CreateEmployee();
         var repository = new TestEmployeeRepository(employee);
         var publisher = new RecordingEventPublisher();
-        var handler = new DeleteEmployeeHandler(repository, publisher);
+        var handler = new DeleteEmployeeHandler(repository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
         Results<NoContent, NotFound> result = await DeleteEmployeeEndpoint.HandleAsync(
             employee.EmployeeId,
@@ -154,7 +155,7 @@ public class EmployeeEndpointsTest
     {
         Results<NoContent, NotFound> result = await DeleteEmployeeEndpoint.HandleAsync(
             Guid.NewGuid(),
-            new DeleteEmployeeHandler(new TestEmployeeRepository(), new RecordingEventPublisher()),
+            new DeleteEmployeeHandler(new TestEmployeeRepository(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System),
             CancellationToken.None);
 
         Assert.IsType<NotFound>(result.Result);

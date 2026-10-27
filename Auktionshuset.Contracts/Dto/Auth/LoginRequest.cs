@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Auktionshuset.Contracts.Dto.Auth
 {
@@ -10,7 +7,7 @@ namespace Auktionshuset.Contracts.Dto.Auth
         /// <summary>
         /// The email address of the user.
         /// the password of the user.
-        
+
         [Required]
         [EmailAddress]
         [StringLength(254)]

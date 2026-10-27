@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using Auktionshuset.Contracts.Dto.Admin.Lot;
+﻿using Auktionshuset.Contracts.Dto.Admin.Lot;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Auktionshuset.Api.Hubs
 {

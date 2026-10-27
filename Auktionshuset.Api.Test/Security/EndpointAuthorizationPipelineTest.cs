@@ -11,6 +11,7 @@ using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Api.Test;
 using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.EventHandling;
@@ -172,8 +173,8 @@ public class EndpointAuthorizationPipelineTest
         using HttpResponseMessage auctionCreatedResponse = await SendJsonAsync(client, auctionAdminToken, HttpMethod.Post, "/api/auctions/", new
         {
             name = "Permission test auction",
-            startsAt = DateTime.Now.AddDays(1),
-            endsAt = DateTime.Now.AddDays(1).AddHours(1),
+            startsAt = DateTime.UtcNow.AddDays(1),
+            endsAt = DateTime.UtcNow.AddDays(1).AddHours(1),
             employeeId = (Guid?)null,
             lots = Array.Empty<object>()
         });
@@ -183,8 +184,8 @@ public class EndpointAuthorizationPipelineTest
         Assert.Equal(HttpStatusCode.OK, (await SendJsonAsync(client, auctionAdminToken, HttpMethod.Put, $"/api/auctions/{auctionId}", new
         {
             name = "Updated permission test auction",
-            startsAt = DateTime.Now.AddDays(1),
-            endsAt = DateTime.Now.AddDays(1).AddHours(1),
+            startsAt = DateTime.UtcNow.AddDays(1),
+            endsAt = DateTime.UtcNow.AddDays(1).AddHours(1),
             employeeId = (Guid?)null,
             lots = Array.Empty<object>()
         })).StatusCode);
@@ -264,6 +265,10 @@ public class EndpointAuthorizationPipelineTest
                     services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
                     services.AddSingleton<ILotRepository, InMemoryLotRepository>();
                     services.AddSingleton<IIntegrationEventPublisher, RecordingEventPublisher>();
+                    services.AddSingleton<IOutboxWriter, RecordingEventPublisher>();
+                    services.AddSingleton<IUnitOfWork, RecordingUnitOfWork>();
+                    services.AddSingleton<Auktionshuset.Application.Abstraction.Auction.IAuctionWriteSessionFactory,
+                        RecordingAuctionWriteSessionFactory>();
                     services.AddSingleton<ILotImageStore>(_ => new TestLotImageStore());
                     services.AddSingleton(configuration);
                     services.AddSecurityServices(configuration);

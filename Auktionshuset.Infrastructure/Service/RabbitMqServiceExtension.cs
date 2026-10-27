@@ -1,6 +1,11 @@
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
+using Auktionshuset.Infrastructure.Messaging.InboxServices;
+using Auktionshuset.Infrastructure.Messaging.OutboxServices;
+using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
@@ -19,43 +24,40 @@ namespace Auktionshuset.Infrastructure.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.AddSingleton<RabbitMqRoutingKeyResolver>();
+            services.AddSingleton<EventContractRegistry>();
+            services.AddSingleton<RabbitMqTopologyInitializer>();
 
-            services.AddSingleton<IConnection>(_ =>
+            services.AddSingleton(_ => new ConnectionFactory
             {
-                string hostName = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:HostName");
+                HostName = GetRequiredConfigurationValue(
+                    configuration, "RabbitMQ:HostName"),
+                UserName = GetRequiredConfigurationValue(
+                    configuration, "RabbitMQ:UserName"),
+                Password = GetRequiredConfigurationValue(
+                    configuration, "RabbitMQ:Password"),
+                Port = GetRequiredRabbitMqPort(configuration),
+                VirtualHost = configuration["RabbitMQ:VirtualHost"] ?? "/",
+                ClientProvidedName = "auktionshuset-api",
 
-                string userName = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:UserName");
+                // Provider and worker loop owns reconnect
+                AutomaticRecoveryEnabled = false,
+                TopologyRecoveryEnabled = false,
 
-                string password = GetRequiredConfigurationValue(
-                    configuration,
-                    "RabbitMQ:Password");
+                RequestedConnectionTimeout = TimeSpan.FromSeconds(5),
+                HandshakeContinuationTimeout = TimeSpan.FromSeconds(5),
+                ContinuationTimeout = TimeSpan.FromSeconds(5),
 
-                int port = GetRequiredRabbitMqPort(configuration);
+                RequestedHeartbeat = TimeSpan.FromSeconds(15),
 
-                var factory = new ConnectionFactory
-                {
-                    HostName = hostName,
-                    Port = port,
-                    UserName = userName,
-                    Password = password
-                };
-
-                return factory
-                    .CreateConnectionAsync()
-                    .GetAwaiter()
-                    .GetResult();
+                ConsumerDispatchConcurrency = 1
             });
 
-            services.AddSingleton<
-                IIntegrationEventPublisher,
-                RabbitMqIntegrationEventPublisher>();
-
-            services.AddHostedService<AdminEventsConsumer>();
+            services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
+            services.AddSingleton<IIntegrationEventPublisher, RabbitMqIntegrationEventPublisher>();
+            services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+            services.AddScoped<DbOutboxStore>();
+            services.AddScoped<DbInboxStore>();
+            services.AddScoped<IInboxStore>(services => services.GetRequiredService<DbInboxStore>());
 
             return services;
         }
@@ -82,10 +84,10 @@ namespace Auktionshuset.Infrastructure.Service
                 configuration,
                 "RabbitMQ:Port");
 
-            if (!int.TryParse(value, out int port) || port <= 0)
+            if (!int.TryParse(value, out int port) || port is < 1 or > 65535)
             {
                 throw new InvalidOperationException(
-                    "Configuration value 'RabbitMQ:Port' must be a positive integer.");
+                    "Configuration value 'RabbitMQ:Port' must be between 1 and 65535.");
             }
 
             return port;

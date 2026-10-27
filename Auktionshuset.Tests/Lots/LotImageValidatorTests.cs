@@ -1,5 +1,5 @@
-using Xunit;
 using Auktionshuset.Application.Admin.Lots.Images;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 

@@ -10,6 +10,8 @@
         public required string Name { get; set; }
         public required DateTime StartsAt { get; set; }
         public DateTime? EndedAt { get; set; }
+        public DateTime? StartedAtTime { get; set; }
+        public DateTime? ClosedAtTime { get; set; }
         public required string AuctionStatus { get; set; }
 
         public ICollection<AuctionLot> AuctionLots { get; set; } = new List<AuctionLot>();

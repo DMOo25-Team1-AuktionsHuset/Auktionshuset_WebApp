@@ -1,11 +1,12 @@
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
-using Auktionshuset.Application.EventHandling;
 
 namespace Auktionshuset.Application.Admin.Lots.DeleteLot;
 
 public sealed class DeleteLotHandler(
     ILotRepository lotRepository,
-    IIntegrationEventPublisher eventPublisher)
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork, TimeProvider clock)
 {
     /// <summary>
     /// Deletes the lot referenced by the specified command.
@@ -29,11 +30,13 @@ public sealed class DeleteLotHandler(
         var integrationEvent = new LotDeletedIntegrationEvent(
             EventId: Guid.NewGuid(),
             LotId: command.LotId,
-            OccurredAt: DateTime.UtcNow);
+            OccurredAt: clock.GetUtcNow().UtcDateTime);
 
-        await eventPublisher.PublishAsync(
+        await outboxWriter.AddAsync(
             integrationEvent,
             cancellationToken);
+
+        await unitOfWork.CommitBatchAsync(cancellationToken);
 
         return true;
     }

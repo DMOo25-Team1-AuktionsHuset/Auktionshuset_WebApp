@@ -50,14 +50,14 @@ namespace Auktionshuset.Infrastructure.Seed
             AHDBContext context,
             CancellationToken cancellationToken = default)
         {
-            var employeeIds = Employees.Select(employee => employee.EmployeeId).ToArray();
-            var existingIds = await context.Employee
+            Guid[] employeeIds = Employees.Select(employee => employee.EmployeeId).ToArray();
+            List<Guid> existingIds = await context.Employee
                 .Where(employee => employeeIds.Contains(employee.EmployeeId))
                 .Select(employee => employee.EmployeeId)
                 .ToListAsync(cancellationToken);
 
             var existingIdSet = existingIds.ToHashSet();
-            var missingEmployees = Employees
+            Employee[] missingEmployees = Employees
                 .Where(employee => !existingIdSet.Contains(employee.EmployeeId))
                 .ToArray();
 

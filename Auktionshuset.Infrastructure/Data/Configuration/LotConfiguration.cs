@@ -1,8 +1,8 @@
-﻿using System.Text.Json;
-using Auktionshuset.Domain.Entities;
+﻿using Auktionshuset.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json;
 
 namespace Auktionshuset.Infrastructure.Data.Configuration
 {
@@ -21,7 +21,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.Property(l => l.Quantity).IsRequired();
             entity.Property(l => l.EstimatedValue).IsRequired();
             entity.Property(l => l.Description).IsRequired();
-            var tags = entity.Property(l => l.Tags)
+            PropertyBuilder<List<string>> tags = entity.Property(l => l.Tags)
                 .IsRequired()
                 .HasColumnType("jsonb")
                 .HasConversion(

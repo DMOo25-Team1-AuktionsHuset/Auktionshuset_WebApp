@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-
-namespace Auktionshuset.Contracts.Dto.Auth
+﻿namespace Auktionshuset.Contracts.Dto.Auth
 {
     public sealed record LoginResponse(
         string AccessToken,
@@ -20,7 +15,7 @@ namespace Auktionshuset.Contracts.Dto.Auth
         IReadOnlyCollection<string> Roles,
         IReadOnlyCollection<string> Permissions
         );
-    
 
-    
+
+
 }

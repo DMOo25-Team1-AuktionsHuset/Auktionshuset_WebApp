@@ -24,7 +24,13 @@ public sealed record AuctionLotLine(
     string Category,
     int Quantity,
     decimal EstimatedValue,
-    string? ImageFileName);
+    string? ImageFileName,
+    Guid AuctionLotId,
+    bool OpenForBids,
+    decimal CurrentPrice,
+    int SequenceNumber,
+    Guid? CurrentHighestBidId,
+    DateTime? ClosedAtTime);
 
 /// <summary>
 /// The full detail view of a single auction.

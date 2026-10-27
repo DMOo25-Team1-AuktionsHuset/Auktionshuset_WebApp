@@ -1,6 +1,6 @@
-using Xunit;
-using Auktionshuset.Infrastructure.Service;
 using Auktionshuset.Domain.Entities;
+using Auktionshuset.Infrastructure.Service;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 
@@ -68,7 +68,7 @@ public class InMemoryEmployeeRepositoryTests
     public async Task AddAsync_AddsEmployee()
     {
         var repository = new InMemoryEmployeeRepository();
-        var employee = NewEmployee();
+        Employee employee = NewEmployee();
 
         await repository.AddAsync(employee, CancellationToken.None);
 
@@ -153,7 +153,7 @@ public class InMemoryEmployeeRepositoryTests
     [Fact]
     public async Task GetAllAsync_WhenCancelled_Throws()
     {
-        using var cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>

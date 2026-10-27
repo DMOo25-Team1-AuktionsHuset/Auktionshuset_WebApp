@@ -104,7 +104,7 @@ public class SecurityServiceExtensionsTest
             })
             .Build();
 
-        var services = new ServiceCollection();
+        ServiceCollection services = new ServiceCollection();
         services.AddLogging();
         services.AddSecurityServices(configuration);
 

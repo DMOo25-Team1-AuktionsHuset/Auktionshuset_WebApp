@@ -1,9 +1,9 @@
-using Xunit;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Service;
+using Xunit;
 
 namespace Auktionshuset.Tests;
 
@@ -87,19 +87,20 @@ public class DeleteAuctionHandlerTests
         var auctions = new InMemoryAuctionRepository();
         var employees = new TestEmployeeRepository();
         employees.Add(employee);
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        var createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher);
+        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
         CreateAuctionResult first = await createHandler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(1), DateTime.Now.AddDays(2)),
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2)),
             CancellationToken.None);
 
         CreateAuctionResult second = await createHandler.HandleAsync(
-            TestData.CreateCommand(employee.EmployeeId, DateTime.Now.AddDays(3), DateTime.Now.AddDays(4)),
+            TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(3), DateTime.UtcNow.AddDays(4)),
             CancellationToken.None);
 
-        return (new DeleteAuctionHandler(auctions, publisher), auctions, first.AuctionId, second.AuctionId);
+        return (new DeleteAuctionHandler(auctions, publisher,
+            new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System), auctions, first.AuctionId, second.AuctionId);
     }
 
     private static async Task<(DeleteAuctionHandler Handler, InMemoryAuctionRepository Auctions, Guid AuctionId, RecordingEventPublisher Publisher)> CreateHandlerWithPublisherAsync(
@@ -111,19 +112,20 @@ public class DeleteAuctionHandlerTests
         var employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
 
-        var publisher = new RecordingEventPublisher();
+        RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,
-                    DateTime.Now.AddDays(5),
-                    DateTime.Now.AddDays(6),
+                    DateTime.UtcNow.AddDays(5),
+                    DateTime.UtcNow.AddDays(6),
                     [.. lots.Select(lot => new AuctionLotSelection(lot.LotId, 1))]),
                 CancellationToken.None);
 
         Assert.True(created.Succeeded);
 
-        return (new DeleteAuctionHandler(auctionRepository, publisher), auctionRepository, created.AuctionId, publisher);
+        return (new DeleteAuctionHandler(auctionRepository, publisher,
+            new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System), auctionRepository, created.AuctionId, publisher);
     }
 }
