@@ -1,9 +1,7 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using Auktionshuset.Security;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Http;
 
 namespace Auktionshuset.Services;
 

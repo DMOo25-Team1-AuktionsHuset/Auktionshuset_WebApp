@@ -4,7 +4,6 @@ using Auktionshuset.Security;
 using Auktionshuset.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
@@ -44,14 +43,14 @@ builder.Services
         options.Events.OnValidatePrincipal = async context =>
         {
             string? sessionId = context.Principal?.FindFirstValue(ServerTicketStore.SessionIdClaim);
-            var sessions = context.HttpContext.RequestServices.GetRequiredService<BackendSessionService>();
+            BackendSessionService sessions = context.HttpContext.RequestServices.GetRequiredService<BackendSessionService>();
             if (sessionId is null || await sessions.GetAccessTokenAsync(sessionId, context.HttpContext.RequestAborted) is null)
             {
                 context.RejectPrincipal();
                 await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 return;
             }
-            var ticket = context.HttpContext.RequestServices.GetRequiredService<ServerTicketStore>().GetValidTicket(sessionId);
+            AuthenticationTicket? ticket = context.HttpContext.RequestServices.GetRequiredService<ServerTicketStore>().GetValidTicket(sessionId);
             if (ticket is not null) context.ReplacePrincipal(ticket.Principal);
         };
         options.Events.OnRedirectToLogin = context =>

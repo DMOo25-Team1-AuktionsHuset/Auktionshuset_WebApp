@@ -39,7 +39,7 @@ public static class AuthRateLimitingExtensions
                     error = "Too many authentication requests. Try again later."
                 }, cancellationToken);
             };
-            foreach (var (name, limit) in new[] { (Login, 5), (Refresh, 30), (Logout, 30) })
+            foreach ((string name, int limit) in new[] { (Login, 5), (Refresh, 30), (Logout, 30) })
                 options.AddPolicy(name, context => RateLimitPartition.GetSlidingWindowLimiter(
                     GetClientIp(context), _ => new SlidingWindowRateLimiterOptions
                     {
@@ -52,7 +52,7 @@ public static class AuthRateLimitingExtensions
 
     public static string GetClientIp(HttpContext context)
     {
-        var ip = context.Connection.RemoteIpAddress;
+        IPAddress? ip = context.Connection.RemoteIpAddress;
         return (ip?.IsIPv4MappedToIPv6 == true ? ip.MapToIPv4() : ip)?.ToString() ?? "unknown";
     }
 }

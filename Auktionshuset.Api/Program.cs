@@ -10,9 +10,6 @@ using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
-using Auktionshuset.Application.Abstraction.Admin.Auctions;
-using Auktionshuset.Application.Abstraction.Admin.Employees;
-using Auktionshuset.Infrastructure.Service;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -28,15 +25,8 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
 
-// needs its own service class
-builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
-builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
-
 //API Services
 builder.Services.AddApiServices();
-
-//Infrastructure Services
-builder.Services.AddInfrastructure(builder.Configuration);
 
 if (builder.Configuration.GetValue<bool>(
         "Observability:EnableOtlp"))

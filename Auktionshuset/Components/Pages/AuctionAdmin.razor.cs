@@ -7,13 +7,13 @@ using Auktionshuset.Contracts.Dto.Admin.Employee.UpdateEmployee;
 using Auktionshuset.Contracts.Dto.Admin.Lot;
 using Auktionshuset.Models;
 using Auktionshuset.Services;
-using Auktionshuset.Security;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Globalization;
 using System.Security.Claims;
 using Auktionshuset.Contracts.Time;
+using Auktionshuset.Security;
 
 namespace Auktionshuset.Components.Pages;
 

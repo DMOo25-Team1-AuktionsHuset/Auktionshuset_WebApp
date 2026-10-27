@@ -3,6 +3,7 @@ using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Messaging.Consumers;
+using Auktionshuset.Infrastructure.Service.Vault;
 using Auktionshuset.Infrastructure.Messaging.InboxServices;
 using Auktionshuset.Infrastructure.Messaging.OutboxServices;
 using Auktionshuset.Infrastructure.Messaging.RabbitMqServices;
@@ -22,7 +23,8 @@ namespace Auktionshuset.Infrastructure.Service
         /// <returns>The same service collection so that further calls can be chained.</returns>
         internal static IServiceCollection AddRabbitMq(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            RabbitMqCredentials credentials)
         {
             services.AddSingleton<EventContractRegistry>();
             services.AddSingleton<RabbitMqTopologyInitializer>();

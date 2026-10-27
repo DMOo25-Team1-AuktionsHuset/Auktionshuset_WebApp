@@ -4,13 +4,13 @@ Denne guide er til dig, der har hentet projektet, men aldrig har brugt Vault.
 Følg trinene i rækkefølge. Kommandoerne i denne guide køres på **din Windows-pc**.
 
 Du har allerede fået certifikatet og adgang til teamets VPN. Vault kører på vores
-fælles Linux-server. API'en bruger Vault til at hente databasebrugernavn og
-databaseadgangskode. Du behøver hverken installere Vault eller logge ind på dens
-webside for at køre projektet.
+fælles Linux-server. API'en bruger Vault til at hente brugernavn og adgangskode
+til både PostgreSQL og RabbitMQ. Du behøver hverken installere Vault eller logge
+ind på dens webside for at køre projektet.
 
-**Status for denne version:** Kun databaseoplysningerne hentes fra Vault.
-RabbitMQ og appens login kræver stadig lokal opsætning i trin 5. Denne guide
-ændrer ikke, hvor applikationen henter de øvrige hemmeligheder.
+**Status for denne version:** Database- og RabbitMQ-login hentes fra Vault.
+Serveradresser, porte og databasenavn skal være korrekt konfigureret. JWT-signering
+og appens bootstrap-login opsættes stadig lokalt i trin 5.
 
 ## 1. Hav dette klar
 
@@ -24,15 +24,18 @@ RabbitMQ og appens login kræver stadig lokal opsætning i trin 5. Denne guide
 
 Bed den projektansvarlige om disse oplysninger:
 
-| Oplysning | Hvad bruger du den til? |
-| --- | --- |
-| Vaults HTTPS-adresse | Adressen på vores fælles Vault, inklusive port. Brug den nøjagtige adresse, der passer til certifikatet. |
-| Backendrollens RoleID | Fortæller Vault, hvilken backendrolle API'en logger ind som. |
-| Dit personlige engangstoken (`wrapping_token`) | Bruges én gang til at hente dit SecretID. Bed først om det, når du er klar til trin 4. |
-| RabbitMQ-host, port, brugernavn og adgangskode | Skal bruges i trin 5 i den nuværende version. Brugernavn og adgangskode leveres fortroligt. |
+| Oplysning                                      | Hvad bruger du den til?                                                                                  |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Vaults HTTPS-adresse                           | Adressen på vores fælles Vault, inklusive port. Brug den nøjagtige adresse, der passer til certifikatet. |
+| Backendrollens RoleID                          | Fortæller Vault, hvilken backendrolle API'en logger ind som.                                             |
+| Dit personlige engangstoken (`wrapping_token`) | Bruges én gang til at hente dit SecretID. Bed først om det, når du er klar til trin 4.2. |
+| PostgreSQL-host, port og databasenavn | Kontrollér værdierne i trin 5.1. Databasebrugernavn og adgangskode hentes fra Vault. |
+| RabbitMQ-serverens Tailscale-adresse og port | Kontrollér værdierne i trin 5.1. API-forbindelsen bruger port `5672` i vores opsætning. RabbitMQ-login hentes fra Vault. |
 
-Projektansvarliges del af opsætningen står i
-[vejledningen til udlevering af adgang](vault-admin-onboarding.md).
+Den projektansvarlige skal sikre, at AppRole `auction-backend` har læseadgang
+til begge secrets: `auction/development/database` og
+`auction/development/rabbitmq`. Det er samme personlige SecretID, API'en bruger
+til at hente dem. Du skal ikke modtage en separat RabbitMQ-adgangskode.
 
 ### De tre slags login
 
@@ -81,41 +84,42 @@ fortsætter. Certifikatkontrollen skal forblive slået til.
 
 ## 4. Hent og gem din personlige Vault-adgang
 
-### 4.1. Kontrollér, om PowerShell må køre scriptet
+### 4.1. Kontrollér scriptkørsel, før du beder om engangstokenet
 
-Kør først denne kommando i vinduet fra trin 2. Den viser indstillingerne uden
-at ændre dem:
+Kør først i PowerShell-vinduet fra trin 2:
 
 ```powershell
 Get-ExecutionPolicy -List
 ```
 
-Se på rækkerne **MachinePolicy** og **UserPolicy**:
+Kommandoen viser indstillingerne uden at ændre dem. Se på rækkerne
+**MachinePolicy** og **UserPolicy**:
 
 - Hvis en af dem har en anden værdi end `Undefined`, er der en centralt fastsat
-  politik. Hvis den blokerer scriptet, skal du sende resultatet og fejlen til
-  den projektansvarlige eller IT. Fortsæt ikke med en politikændring nedenfor.
+  politik. Hvis den blokerer scriptet, skal den projektansvarlige eller IT hjælpe.
+  Fortsæt ikke med en politikændring nedenfor.
 - Hvis begge er `Undefined`, kan du kontrollere den gældende indstilling:
 
   ```powershell
   Get-ExecutionPolicy
   ```
 
-Hvis resultatet er **Restricted**, er scriptkørsel slået fra. På din egen
-udviklings-pc kan du tillade lokale scripts midlertidigt i **dette ene vindue**:
+Hvis resultatet er **Restricted**, kan din egen udviklings-pc ikke køre
+scriptfiler med den nuværende indstilling. Du kan tillade lokale scripts
+midlertidigt i **dette ene PowerShell-vindue**:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-Læs bekræftelsen, og godkend ændringen, hvis det er din egen udviklings-pc, og du
-vil køre teamets script. Administratorrettigheder er ikke nødvendige. Ændringen
-forsvinder, når dette PowerShell-vindue lukkes. `RemoteSigned` kræver stadig
-signatur på scripts, der er markeret som downloadet fra internettet.
+Læs bekræftelsen, og godkend med den tast, den angiver, hvis du vil køre teamets
+script på din egen udviklings-pc. Administratorrettigheder er ikke nødvendige.
+Ændringen forsvinder, når vinduet lukkes. Lad vinduet være åbent til trin 4.2.
+`RemoteSigned` kræver stadig signatur på filer, der er markeret som downloadet.
 
 Hvis den gældende indstilling allerede er `RemoteSigned` eller `Unrestricted`,
-behøver du ikke ændre den for dette trin. Hvis den er `AllSigned`, så få den
-projektansvarlige eller IT til at hjælpe med en signeret udgave af scriptet.
+behøver du ikke ændre den for dette trin. Ved `AllSigned` skal den
+projektansvarlige eller IT hjælpe med en signeret udgave af scriptet.
 
 **Hvis fejlteksten siger "not digitally signed":** Få først den projektansvarlige
 til at kontrollere, at filen er teamets forventede script. Under `RemoteSigned`
@@ -125,8 +129,8 @@ kan den kontrollerede fil frigives enkeltvis:
 Unblock-File -LiteralPath .\scripts\Initialize-VaultEnvironment.ps1
 ```
 
-Det fjerner filens downloadmarkering; det ændrer ikke execution policy. Det
-opfylder ikke et krav om `AllSigned`. Frigiv kun denne kontrollerede fil.
+Det fjerner filens downloadmarkering og ændrer ikke execution policy. Det
+opfylder ikke et krav om `AllSigned`. Frigiv kun den kontrollerede fil.
 
 ### 4.2. Kør opsætningen i samme PowerShell-vindue
 
@@ -169,16 +173,49 @@ færdigt. Det bekræfter, at adgangen er gemt; selve API-login testes ved opstar
 Start-menuen**, og åbn solutionen. Et allerede åbent Visual Studio får ikke
 automatisk de nye miljøvariabler.
 
-Hvis scriptet stadig blokeres, så send hele fejlbeskeden og resultatet af
-`Get-ExecutionPolicy -List` til den projektansvarlige. Hvis engangstokenet er
-udløbet under fejlsøgningen, skal du bede om et nyt. En blokering før scriptstart
-har ikke i sig selv brugt tokenet.
+Hvis scriptet stadig blokeres, så send fejlbeskeden og resultatet af
+`Get-ExecutionPolicy -List` til den projektansvarlige. En blokering før
+scriptstart har ikke brugt engangstokenet, men det kan være udløbet under
+fejlsøgningen. Bed om et nyt, hvis leveringsfristen er overskredet.
 
-## 5. Opsæt RabbitMQ og dit login til appen
+## 5. Kontrollér serveradresser, og opsæt dit login til appen
 
-Dette trin er stadig nødvendigt, fordi koden endnu kun henter databaseoplysninger
-fra Vault. Der skal ikke tilføjes en databaseadgangskode eller en
-`ConnectionStrings:DefaultConnection` på din pc.
+### 5.1. Kontrollér PostgreSQL- og RabbitMQ-adresser
+
+Åbn `appsettings.Development.json` i **Auktionshuset.Api**. Kontrollér værdierne
+i `Database` og `RabbitMQ` med den projektansvarlige. Hvis teamets korrekte
+værdier allerede er hentet med koden, skal du beholde dem.
+
+Eksemplet nedenfor viser strukturen. Erstat pladsholderne med teamets værdier,
+og behold filens øvrige sektioner, eksempelvis `Logging` og `Authentication`:
+
+```json
+{
+  "Database": {
+    "Host": "TEAMETS-POSTGRESQL-HOST",
+    "Port": 5432,
+    "Name": "TEAMETS-DATABASENAVN"
+  },
+  "RabbitMQ": {
+    "HostName": "LINUX-SERVERENS-TAILSCALE-IP",
+    "Port": 5672
+  }
+}
+```
+
+Begge sektioner skal ligge på rodniveau. Bemærk kommaet efter `Database`-sektionen.
+Host skal ikke indeholde `http://`, `https://` eller et portnummer. RabbitMQs
+port `15672` er til webinterfacet; API'en bruger `5672` i vores opsætning.
+Brug den aftalte PostgreSQL-port, hvis den afviger fra eksemplets `5432`.
+
+Hvis du tidligere har angivet host, port eller databasenavn i User Secrets,
+overskriver de værdier filen. Ret dem til teamets værdier, eller fjern de lokale
+overrides, når de fælles JSON-indstillinger er korrekte.
+
+### 5.2. Opsæt JWT og din lokale bootstrap-konto
+
+Disse oplysninger hentes endnu ikke fra Vault. Database- og RabbitMQ-login
+hentes derimod automatisk ved opstart og skal ikke stå i din User Secrets-fil.
 
 1. Find **Auktionshuset.Api** i Visual Studios **Solution Explorer**.
 2. Højreklik på projektet, og vælg **Manage User Secrets** /
@@ -201,10 +238,14 @@ fra Vault. Der skal ikke tilføjes en databaseadgangskode eller en
 }
 ```
 
-Erstat alle pladsholdere. Brug RabbitMQ-porten fra den projektansvarlige; `5672`
-er kun et eksempel. Vælg din egen email og adgangskode til appens lokale
+Erstat alle pladsholdere. Vælg din egen email og adgangskode til appens lokale
 bootstrap-konto. Den nuværende kode giver denne konto rollen **SuperAdmin**.
 Kopier ikke en andens fulde `secrets.json`.
+
+Hvis du har gamle `RabbitMQ:UserName`, `RabbitMQ:Password` eller
+`ConnectionStrings:DefaultConnection` i User Secrets, skal de fjernes.
+Den nuværende integration bruger Vault til disse credentials. Behold andre
+indstillinger, du stadig har brug for, og kontrollér kommaerne efter redigering.
 
 ### Opret din lokale signing key
 
@@ -223,8 +264,8 @@ Kopiér resultatet til `Authentication:SigningKey` i din lokale User Secrets-fil
 Gem ikke resultatet i projektet eller gruppechatten. Gem filen med **Ctrl+S**.
 Issuer og audience kan beholde værdierne fra projektets almindelige konfiguration.
 
-Når RabbitMQ og login senere hentes fra Vault, skal dette trin opdateres og de
-overflødige lokale værdier fjernes.
+Når JWT-signering og bootstrap-login senere hentes fra Vault, skal trin 5.2
+opdateres og de overflødige lokale værdier fjernes.
 
 ## 6. Byg og start de to projekter
 
@@ -241,10 +282,12 @@ API'en bruger `https://localhost:7061`, og hjemmesiden bruger
 Hvis Visual Studio spørger om at stole på ASP.NET Cores lokale udviklingscertifikat,
 er det certifikatet til din lokale app. Det er separat fra teamets Vault-certifikat.
 
-Ved API-opstart hentes databaseoplysningerne fra Vault. API'en migrerer og seeder
-også databasen. Start mod den aftalte udviklingsdatabase. PostgreSQL skal tillade
-din pc's VPN-adresse, og den konfigurerede RabbitMQ-server skal være tilgængelig.
-Den projektansvarlige håndterer servernes adgangsregler.
+Ved API-opstart hentes både database- og RabbitMQ-login fra Vault. API'en
+migrerer og seeder også databasen. Start mod den aftalte udviklingsdatabase.
+PostgreSQL skal tillade din pc's VPN-adresse, og RabbitMQ skal kunne nås på
+Linux-serverens Tailscale-adresse og port `5672`. Den projektansvarlige håndterer
+servernes adgangsregler og kan kontrollere API-forbindelsen som `ah_backend`
+under **Connections** i RabbitMQs webinterface.
 
 ## 7. Kontrollér, at det virker
 
@@ -271,17 +314,18 @@ gentager trin 4. Dine eksisterende miljøvariabler bliver erstattet.
 | Fejl eller symptom | Hvad gør du? |
 | --- | --- |
 | `Test-Path` viser `False` | Find mappen med solutionen, eller hent den seneste kode. |
-| `PSSecurityException` / `running scripts is disabled` | Følg trin 4.1. Ved `Restricted` uden central politik kan `RemoteSigned` vælges for det aktuelle vindue. |
-| Scriptet er `not digitally signed` | Følg trin 4.1. Under `RemoteSigned` kan den kontrollerede fil frigives enkeltvis; ved `AllSigned` skal du have hjælp til signering. |
+| `PSSecurityException` / `running scripts is disabled` | Følg trin 4.1. Ved `Restricted` uden central politik kan du vælge `RemoteSigned` for det aktuelle PowerShell-vindue. |
+| Scriptet er `not digitally signed` | Følg trin 4.1. Under `RemoteSigned` kan den kontrollerede fil frigives enkeltvis. Ved `AllSigned` skal du have hjælp til signering. |
 | Vaults login-side kan ikke åbnes | Kontrollér VPN og den udleverede adresse. Kontakt den projektansvarlige. |
 | Certifikatfejl i browser eller script | Kontrollér det installerede CA-certifikat og det præcise hostnavn. Få hjælp; behold certifikatkontrollen. |
 | Engangstoken er udløbet eller allerede brugt | Bed om et nyt. Prøv ikke at pakke samme token ud i både browser og script. |
 | Tokenet er oprettet til en anden sti | Kontakt den projektansvarlige. Scriptet pakker det ikke ud. |
 | `VAULT_ADDR mangler` | Luk alle Visual Studio-vinduer, og åbn fra Start-menuen. Kontrollér, at trin 4 blev gennemført under din Windows-bruger. |
 | AppRole-login giver `invalid role or secret ID` | Bed den projektansvarlige kontrollere RoleID, SecretID, udløb og eventuelle IP-begrænsninger. |
-| Vault giver `permission denied` ved læsning | Backendrollens policy skal kontrolleres af den projektansvarlige. |
+| Vault giver `permission denied` ved læsning | Backendrollens policy skal give `read` på både `auction/data/development/database` og `auction/data/development/rabbitmq`. Bed den projektansvarlige kontrollere den. |
 | PostgreSQL giver `no pg_hba.conf entry` | Send fejlbeskeden til den projektansvarlige. Din VPN-adresse, databasebruger og eventuelle TLS-krav skal passe til serverreglerne. |
-| RabbitMQ-forbindelsen fejler | Kontrollér de udleverede host-, port- og loginværdier samt VPN. `localhost` betyder din egen pc. |
+| RabbitMQ-forbindelsen fejler | Kontrollér Tailscale, host og port `5672`. Login hentes fra Vault; bed den projektansvarlige kontrollere secretet, brugeren og rettighederne til vhost `/`. `localhost` betyder din egen pc. |
+| JSON-filen kan ikke indlæses | Kontrollér filnavnet i fejlen, kommaer og klammeparenteser. Se strukturen i trin 5.1. `Database` og `RabbitMQ` skal stå på rodniveau. |
 | Fejl om `Authentication:SigningKey` | Kontrollér User Secrets på **Auktionshuset.Api**. Brug hele nøglen fra trin 5. |
 | Appens login afvises | Brug email og adgangskode fra `BootstrapAdmin`, gem filen, og genstart API'en. |
 | Hjemmesiden kan ikke kontakte API'en | Start begge projekter med **https**, og kontrollér API-adressen `https://localhost:7061`. |
@@ -297,3 +341,4 @@ Fjern tokens, adgangskoder og komplette connection strings fra tekst og screensh
 - [Microsoft: User Secrets under udvikling](https://learn.microsoft.com/aspnet/core/security/app-secrets?view=aspnetcore-10.0)
 - [Microsoft: Execution policies og Process-scope](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_execution_policies)
 - [Microsoft: Frigiv en kontrolleret fil](https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/unblock-file)
+- [RabbitMQ: Webinterface og administrationsport](https://www.rabbitmq.com/docs/management)

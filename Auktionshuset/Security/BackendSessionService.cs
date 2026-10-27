@@ -23,7 +23,7 @@ public sealed class BackendSessionService(
             ticket.Properties.Items.TryGetValue(ServerTicketStore.BackendTokenProperty, out string? accessToken);
             ticket.Properties.Items.TryGetValue(ServerTicketStore.RefreshTokenProperty, out string? refreshToken);
             DateTimeOffset expiresAt = ticket.Properties.Items.TryGetValue(ServerTicketStore.AccessTokenExpiryProperty, out string? expiry)
-                && DateTimeOffset.TryParse(expiry, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed)
+                && DateTimeOffset.TryParse(expiry, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset parsed)
                 ? parsed : ticket.Properties.ExpiresUtc!.Value;
             if (expiresAt > clock.GetUtcNow().AddSeconds(30)
                 || (string.IsNullOrEmpty(refreshToken) && expiresAt > clock.GetUtcNow()))
@@ -39,23 +39,23 @@ public sealed class BackendSessionService(
             // HttpClient's timeout bounds the request. A lost response makes the session unusable.
             try
             {
-                using var client = CreateClient(ticket);
-                using var response = await client.PostAsJsonAsync("api/auth/refresh", new RefreshTokenRequest(refreshToken));
+                using HttpClient client = CreateClient(ticket);
+                using HttpResponseMessage response = await client.PostAsJsonAsync("api/auth/refresh", new RefreshTokenRequest(refreshToken));
                 if (response.IsSuccessStatusCode)
                 {
-                    var login = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                    LoginResponse? login = await response.Content.ReadFromJsonAsync<LoginResponse>();
                     if (login is not null && !string.IsNullOrWhiteSpace(login.AccessToken)
                         && !string.IsNullOrWhiteSpace(login.RefreshToken) && login.ExpiresAtUtc > clock.GetUtcNow()
                         && login.RefreshTokenExpiresAtUtc is not null
                         && ticket.Properties.Items.TryGetValue(ServerTicketStore.RefreshTokenExpiryProperty, out string? refreshExpiry)
-                        && DateTimeOffset.TryParse(refreshExpiry, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var originalExpiry)
+                        && DateTimeOffset.TryParse(refreshExpiry, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset originalExpiry)
                         // PostgreSQL persists timestamps with microsecond precision; .NET also has 100 ns ticks.
                         && login.RefreshTokenExpiresAtUtc.Value.UtcTicks / TimeSpan.TicksPerMicrosecond
                             == originalExpiry.UtcTicks / TimeSpan.TicksPerMicrosecond
                         && login.User is not null
                         && login.User.UserId.ToString() == ticket.Principal.FindFirstValue(ClaimTypes.NameIdentifier))
                     {
-                        var principal = CreatePrincipal(login.User, ticket.AuthenticationScheme, sessionId);
+                        ClaimsPrincipal principal = CreatePrincipal(login.User, ticket.AuthenticationScheme, sessionId);
                         ticket = new AuthenticationTicket(principal, ticket.Properties, ticket.AuthenticationScheme);
                         ticket.Properties.Items[ServerTicketStore.BackendTokenProperty] = login.AccessToken;
                         ticket.Properties.Items[ServerTicketStore.RefreshTokenProperty] = login.RefreshToken;
@@ -91,8 +91,8 @@ public sealed class BackendSessionService(
                 || string.IsNullOrEmpty(refreshToken)) return;
             try
             {
-                using var client = CreateClient(ticket);
-                using var response = await client.PostAsJsonAsync("api/auth/logout", new RefreshTokenRequest(refreshToken));
+                using HttpClient client = CreateClient(ticket);
+                using HttpResponseMessage response = await client.PostAsJsonAsync("api/auth/logout", new RefreshTokenRequest(refreshToken));
                 if (!response.IsSuccessStatusCode)
                     logger.LogWarning("Backend session revocation returned {StatusCode}.", (int)response.StatusCode);
             }
@@ -123,13 +123,13 @@ public sealed class BackendSessionService(
     internal static void ForwardClientIp(HttpClient client, string? address)
     {
         // Only forward the address established by the server, never a browser-supplied header.
-        if (IPAddress.TryParse(address, out var ip))
+        if (IPAddress.TryParse(address, out IPAddress? ip))
             client.DefaultRequestHeaders.Add("X-Forwarded-For", (ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip).ToString());
     }
 
     private HttpClient CreateClient(AuthenticationTicket ticket)
     {
-        var client = clients.CreateClient("BackendAuthentication");
+        HttpClient client = clients.CreateClient("BackendAuthentication");
         ticket.Properties.Items.TryGetValue(ServerTicketStore.ClientIpProperty, out string? address);
         ForwardClientIp(client, address);
         return client;

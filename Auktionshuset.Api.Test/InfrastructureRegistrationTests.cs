@@ -9,14 +9,13 @@ using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 //using Auktionshuset.Infrastructure.Messaging.InboxServices;
-using Auktionshuset.Infrastructure.Messaging;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Auktionshuset.Api.Test;
@@ -41,7 +40,7 @@ public sealed class InfrastructureRegistrationTests
         services.AddSignalR();
         services.AddSecurityServices(configuration);
         services.AddApiServices();
-        services.AddInfrastructure(configuration);
+        await services.AddInfrastructureAsync(configuration); ;
         await using ServiceProvider provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
@@ -55,7 +54,7 @@ public sealed class InfrastructureRegistrationTests
         Assert.IsType<EFAuctionRepository>(scope.ServiceProvider.GetRequiredService<IAuctionRepository>());
         Assert.IsType<EFEmployeeRepository>(scope.ServiceProvider.GetRequiredService<IEmployeeRepository>());
         Assert.IsType<EfUnitOfWork>(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
- //       Assert.IsType<DbInboxStore>(scope.ServiceProvider.GetRequiredService<IInboxStore>());
+        //       Assert.IsType<DbInboxStore>(scope.ServiceProvider.GetRequiredService<IInboxStore>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IOutboxWriter>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<CreateAuctionHandler>());
