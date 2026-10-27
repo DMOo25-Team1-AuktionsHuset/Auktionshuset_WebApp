@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using System.Globalization;
 using System.Security.Claims;
 using Auktionshuset.Contracts.Time;
+using Auktionshuset.Security;
 
 namespace Auktionshuset.Components.Pages;
 

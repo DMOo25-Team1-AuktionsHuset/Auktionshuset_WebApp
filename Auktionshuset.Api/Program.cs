@@ -33,15 +33,11 @@ builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
 
-// needs its own service class
-builder.Services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
-builder.Services.AddSingleton<IAuctionRepository, InMemoryAuctionRepository>();
-
 //API Services
 builder.Services.AddApiServices();
 
 //Infrastructure Services
-builder.Services.AddInfrastructure(builder.Configuration);
+await builder.Services.AddInfrastructureAsync(builder.Configuration);
 
 if (builder.Configuration.GetValue<bool>(
         "Observability:EnableOtlp"))

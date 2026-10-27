@@ -85,8 +85,6 @@ namespace Auktionshuset.Infrastructure.Service
 
             // Existing infrastructure registrations
             services.AddRabbitMq(configuration, rabbitMqCredentials);
-            // Add infrastructure services here
-            services.AddRabbitMq(configuration);
 
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuctionWriteSessionFactory, PostgresAuctionWriteSessionFactory>();

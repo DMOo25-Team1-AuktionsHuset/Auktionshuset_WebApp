@@ -48,16 +48,7 @@ namespace Auktionshuset.Infrastructure.Service
                 RequestedConnectionTimeout = TimeSpan.FromSeconds(5),
                 HandshakeContinuationTimeout = TimeSpan.FromSeconds(5),
                 ContinuationTimeout = TimeSpan.FromSeconds(5),
-                int port = GetRequiredRabbitMqPort(configuration);
 
-                var factory = new ConnectionFactory
-                {
-                    HostName = hostName,
-                    Port = port,
-                    UserName = credentials.Username,
-                    Password = credentials.Password,
-                    VirtualHost = "/"
-                };
                 RequestedHeartbeat = TimeSpan.FromSeconds(15),
 
                 ConsumerDispatchConcurrency = 1
