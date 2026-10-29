@@ -105,7 +105,8 @@ namespace Auktionshuset.Infrastructure.Service
 
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
-
+            services.AddScoped<IDeviceSecretService, DeviceSecretService>();
+            services.AddScoped<IDeviceRepository, PostgresDeviceRepository>();
             services.AddScoped<IEmployeeRepository, EFEmployeeRepository>();
             services.AddScoped<IAuctionRepository, EFAuctionRepository>();
             services.AddScoped<IPlaceBidStore, AuctionLotBiddingStore>();

@@ -1,5 +1,5 @@
 ﻿using Auktionshuset.Application.Admin.Devices.RegisterDevice;
-
+using Auktionshuset.Application.Devices.AuthenticateDevice;
 using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions.Bids;
@@ -25,7 +25,7 @@ namespace Auktionshuset.Api.Services
                 BidPlacedRealTimeHandler>();
 
             services.AddScoped<RegisterDeviceHandler>();
-
+            services.AddScoped<AuthenticateDeviceHandler>();
             return services;
         }
     }
