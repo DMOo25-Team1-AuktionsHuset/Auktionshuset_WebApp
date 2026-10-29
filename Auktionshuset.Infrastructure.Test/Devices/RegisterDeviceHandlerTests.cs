@@ -4,7 +4,7 @@ using Auktionshuset.Domain.Entities;
 using Moq;
 using Xunit;
 
-namespace Auktionshuset.Infrastructure.Test;
+namespace Auktionshuset.Infrastructure.Test.Devices;
 
 public sealed class RegisterDeviceHandlerTests
 {
