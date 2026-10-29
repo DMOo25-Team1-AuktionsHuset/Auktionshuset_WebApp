@@ -1,4 +1,6 @@
-﻿namespace Auktionshuset.Api.Services
+﻿using Auktionshuset.Application.Admin.Devices.RegisterDevice;
+
+namespace Auktionshuset.Api.Services
 {
     public static class ApiServiceExtension
     {
@@ -13,6 +15,8 @@
             services.AddLotHandler();
             services.AddEmployeeHandler();
             services.AddAuctionHandlers();
+
+            services.AddScoped<RegisterDeviceHandler>();
 
             return services;
         }
