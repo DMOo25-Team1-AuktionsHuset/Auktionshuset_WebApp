@@ -47,7 +47,6 @@ public sealed class AuthenticateDeviceHandler(
 
         return new AuthenticateDeviceResult(
             credential.DeviceId,
-            credential.Device.AuctionHouseId,
             credential.Device.DeviceNumber,
             credential.CredentialVersion);
     }

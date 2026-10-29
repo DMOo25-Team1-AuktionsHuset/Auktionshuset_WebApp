@@ -4,9 +4,8 @@ using System.Text;
 
 namespace Auktionshuset.Application.Admin.Devices.AuthenticateDevice
 {
-    public sealed record AuthenticateDeviceResults(
+    public sealed record AuthenticateDeviceResult(
         Guid DeviceId,
-        Guid AuctionHouseId,
         int DeviceNumber,
         int CredentialVersion);
 }
