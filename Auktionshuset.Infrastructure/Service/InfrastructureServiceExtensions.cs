@@ -10,6 +10,7 @@ using Auktionshuset.Infrastructure.Messaging.MessagingServices;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Auctions;
 using Auktionshuset.Infrastructure.Service.Lots;
+using Auktionshuset.Infrastructure.Service.Auth;
 using Auktionshuset.Infrastructure.Service.Vault;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -104,7 +105,6 @@ namespace Auktionshuset.Infrastructure.Service
 
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
-            services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
 
             services.AddScoped<IEmployeeRepository, EFEmployeeRepository>();
             services.AddScoped<IAuctionRepository, EFAuctionRepository>();

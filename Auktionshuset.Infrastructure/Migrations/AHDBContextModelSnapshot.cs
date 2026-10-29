@@ -231,6 +231,27 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.ToTable("Device");
                 });
 
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.DeviceCredential", b =>
+                {
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CredentialVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SecretHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("DeviceId");
+
+                    b.ToTable("DeviceCredentials", (string)null);
+                });
+
             modelBuilder.Entity("Auktionshuset.Domain.Entities.DeviceSession", b =>
                 {
                     b.Property<Guid>("DeviceSessionId")
@@ -939,6 +960,17 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("AuctionHouse");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.DeviceCredential", b =>
+                {
+                    b.HasOne("Auktionshuset.Domain.Entities.Device", "Device")
+                        .WithOne()
+                        .HasForeignKey("Auktionshuset.Domain.Entities.DeviceCredential", "DeviceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Device");
                 });
 
             modelBuilder.Entity("Auktionshuset.Domain.Entities.DeviceSession", b =>

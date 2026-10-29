@@ -1,4 +1,6 @@
-﻿using Auktionshuset.Api.Events.Admin.Auction;
+﻿using Auktionshuset.Application.Admin.Devices.RegisterDevice;
+
+using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.EventHandling;
@@ -21,6 +23,8 @@ namespace Auktionshuset.Api.Services
             services.AddScoped<PlaceBidHandler>();
             services.AddScoped<IIntegrationEventHandler<BidPlacedIntegrationEvent>,
                 BidPlacedRealTimeHandler>();
+
+            services.AddScoped<RegisterDeviceHandler>();
 
             return services;
         }
