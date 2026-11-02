@@ -1,5 +1,10 @@
 # Plan
 
+## Device contract milestone
+- [x] Record the agreed assignment, shared lot, SignalR gateway, versioned message, ordering and exact-money contracts in ARCHITECTURE.md; they are target requirements, not deployed features.
+- [x] Implement and test isolated device encoder calculations without changing web bidding rules.
+- [ ] Later milestone: implement persistent assignment/registration, auctioneer selection, authoritative revisions, real SignalR/.NET-client gateway, device WebSocket and end-to-end tests; resolve credential provisioning and concrete protocol error codes.
+
 ## Customer and staff access milestone (2026-10-29)
 - [x] Show live auctions first, with deterministic start-time ordering and empty states.
 - [x] Add own-customer unregistration, serialized with bidding; confirmation and feedback in both overviews.

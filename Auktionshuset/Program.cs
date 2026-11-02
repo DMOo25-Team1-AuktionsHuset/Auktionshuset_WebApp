@@ -134,6 +134,7 @@ builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<CustomerAuctionService>();
 builder.Services.AddScoped<CustomerAuctionRealtimeService>();
 builder.Services.AddScoped<InvoiceService>();
+builder.Services.AddScoped<DeviceAdministrationService>();
 
 builder.Services.AddScoped<AuctionRealtimeService>();
 builder.Services.AddScoped<EmployeeRealtimeService>();

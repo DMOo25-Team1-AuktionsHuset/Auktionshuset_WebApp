@@ -12,6 +12,7 @@ namespace Auktionshuset.Domain.Entities
         public required string SecretHash { get; set; }
         public bool IsEnabled { get; set; } = false;
         public int CredentialVersion { get; set; } = 1;
+        public long SessionRevision { get; set; }
 
     }
 }

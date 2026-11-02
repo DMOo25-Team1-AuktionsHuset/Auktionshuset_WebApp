@@ -1,4 +1,6 @@
-﻿using Auktionshuset.Application.Admin.Auctions.Bids;
+﻿using Auktionshuset.Application.Admin.Auctions;
+using Auktionshuset.Application.Admin.Devices;
+using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.Admin.Auctions.CreateAuction;
 using Auktionshuset.Application.Admin.Auctions.DeleteAuction;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
@@ -38,12 +40,16 @@ namespace Auktionshuset.Infrastructure.Messaging
             EventContract<AuctionDeletedIntegrationEvent>("auction.deleted.v1"),
 
             EventContract<AuctionLotClosedIntegrationEvent>("auction-lot.closed.v1"),
+            EventContract<AuctionRevisionChangedIntegrationEvent>("auction.revision-changed.v1"),
 
             EventContract<EmployeeCreatedIntegrationEvent>("employee.created.v1"),
             EventContract<EmployeeUpdatedIntegrationEvent>("employee.updated.v1"),
             EventContract<EmployeeDeletedIntegrationEvent>("employee.deleted.v1"),
 
-            EventContract<BidPlacedIntegrationEvent>("bid.placed.v1")
+            EventContract<BidPlacedIntegrationEvent>("bid.placed.v1"),
+            EventContract<DeviceRegisteredIntegrationEvent>("device.registered.v1"),
+            EventContract<DeviceIssuedIntegrationEvent>("device.issued.v1"),
+            EventContract<DeviceReleasedIntegrationEvent>("device.released.v1")
         ];
 
         public IEnumerable<string> EventContractNames =>

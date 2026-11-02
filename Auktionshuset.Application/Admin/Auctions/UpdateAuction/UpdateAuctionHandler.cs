@@ -131,6 +131,11 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Missing();
         }
 
+        auction.AuctionRevision = checked(auction.AuctionRevision + 1);
+        await outboxWriter.AddAsync(new AuctionRevisionChangedIntegrationEvent(
+            Guid.NewGuid(), auction.AuctionId, auction.SelectedAuctionLotId,
+            auction.AuctionRevision, clock.GetUtcNow().UtcDateTime), cancellationToken);
+
         await outboxWriter.AddAsync(
             new AuctionUpdatedIntegrationEvent(
                 EventId: Guid.NewGuid(),

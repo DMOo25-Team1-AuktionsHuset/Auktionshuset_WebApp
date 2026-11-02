@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction;
 using Auktionshuset.Api.Endpoints.Admin.Auction.Lifecycle;
 using Auktionshuset.Api.Security;
@@ -13,6 +14,7 @@ using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Application.Auction;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Auctions;
 using Microsoft.AspNetCore.Builder;
@@ -67,7 +69,8 @@ public class ManualAuctionTests
             [new AuctionLotSelection(fixture.Item.LotId, 1, 125m)]), default);
 
         Assert.True(result.Succeeded);
-        Assert.Single(fixture.Outbox.Events);
+        Assert.Single(fixture.Outbox.Events.OfType<AuctionUpdatedIntegrationEvent>());
+        Assert.Single(fixture.Outbox.Events.OfType<AuctionRevisionChangedIntegrationEvent>());
         fixture.Db.ChangeTracker.Clear();
         var saved = await fixture.Db.Auction.Include(a => a.Employee).SingleAsync();
         Assert.Equal("Updated auction", saved.Name);
@@ -83,6 +86,7 @@ public class ManualAuctionTests
     [InlineData("start")]
     [InlineData("close")]
     [InlineData("lot")]
+    [InlineData("selection")]
     public async Task OperationsRequireAuctionUpdatePermission(string operation)
     {
         using var host = await new HostBuilder().ConfigureWebHost(web =>
@@ -112,6 +116,7 @@ public class ManualAuctionTests
                 services.AddSecurityServices(configuration);
                 services.AddSingleton<IAuctionLifeCycleStore, MissingAuctionStore>();
                 services.AddSingleton<ICloseAuctionLotStore, MissingLotStore>();
+                services.AddSingleton<ISharedAuctionLotStore, MissingSharedLotStore>();
                 services.AddTransient<CloseAuctionLotHandler>();
             });
             web.Configure(app =>
@@ -125,20 +130,22 @@ public class ManualAuctionTests
             });
         }).StartAsync();
         using var client = host.GetTestClient();
-        string path = operation == "lot" ? $"/api/auction-lots/{Guid.NewGuid()}" : $"/api/auctions/{Guid.NewGuid()}/{operation}";
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsync(path, null)).StatusCode);
+        string path = operation == "lot" ? $"/api/auction-lots/{Guid.NewGuid()}" : $"/api/auctions/{Guid.NewGuid()}/{(operation == "selection" ? "shared-lot" : operation)}";
+        Task<HttpResponseMessage> SendAsync() => operation == "selection"
+            ? client.PutAsJsonAsync(path, new { AuctionLotId = (Guid?)null }) : client.PostAsync(path, null);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync()).StatusCode);
         foreach (var role in new[] { SecurityRoles.Customer, SecurityRoles.LotAdmin, SecurityRoles.AuctionAdmin, SecurityRoles.Admin })
         {
             var user = await host.Services.GetRequiredService<ConfiguredAuthUserStore>().FindByEmailAsync($"{role.ToLowerInvariant()}@example.test", default);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", host.Services.GetRequiredService<IAccessTokenService>().Issue(user!).Value);
             Assert.Equal(role is SecurityRoles.Admin or SecurityRoles.AuctionAdmin ? HttpStatusCode.NotFound : HttpStatusCode.Forbidden,
-                (await client.PostAsync(path, null)).StatusCode);
+                (await SendAsync()).StatusCode);
         }
         var configuredReader = (await host.Services.GetRequiredService<ConfiguredAuthUserStore>().FindByEmailAsync("auctionadmin@example.test", default))!;
         var reader = new AuthUser { UserId = configuredReader.UserId, Email = configuredReader.Email, PasswordHash = "",
             Roles = [SecurityRoles.AuctionAdmin], Permissions = [SecurityPermissions.ViewAuctions] };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", host.Services.GetRequiredService<IAccessTokenService>().Issue(reader).Value);
-        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync(path, null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync()).StatusCode);
     }
 
     [Theory]
@@ -166,7 +173,7 @@ public class ManualAuctionTests
         Assert.True(await fixture.Lifecycle.StartAsync(id, default));
         Assert.Equal(Now, fixture.Auction.StartedAtTime);
         Assert.True(fixture.Item.OpenForBids);
-        Assert.Single(fixture.Outbox.Events);
+        Assert.Single(fixture.Outbox.Events.OfType<AuctionUpdatedIntegrationEvent>());
         Assert.True(await fixture.Lifecycle.CloseAsync(id, default));
         Assert.True(await fixture.Lifecycle.CloseAsync(id, default));
         Assert.True(await fixture.Lifecycle.StartAsync(id, default)); // A retry never reopens a closed auction.
@@ -175,7 +182,8 @@ public class ManualAuctionTests
         Assert.Equal(plannedEnd, fixture.Auction.EndedAt);
         Assert.False(fixture.Item.OpenForBids);
         Assert.Equal(Now, fixture.Item.ClosedAtTime);
-        Assert.Equal(3, fixture.Outbox.Events.Count);
+        Assert.Equal(3, fixture.Outbox.Events.Count(e => e is not AuctionRevisionChangedIntegrationEvent));
+        Assert.Equal(3, fixture.Outbox.Events.OfType<AuctionRevisionChangedIntegrationEvent>().Count());
     }
 
     [Fact]
@@ -201,12 +209,12 @@ public class ManualAuctionTests
         await fixture.Lifecycle.StartAsync(fixture.Auction.AuctionId, default);
         Assert.Null(await store.CloseAuctionLotAsync(fixture.Item.AuctionLotId, default));
         Assert.Null(await store.CloseAuctionLotAsync(fixture.Item.AuctionLotId, default));
-        Assert.Equal(2, fixture.Outbox.Events.Count);
+        Assert.Equal(2, fixture.Outbox.Events.Count(e => e is not AuctionRevisionChangedIntegrationEvent));
         Assert.False(fixture.Item.OpenForBids);
         Assert.Equal(Now, fixture.Item.ClosedAtTime);
         await fixture.Lifecycle.CloseAsync(fixture.Auction.AuctionId, default);
         Assert.Null(await store.CloseAuctionLotAsync(fixture.Item.AuctionLotId, default));
-        Assert.Equal(3, fixture.Outbox.Events.Count);
+        Assert.Equal(3, fixture.Outbox.Events.Count(e => e is not AuctionRevisionChangedIntegrationEvent));
     }
 
     [Theory]
@@ -239,6 +247,139 @@ public class ManualAuctionTests
             Assert.True(accepted.Accepted);
             Assert.Equal(customer.CustomerId, (await fixture.Db.Bids.SingleAsync()).CustomerId);
         }
+    }
+
+    [Fact]
+    public async Task DeviceBidsRequireCurrentRevisionAndSelectedLotButWebAndRetriesRemainSupported()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var customer = new Customer { CustomerId = Guid.NewGuid(), FirstName = "Anna", LastName = "Kunde",
+            Email = "device-bid@example.test", PhoneNumber = "12345678", Address = "Test", BirthDate = new DateOnly(1990, 1, 1) };
+        var device = new Device { DeviceId = Guid.NewGuid(), AuctionHouseId = fixture.Auction.AuctionHouseId,
+            DeviceNumber = 1, Status = "Available" };
+        var deviceSession = new DeviceSession { DeviceSessionId = Guid.NewGuid(), DeviceId = device.DeviceId, Device = device,
+            CustomerId = customer.CustomerId, Customer = customer, AuctionId = fixture.Auction.AuctionId,
+            StartedAt = Now.AddMinutes(-1), EndedAt = null };
+        fixture.Db.DeviceSessions.Add(deviceSession);
+        fixture.Db.DeviceCredentials.Add(new DeviceCredential { DeviceId = device.DeviceId,
+            SecretHash = new Auktionshuset.Infrastructure.Service.Auth.DeviceSecretService().HashSecret(new string('a', 64)), IsEnabled = true, CredentialVersion = 1 });
+        var otherLot = new Lot { LotId = Guid.NewGuid(), AuctionHouseId = fixture.Auction.AuctionHouseId,
+            Name = "Bord", Category = "Møbler", Description = "Test", Quantity = 1, EstimatedValue = 100 };
+        var otherLine = new AuctionLot { AuctionLotId = Guid.NewGuid(), AuctionId = fixture.Auction.AuctionId,
+            Auction = fixture.Auction, LotId = otherLot.LotId, Lot = otherLot, Quantity = 1, StartingPrice = 100 };
+        fixture.Db.AuctionLot.Add(otherLine);
+        fixture.Db.AuctionRegistrations.Add(new AuctionRegistration { AuctionId = fixture.Auction.AuctionId,
+            CustomerId = customer.CustomerId, Customer = customer, RegisteredAt = Now });
+        await fixture.Db.SaveChangesAsync();
+        await fixture.Lifecycle.StartAsync(fixture.Auction.AuctionId, default);
+        var bids = new AuctionLotBiddingStore(fixture.Db, new FixedClock(), fixture.Outbox);
+        var select = new SharedAuctionLotStore(fixture.Db, new Sessions(fixture.Db), fixture.Outbox, new FixedClock());
+        var missing = new PlaceBidCommand(fixture.Item.AuctionLotId, customer.CustomerId, deviceSession.DeviceSessionId, Guid.NewGuid(), 110,
+                    DeviceId: device.DeviceId, CredentialVersion: 1);
+        Assert.Equal("AuctionRevisionRequired", (await bids.PlaceBidAsync(missing, default)).ErrorCode);
+        Assert.True((await bids.PlaceBidAsync(missing, default)).Duplicate);
+        Assert.Equal("RequestIdReuseWithDifferentPayload", (await bids.PlaceBidAsync(missing with { AuctionRevision = 1 }, default)).ErrorCode);
+        Assert.Equal("AuctionContextChanged", (await bids.PlaceBidAsync(missing with { RequestId = Guid.NewGuid(), AuctionRevision = 1 }, default)).ErrorCode);
+        Assert.Empty(await fixture.Db.Bids.ToListAsync());
+
+        var selected = await select.SelectAsync(fixture.Auction.AuctionId, fixture.Item.AuctionLotId, default);
+        var command = missing with { RequestId = Guid.NewGuid(), AuctionRevision = selected!.AuctionRevision };
+        var accepted = await bids.PlaceBidAsync(command, default);
+        Assert.True(accepted.Accepted);
+        var retry = await bids.PlaceBidAsync(command, default);
+        Assert.True(retry.Accepted);
+        Assert.True(retry.Duplicate);
+        Assert.Equal(accepted.BidId, retry.BidId);
+        Assert.Equal("RequestIdReuseWithDifferentPayload", (await bids.PlaceBidAsync(command with { AuctionRevision = selected.AuctionRevision + 1 }, default)).ErrorCode);
+        Assert.Equal("AuctionContextChanged", (await bids.PlaceBidAsync(command with { RequestId = Guid.NewGuid(), Amount = 120 }, default)).ErrorCode);
+
+        // Simulate a revision committed by another context while this context still tracks the old auction.
+        await fixture.Db.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"Auction\" SET \"AuctionRevision\" = \"AuctionRevision\" + 1 WHERE \"AuctionId\" = {fixture.Auction.AuctionId}");
+        Assert.Equal("AuctionContextChanged", (await bids.PlaceBidAsync(command with { RequestId = Guid.NewGuid(), Amount = 120, AuctionRevision = selected.AuctionRevision + 1 }, default)).ErrorCode);
+
+        var switched = await select.SelectAsync(fixture.Auction.AuctionId, otherLine.AuctionLotId, default);
+        Assert.Equal("AuctionContextChanged", (await bids.PlaceBidAsync(command with { RequestId = Guid.NewGuid(), Amount = 120, AuctionRevision = switched!.AuctionRevision }, default)).ErrorCode);
+        var cleared = await select.SelectAsync(fixture.Auction.AuctionId, null, default);
+        Assert.Equal("AuctionContextChanged", (await bids.PlaceBidAsync(command with { RequestId = Guid.NewGuid(), Amount = 120, AuctionRevision = cleared!.AuctionRevision }, default)).ErrorCode);
+        Assert.Single(await fixture.Db.Bids.ToListAsync());
+        var web = await bids.PlaceBidAsync(new PlaceBidCommand(fixture.Item.AuctionLotId, customer.CustomerId, null, Guid.NewGuid(), 120), default);
+        Assert.True(web.Accepted);
+        Assert.Equal(2, await fixture.Db.Bids.CountAsync());
+    }
+
+    [Fact]
+    public async Task SharedSelectionValidatesAndClearsOnLotClose()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var selection = new SharedAuctionLotStore(fixture.Db, new Sessions(fixture.Db), fixture.Outbox, new FixedClock());
+        Guid id = fixture.Auction.AuctionId;
+        Assert.Null(await selection.GetAsync(Guid.NewGuid(), default));
+        await Assert.ThrowsAsync<AuctionStateConflictException>(() => selection.SelectAsync(id, fixture.Item.AuctionLotId, default));
+        await fixture.Lifecycle.StartAsync(id, default);
+        await Assert.ThrowsAsync<AuctionStateConflictException>(() => selection.SelectAsync(id, Guid.NewGuid(), default));
+        var otherAuction = new Auction { AuctionId = Guid.NewGuid(), AuctionHouseId = fixture.Auction.AuctionHouseId,
+            Name = "Other", AuctionStatus = AuctionStatuses.Live, StartsAt = Now.AddHours(-1), StartedAtTime = Now };
+        var otherLine = new AuctionLot { AuctionLotId = Guid.NewGuid(), AuctionId = otherAuction.AuctionId,
+            Auction = otherAuction, LotId = fixture.Item.LotId, Quantity = 1, OpenForBids = true };
+        fixture.Db.AuctionLot.Add(otherLine);
+        await fixture.Db.SaveChangesAsync();
+        await Assert.ThrowsAsync<AuctionStateConflictException>(() => selection.SelectAsync(id, otherLine.AuctionLotId, default));
+        var selected = await selection.SelectAsync(id, fixture.Item.AuctionLotId, default);
+        Assert.Equal(2, selected!.AuctionRevision);
+        Assert.Equal(fixture.Item.AuctionLotId, selected.AuctionLotId);
+        Assert.Equal(selected, await selection.SelectAsync(id, fixture.Item.AuctionLotId, default));
+        fixture.Db.ChangeTracker.Clear();
+        Assert.Equal(selected, await selection.GetAsync(id, default));
+        var closer = new AuctionLotBiddingStore(fixture.Db, new FixedClock(), fixture.Outbox);
+        await closer.CloseAuctionLotAsync(fixture.Item.AuctionLotId, default);
+        var cleared = await selection.GetAsync(id, default);
+        Assert.Null(cleared!.AuctionLotId);
+        Assert.Equal(3, cleared.AuctionRevision);
+        Assert.Equal(new long[] { 1, 2, 3 }, fixture.Outbox.Events.OfType<AuctionRevisionChangedIntegrationEvent>().Select(e => e.AuctionRevision));
+    }
+
+    [Fact]
+    public async Task SelectionCanSwitchAndClearAndAuctionCloseClearsWithoutAdvancing()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var secondLot = new Lot { LotId = Guid.NewGuid(), AuctionHouseId = fixture.Auction.AuctionHouseId,
+            Name = "Bord", Category = "Møbler", Description = "Test", Quantity = 1, EstimatedValue = 100 };
+        var secondLine = new AuctionLot { AuctionLotId = Guid.NewGuid(), AuctionId = fixture.Auction.AuctionId,
+            Auction = fixture.Auction, LotId = secondLot.LotId, Lot = secondLot, Quantity = 1, StartingPrice = 100 };
+        fixture.Db.AuctionLot.Add(secondLine);
+        await fixture.Db.SaveChangesAsync();
+        await fixture.Lifecycle.StartAsync(fixture.Auction.AuctionId, default);
+        var selection = new SharedAuctionLotStore(fixture.Db, new Sessions(fixture.Db), fixture.Outbox, new FixedClock());
+        Guid id = fixture.Auction.AuctionId;
+        await selection.SelectAsync(id, fixture.Item.AuctionLotId, default);
+        Assert.Equal(secondLine.AuctionLotId, (await selection.SelectAsync(id, secondLine.AuctionLotId, default))!.AuctionLotId);
+        Assert.Null((await selection.SelectAsync(id, null, default))!.AuctionLotId);
+        await selection.SelectAsync(id, fixture.Item.AuctionLotId, default);
+        await fixture.Lifecycle.CloseAsync(id, default);
+        fixture.Db.ChangeTracker.Clear();
+        var closed = await selection.GetAsync(id, default);
+        Assert.Null(closed!.AuctionLotId);
+        Assert.Equal(8, closed.AuctionRevision);
+    }
+
+    [Fact]
+    public async Task FailedSelectionOutboxRollsBackSelectionAndRevision()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await fixture.Lifecycle.StartAsync(fixture.Auction.AuctionId, default);
+        var sessions = new PostgresAuctionWriteSessionFactory(fixture.Db, new EfUnitOfWork(fixture.Db));
+        var selection = new SharedAuctionLotStore(fixture.Db, sessions, new FailingSelectionOutbox(), new FixedClock());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => selection.SelectAsync(fixture.Auction.AuctionId, fixture.Item.AuctionLotId, default));
+        fixture.Db.ChangeTracker.Clear();
+        var saved = await selection.GetAsync(fixture.Auction.AuctionId, default);
+        Assert.Null(saved!.AuctionLotId);
+        Assert.Equal(1, saved.AuctionRevision);
+    }
+
+    private sealed class FailingSelectionOutbox : IOutboxWriter
+    {
+        public Task AddAsync(IIntegrationEvent integrationEvent, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Outbox failure");
     }
 
     private sealed class FixedClock : TimeProvider { public override DateTimeOffset GetUtcNow() => new(Now); }
@@ -304,6 +445,11 @@ public class ManualAuctionTests
     {
         public Task<bool> StartAsync(Guid id, CancellationToken ct) => Task.FromResult(false);
         public Task<bool> CloseAsync(Guid id, CancellationToken ct) => Task.FromResult(false);
+    }
+    private sealed class MissingSharedLotStore : ISharedAuctionLotStore
+    {
+        public Task<SharedAuctionLotState?> GetAsync(Guid id, CancellationToken ct) => Task.FromResult<SharedAuctionLotState?>(null);
+        public Task<SharedAuctionLotState?> SelectAsync(Guid id, Guid? lotId, CancellationToken ct) => Task.FromResult<SharedAuctionLotState?>(null);
     }
     private sealed class MissingLotStore : ICloseAuctionLotStore
     { public Task<Guid?> CloseAuctionLotAsync(Guid id, CancellationToken ct) => throw new KeyNotFoundException(); }

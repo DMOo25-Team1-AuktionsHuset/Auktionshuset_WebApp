@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Auktionshuset.Api.Hubs;
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 
@@ -12,6 +13,12 @@ public sealed class LoginConnections : IHubFilter
 
     public async Task OnConnectedAsync(HubLifetimeContext context, Func<HubLifetimeContext, Task> next)
     {
+        if (context.Hub is DeviceGatewayHub)
+        {
+            await next(context);
+            return;
+        }
+
         try
         {
             var id = context.Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);

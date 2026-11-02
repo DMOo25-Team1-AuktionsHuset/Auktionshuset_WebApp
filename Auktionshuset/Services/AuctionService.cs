@@ -6,6 +6,21 @@ namespace Auktionshuset.Services;
 
 public sealed class AuctionService(BackendApiClient httpClient)
 {
+    public async Task<SharedAuctionLotResponse> GetSharedLotAsync(Guid auctionId, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.GetAsync($"api/auctions/{auctionId}/shared-lot", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new AuctionApiException(await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Valget", "hentes"), response.StatusCode);
+        return await ReadAsync<SharedAuctionLotResponse>(response, "Serveren returnerede ikke et gyldigt valg.", cancellationToken);
+    }
+
+    public async Task SelectSharedLotAsync(Guid auctionId, Guid? auctionLotId, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PutAsJsonAsync($"api/auctions/{auctionId}/shared-lot", new SelectSharedAuctionLotRequest(auctionLotId), cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new AuctionApiException(await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Valget", "gemmes"), response.StatusCode);
+    }
+
     public Task StartAsync(Guid auctionId, CancellationToken cancellationToken = default) =>
         ExecuteAsync($"api/auctions/{auctionId}/start", "startes", cancellationToken);
 

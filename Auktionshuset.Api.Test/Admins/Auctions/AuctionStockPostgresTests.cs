@@ -258,7 +258,7 @@ public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
         await Task.WhenAll(Lifecycle(a).CloseAsync(created.AuctionId, default), Lifecycle(b).CloseAsync(created.AuctionId, default));
         db.ChangeTracker.Clear();
         Assert.Equal(6, (await db.Lot.SingleAsync()).Quantity);
-        Assert.Equal(before + 2, await db.OutboxMessages.CountAsync());
+        Assert.Equal(before + 4, await db.OutboxMessages.CountAsync());
     }
 
     [PostgresStockFact]
@@ -393,7 +393,7 @@ public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
         finally { await worker.StopAsync(default); }
         using var restarted = Worker(services, clock);
         await restarted.ProcessDueAsync(default);
-        Assert.Equal(before + 2, await db.OutboxMessages.CountAsync());
+        Assert.Equal(before + 4, await db.OutboxMessages.CountAsync());
         var line = await db.AuctionLot.SingleAsync();
         Assert.False(line.OpenForBids);
         Assert.Null(line.CurrentHighestBidId);
@@ -426,7 +426,7 @@ public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
         await first.ProcessDueAsync(default);
         Assert.Equal("BiddingClosed", (await late).ErrorCode);
         Assert.Equal(6, (await seed.Lot.SingleAsync()).Quantity);
-        Assert.Equal(before + 2, await seed.OutboxMessages.CountAsync());
+        Assert.Equal(before + 4, await seed.OutboxMessages.CountAsync());
         Assert.Single(await seed.Bids.ToListAsync());
         Assert.Equal(accepted.BidId, (await seed.AuctionLot.SingleAsync()).CurrentHighestBidId);
     }
@@ -454,13 +454,13 @@ public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
         Assert.True(failedLine.OpenForBids);
         Assert.NotNull((await db.Auction.SingleAsync(a => a.AuctionId == other.AuctionId)).ClosedAtTime);
         Assert.Equal(10, (await db.Lot.SingleAsync()).Quantity);
-        Assert.Equal(before + 2, await db.OutboxMessages.CountAsync());
+        Assert.Equal(before + 4, await db.OutboxMessages.CountAsync());
         fail = false;
         await worker.ProcessDueAsync(default);
         db.ChangeTracker.Clear();
         Assert.Equal(2, await db.Auction.CountAsync(a => a.ClosedAtTime != null));
         Assert.Equal(6, (await db.Lot.SingleAsync()).Quantity);
-        Assert.Equal(before + 4, await db.OutboxMessages.CountAsync());
+        Assert.Equal(before + 8, await db.OutboxMessages.CountAsync());
     }
 
     [PostgresStockFact]
@@ -520,7 +520,7 @@ public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
         using var worker = Worker(services, clock);
         await worker.ProcessDueAsync(default);
         db.ChangeTracker.Clear();
-        Assert.Equal(before + 3, await db.OutboxMessages.CountAsync()); // Two remaining lines and auction.
+        Assert.Equal(before + 6, await db.OutboxMessages.CountAsync()); // Two remaining lines and auction, with revisions.
         var lines = await db.AuctionLot.ToListAsync();
         Assert.All(lines, line => { Assert.False(line.OpenForBids); Assert.NotNull(line.ClosedAtTime); });
         Assert.Equal(accepted.BidId, lines.Single(l => l.AuctionLotId == scheduled.LineId).CurrentHighestBidId);

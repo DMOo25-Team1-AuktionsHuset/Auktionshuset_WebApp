@@ -1,4 +1,5 @@
 using Auktionshuset.Api.Services;
+
 using Auktionshuset.Contracts.Security;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -39,13 +40,21 @@ public static class SecurityServiceExtensions
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration));
+            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration))
+            .AddJwtBearer(DeviceGatewayAuthentication.Scheme, options => DeviceGatewayAuthentication.Configure(options, configuration));
 
         services.AddAuthorization(options =>
         {
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
                 .Build();
+
+            options.AddPolicy(SecurityPolicies.DeviceGateway, policy =>
+            {
+                policy.AddAuthenticationSchemes(DeviceGatewayAuthentication.Scheme);
+                policy.RequireAuthenticatedUser();
+                policy.RequireClaim("scope", DeviceGatewayAuthentication.Scope);
+            });
 
             options.AddPolicy(SecurityPolicies.Admin, policy =>
             {

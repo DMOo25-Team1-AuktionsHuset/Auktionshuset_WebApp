@@ -35,6 +35,8 @@ public class ManualAuctionPageTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         string html = Regex.Replace(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "<!--[\\s\\S]*?-->", "");
         Assert.Contains("Testgenstand", html);
+        Assert.Contains("Aktuelt valg:", html);
+        Assert.Equal(update, html.Contains("Vælg fælles genstand"));
         Assert.Contains("Startpris for hele linjen", html);
         Assert.Contains("35,50", html);
         Assert.Contains("sælges samlet til én vinder", html);
@@ -66,8 +68,10 @@ public class ManualAuctionPageTests
                     new LoginResponse("test-token", "Bearer", DateTimeOffset.UtcNow.AddMinutes(30),
                         new AuthenticatedUserResponse(Guid.NewGuid(), "admin@example.test", ["AuctionAdmin"],
                             update ? ["auctions.read", "auctions.update"] : ["auctions.read"]))));
-                services.AddHttpClient("BackendApi").ConfigurePrimaryHttpMessageHandler(() => new Handler(_ =>
-                    new AuctionDetailResponse(Id, "Testauktion", status, DateTime.UtcNow.AddHours(startHours),
+                services.AddHttpClient("BackendApi").ConfigurePrimaryHttpMessageHandler(() => new Handler(request =>
+                    request.RequestUri!.AbsolutePath.EndsWith("/shared-lot", StringComparison.Ordinal)
+                    ? new SharedAuctionLotResponse(Id, null, 1)
+                    : new AuctionDetailResponse(Id, "Testauktion", status, DateTime.UtcNow.AddHours(startHours),
                         endHours is int end ? DateTime.UtcNow.AddHours(end) : null, null, "Ikke tildelt", 1, 1,
                         [new AuctionLotResponse(Guid.NewGuid(), "Testgenstand", "Møbler", 1, 100, null, Guid.NewGuid(),
                             status == "Live", 100, 0, null, status == "Afsluttet" ? DateTime.UtcNow : null, StartingPrice: 35.50m)])));

@@ -43,6 +43,9 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
             item.OpenForBids = false;
             item.ClosedAtTime = nowUtc;
             item.CurrentHighestBidId = winner?.BidId;
+            if (item.Auction.SelectedAuctionLotId == item.AuctionLotId)
+                item.Auction.SelectedAuctionLotId = null;
+            await AuctionRevision.AdvanceAsync(item.Auction, outboxWriter, nowUtc, cancellationToken);
 
             await outboxWriter.AddAsync(
                 new AuctionLotClosedIntegrationEvent(

@@ -1,42 +1,29 @@
 # State
 
 ## Goal
-- Explain the additional Markdown files and their relationship to repository state synchronization. Preserve application changes; no commit or push.
+- Perform isolated acceptance of backend and firmware device-auction flow.
 
 ## Done (verified)
-- Live-first/start-time ordering, confirmed own-customer unregistration serialized with bidding, and customer SignalR invalidations/reconnect replace price polling. Two-customer browser journeys verified bids, status, start, close and missed-update recovery through real RabbitMQ/PostgreSQL.
-- Reproduced and fixed stale shared-component navigation between My purchases/My auctions using explicit route wrappers. Purchases/invoices load independently with bounded requests, retry and retained data; browser verified empty/won purchases, invoice/receipt access and recovery after database failure.
-- Employee-owned logins, four existing staff roles, admin-only management, session/refresh version checks, active hub disconnection, email collision checks and last-admin concurrency guard implemented. Migration 20261029131752_AddEmployeeLogins preserves existing active customer accounts; production database not migrated.
+- Backend regression suite and firmware host checks passed; firmware compiled for ESP32-S3 using example configuration.
+- Existing tests cover portions of authorization, SignalR, WebSocket, bidding and billing separately; no complete two-device/web journey was established.
 
 ## Active
-- Inspected Git status, the agent contract, hook configuration and state_sync.py. Additional untracked documentation includes .agent/AUCTION-STOCK.md, .agent/BILLING.md and docs/customer-staff-acceptance.md; Git status does not establish their author or creation sequence.
+- Full two-device and web journey through real SignalR, WebSocket, PostgreSQL, RabbitMQ, closure and invoicing remains unverified.
 
 ## Blockers
-- No blocker to explaining the synchronization behavior. The inspected files do not establish which agent created the extra documents or when.
+- Docker engine was unreachable; isolated PostgreSQL and RabbitMQ were unavailable. PostgreSQL and external WebSocket tests were skipped.
+- No ESP32 was identified; physical hardware and firmware-to-backend integration were not tested.
 
 ## Next
-- If documentation creation should be restricted, define that explicitly in AGENTS.md; the current contract does not prohibit additional Markdown files. No such rule change has been made.
-- Deployment and intended-database migrations remain outside this investigation; retain existing stock/billing reconciliation guidance.
+- Start isolated PostgreSQL and RabbitMQ and run the complete acceptance journey, including failures, restart and billing; run physical ESP32 acceptance when available.
 
 ## Verification
-- API suite: 166 passed, 0 failed/skipped with isolated PostgreSQL; frontend/application: 226 passed; infrastructure: 11 passed. Total 403. PostgreSQL coverage includes concurrent bid/unregistration, concurrent admin demotions and upgrade of an existing customer login.
-- Browser: two customers plus Admin/Employee/LotAdmin/AuctionAdmin; signup/unregister/rejoin, overbid rejection, automatic bid/status/start/close/end, forced SignalR loss/recovery, navigation, purchase error/retry retention, invoices/receipts, staff account creation/role/deactivation and denied access verified. See acceptance document for exact coverage.
-- Tests not run for this documentation investigation; the counts above describe documented earlier acceptance, not fresh validation. Inspection confirms sync() replaces only AUTO-SNAPSHOT content in an existing STATE.md; the hook also uses a lock and diagnostic log. No application changes, commit or push performed.
+- Backend `dotnet test`: 492 passed, 47 skipped, 0 failed (42 PostgreSQL and 5 external WebSocket tests skipped).
+- Firmware: 37 host checks passed with mocked hardware/network; ESP32-S3 Arduino build succeeded with core 3.3.11. No hardware test.
 
 <!-- AUTO-SNAPSHOT:BEGIN -->
 ## Repository signal (automatic; NOT proof of completion)
-- Branch / HEAD: `main` / `028aaa5`
-- Working tree: 171 changed path(s) outside agent configuration.
-- Paths (max 10; status + path):
-  - ` M Auktionshuset.Api.Test/Admins/Auctions/AuctionEndpointsTest.cs`
-  - ` M Auktionshuset.Api.Test/Admins/Employees/EmployeeEndpointsTest.cs`
-  - ` M Auktionshuset.Api.Test/Admins/Lots/LotEndpointsTest.cs`
-  - ` M Auktionshuset.Api.Test/Auktionshuset.Api.Test.csproj`
-  - ` M Auktionshuset.Api.Test/Security/AuthRateLimitingTests.cs`
-  - ` M Auktionshuset.Api.Test/Security/EndpointAuthorizationPipelineTest.cs`
-  - ` M Auktionshuset.Api/Endpoints/Admin/Auction/AuctionEndpointMapping.cs`
-  - ` M Auktionshuset.Api/Endpoints/Admin/Auction/CloseAuction/CloseAuctionLotEndpoint.cs`
-  - ` M Auktionshuset.Api/Endpoints/Admin/Auction/GetAuctions/GetAuctionsEndpoint.cs`
-  - ` M Auktionshuset.Api/Endpoints/Admin/Bid/BidEndpoints.cs`
-  - … and 161 more.
+- Branch / HEAD: `Feature/Embedded-Device2.0` / `4ffbeaa`
+- Working tree: 0 changed path(s) outside agent configuration.
+- No application-file changes detected by Git.
 <!-- AUTO-SNAPSHOT:END -->

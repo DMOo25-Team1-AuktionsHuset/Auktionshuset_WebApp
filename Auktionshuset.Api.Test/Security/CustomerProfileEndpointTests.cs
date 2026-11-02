@@ -352,6 +352,11 @@ public sealed partial class CustomerProfileEndpointTests
                     services.AddSingleton<IPlaceBidStore, CustomerAuctionBidStore>();
                     services.AddApiServices();
                     services.AddScoped<Auktionshuset.Infrastructure.Service.Billing.AuctionInvoiceStore>();
+                    services.AddSingleton(TimeProvider.System);
+                    services.AddScoped<Auktionshuset.Infrastructure.Repositories.PostgresDeviceRepository>();
+                    services.AddScoped<Auktionshuset.Application.Abstraction.Auth.IDeviceRepository>(s => s.GetRequiredService<Auktionshuset.Infrastructure.Repositories.PostgresDeviceRepository>());
+                    services.AddScoped<Auktionshuset.Application.Abstraction.Auth.IDeviceAssignmentRepository>(s => s.GetRequiredService<Auktionshuset.Infrastructure.Repositories.PostgresDeviceRepository>());
+                    services.AddScoped<Auktionshuset.Application.Abstraction.Auth.IDeviceSecretService, Auktionshuset.Infrastructure.Service.Auth.DeviceSecretService>();
                     services.AddSignalR();
                     services.AddDbContext<AHDBContext>(options =>
                         options.UseSqlite($"Data Source={databasePath}"));
@@ -380,6 +385,7 @@ public sealed partial class CustomerProfileEndpointTests
                         endpoints.MapHub<Auktionshuset.Api.Hubs.CustomerAuctionHub>("/hubs/customer-auctions")
                             .RequireAuthorization(SecurityPolicies.Customer);
                         Auktionshuset.Api.Endpoints.Billing.InvoiceEndpoints.MapInvoiceEndpoints(endpoints);
+                        Auktionshuset.Api.Endpoints.Device.DeviceAdministrationEndpoints.MapDeviceAdministrationEndpoints(endpoints);
                         endpoints.MapBidEndpoints();
                         endpoints.MapEmployeeEndpoints();
                         endpoints.MapLotEndpoints();

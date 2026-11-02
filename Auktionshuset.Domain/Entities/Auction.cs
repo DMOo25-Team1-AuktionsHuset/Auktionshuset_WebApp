@@ -14,6 +14,8 @@
         public DateTime? StartedAtTime { get; set; }
         public DateTime? ClosedAtTime { get; set; }
         public required string AuctionStatus { get; set; }
+        public Guid? SelectedAuctionLotId { get; set; }
+        public long AuctionRevision { get; set; }
 
         public ICollection<AuctionLot> AuctionLots { get; set; } = new List<AuctionLot>();
         public ICollection<DeviceSession> DeviceSessions { get; set; } = new List<DeviceSession>();

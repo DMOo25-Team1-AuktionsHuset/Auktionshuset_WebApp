@@ -65,11 +65,7 @@ if (app.Environment.IsDevelopment())
     app.MapDeviceTestEndpoints();
 }
 app.UseForwardedHeaders();
-app.UseWhen(
-    context =>
-        !app.Environment.IsDevelopment() ||
-        context.Request.Path != "/ws/device/test",
-    branch => branch.UseHttpsRedirection());
+app.UseDevelopmentAwareHttpsRedirection(app.Environment.IsDevelopment());
 app.UseRouting();
 app.UseRateLimiter();
 
@@ -78,6 +74,8 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapCustomerEndpoints();
+app.MapDeviceAdministrationEndpoints();
+app.MapDeviceWebSocket();
 Auktionshuset.Api.Endpoints.Billing.InvoiceEndpoints.MapInvoiceEndpoints(app);
 app.MapLotEndpoints();
 app.MapStoredLotImages();
@@ -113,6 +111,9 @@ app.MapHealthChecks("/health/messaging", new HealthCheckOptions
         }
 }).RequireAuthorization(SecurityPolicies.Admin);
 
+
+app.MapHub<DeviceGatewayHub>(DeviceGatewayAuthentication.HubPath, options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization(SecurityPolicies.DeviceGateway);
 
 app.MapHub<CustomerAuctionHub>("/hubs/customer-auctions", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.Customer);
