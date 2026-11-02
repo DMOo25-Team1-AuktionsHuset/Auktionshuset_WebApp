@@ -30,7 +30,7 @@ public sealed class RefreshTokenService(IRefreshTokenStore store, IAuthUserStore
         RefreshToken? token = await store.FindAsync(hash, cancellationToken);
         if (token is null || token.ExpiresAt <= clock.GetUtcNow()) return null;
         AuthUser? user = await users.FindByIdAsync(token.UserId, cancellationToken);
-        if (user is null)
+        if (user is null || token.SessionVersion != user.SessionVersion)
         {
             await store.RevokeFamilyAsync(hash, clock.GetUtcNow(), cancellationToken);
             return null;
@@ -61,7 +61,7 @@ public sealed class RefreshTokenService(IRefreshTokenStore store, IAuthUserStore
         string plaintext = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(64));
         return (plaintext, new RefreshToken
         {
-            Id = id, UserId = user.UserId, FamilyId = familyId, TokenHash = Hash(plaintext),
+            Id = id, UserId = user.UserId, SessionVersion = user.SessionVersion, FamilyId = familyId, TokenHash = Hash(plaintext),
             CreatedAt = now, ExpiresAt = expiresAt
         });
     }

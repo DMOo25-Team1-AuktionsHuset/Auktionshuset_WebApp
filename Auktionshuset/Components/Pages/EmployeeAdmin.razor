@@ -74,6 +74,10 @@
         </EditForm>
     </section>
 
+    @if (editingEmployeeId is Guid loginEmployeeId)
+    {
+        <AuthorizeView Roles="Admin"><Auktionshuset.Components.EmployeeLoginEditor @key="loginEmployeeId" EmployeeId="loginEmployeeId" /></AuthorizeView>
+    }
     <section class="card list-card" aria-labelledby="employee-list-heading" aria-busy="@(isLoadingEmployees ? "true" : "false")">
         <div class="card-heading list-heading">
             <div>

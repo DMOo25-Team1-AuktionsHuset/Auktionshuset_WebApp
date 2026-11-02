@@ -16,6 +16,31 @@ namespace Auktionshuset.Api.Test.Admins.Auctions;
 
 public class AuctionEndpointsTest
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(251.75)]
+    public async Task StartingPriceTravelsThroughCreateUpdateAndReadContracts(double amount)
+    {
+        var (context, employee, lot) = await CreateContextAsync(lotQuantity: 4);
+        var request = CreateValidRequest(employee.EmployeeId, [(lot.LotId, 2)]);
+        request.Lots[0] = request.Lots[0] with { StartingPrice = (decimal)amount };
+        var created = Assert.IsType<Created<CreateAuctionResponse>>((await CreateAuctionEndpoint.HandleAsync(
+            request, CreateHandler(context), default)).Result).Value!;
+        var reader = new GetAuctionsHandler(context.Auctions, context.Employees);
+        var detail = Assert.IsType<Ok<AuctionDetailResponse>>((await GetAuctionsEndpoint.HandleGetByIdAsync(
+            created.AuctionId, reader, default)).Result).Value!;
+        Assert.Equal((decimal)amount, Assert.Single(detail.Lots).StartingPrice);
+        var update = CreateValidUpdateRequest(employee.EmployeeId, [(lot.LotId, 3)]);
+        update.Lots[0] = update.Lots[0] with { StartingPrice = 123.45m };
+        var result = await UpdateAuctionEndpoint.HandleAsync(created.AuctionId, update,
+            new UpdateAuctionHandler(context.Auctions, context.Lots, context.Employees, context.Publisher,
+                new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System), default);
+        Assert.IsType<Ok<UpdateAuctionResponse>>(result.Result);
+        detail = Assert.IsType<Ok<AuctionDetailResponse>>((await GetAuctionsEndpoint.HandleGetByIdAsync(
+            created.AuctionId, reader, default)).Result).Value!;
+        Assert.Equal(123.45m, Assert.Single(detail.Lots).StartingPrice);
+    }
+
     /// <summary>
     /// Verifies that a valid request returns 201 with the location of the new auction.
     /// </summary>
@@ -118,7 +143,7 @@ public class AuctionEndpointsTest
        ValidationProblem problem = Assert.IsType<ValidationProblem>(result.Result);
        Assert.Contains(
            problem.ProblemDetails.Errors.SelectMany(error => error.Value),
-           message => message.Contains("kun 2 stk."));
+           message => message.Contains("kun 2 ledige stk."));
     }
 
     /// <summary>
@@ -428,7 +453,7 @@ public class AuctionEndpointsTest
     }
 
     private static CreateAuctionHandler CreateHandler(TestContext context) =>
-       new(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingUnitOfWork(), TimeProvider.System);
+       new(context.Auctions, context.Lots, context.Employees, context.Publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System);
 
     private static async Task<Guid> CreateAuctionAsync(
        TestContext context,

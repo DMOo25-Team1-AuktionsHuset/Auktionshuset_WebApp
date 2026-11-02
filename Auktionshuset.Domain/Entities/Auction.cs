@@ -3,6 +3,7 @@
     public class Auction
     {
         public required Guid AuctionId { get; set; }
+        public long? AuctionNumber { get; set; }
         public required Guid AuctionHouseId { get; set; }
         public AuctionHouse AuctionHouse { get; set; } = null!;
         public Guid? EmployeeId { get; set; }

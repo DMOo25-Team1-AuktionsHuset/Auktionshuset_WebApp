@@ -230,7 +230,7 @@ public sealed class SessionRefreshIntegrationTests
             }
             LastAccessToken = request.Headers.Authorization?.Parameter;
             object bodyContent = path == "/api/auctions"
-                ? new[] { new AuctionListItemResponse(Guid.NewGuid(), "Audit auction", "Kladde", DateTime.UtcNow.AddDays(1),
+                ? new[] { new AuctionListItemResponse(Guid.NewGuid(), "Audit auction", "Kommende", DateTime.UtcNow.AddDays(1),
                     DateTime.UtcNow.AddDays(2), null, "Audit employee", 0, 0, []) }
                 : Array.Empty<object>();
             return new(HttpStatusCode.OK) { Content = JsonContent.Create(bodyContent) };

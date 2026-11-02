@@ -37,7 +37,7 @@ public sealed class PostgresRefreshTokenStore(AHDBContext db) : IRefreshTokenSto
             return RefreshRotationResult.Replay;
         }
 
-        if (replacement.UserId != token.UserId || replacement.FamilyId != token.FamilyId
+        if (replacement.UserId != token.UserId || replacement.SessionVersion != token.SessionVersion || replacement.FamilyId != token.FamilyId
             || replacement.ExpiresAt != token.ExpiresAt)
             throw new InvalidOperationException("Refresh replacement must retain its session identity and absolute expiry.");
 

@@ -3,6 +3,31 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+**/bin/
+**/obj/
+**/.vs/
+**/TestResults/
+**/coverage/
+**/coverage-report/
+**/node_modules/
+**/dist/
+**/tmp/
+**/temp/
+**/trash/
+*.user
+*.suo
+*.log
+.env
+.env.*
+!.env.example
+**/appsettings.Development.local.json
+CLAUDE.local.md
+.claude/settings.local.json
+.agent/.state_sync.lock
+**/__pycache__/
+**/*.pyc
+
+
 # User-specific files
 *.rsuser
 *.suo

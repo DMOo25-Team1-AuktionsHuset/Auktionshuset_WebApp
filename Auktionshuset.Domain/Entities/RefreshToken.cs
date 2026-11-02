@@ -5,6 +5,7 @@ public sealed class RefreshToken
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
+    public int SessionVersion { get; set; }
     public Guid FamilyId { get; set; }
     public required string TokenHash { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

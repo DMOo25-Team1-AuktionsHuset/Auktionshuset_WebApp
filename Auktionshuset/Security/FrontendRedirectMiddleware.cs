@@ -43,6 +43,7 @@ public sealed class FrontendRedirectMiddleware(RequestDelegate next)
         HttpMethods.IsGet(context.Request.Method)
         && (context.Request.Path == "/"
             || context.Request.Path == "/login"
+            || context.Request.Path.StartsWithSegments("/kunde")
             || context.Request.Path.StartsWithSegments("/warehouse")
             || context.Request.Path.StartsWithSegments("/admin")
             || context.Request.Path.StartsWithSegments("/not-found"));

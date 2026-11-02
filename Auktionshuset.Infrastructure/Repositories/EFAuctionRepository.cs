@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Application.Abstraction.Admin.Auctions;
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
 using Auktionshuset.Domain.Entities;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +8,17 @@ namespace Auktionshuset.Infrastructure.Repositories
     public sealed class EFAuctionRepository(AHDBContext context)
         : IAuctionRepository
     {
+
+        public async Task<IReadOnlyDictionary<Guid, long>> GetReservedQuantitiesAsync(Guid? excludingAuctionId, CancellationToken cancellationToken)
+        {
+            return await context.AuctionLot.AsNoTracking()
+                .Where(line => line.AuctionId != excludingAuctionId && line.ClosedAtTime == null
+                    && line.Auction.ClosedAtTime == null
+                    && (line.Auction.AuctionStatus == "Kommende" || line.Auction.AuctionStatus == "Live"))
+                .GroupBy(line => line.LotId)
+                .Select(group => new { LotId = group.Key, Quantity = group.Any(line => line.Quantity <= 0) ? long.MaxValue : group.Sum(line => (long)line.Quantity) })
+                .ToDictionaryAsync(row => row.LotId, row => row.Quantity, cancellationToken);
+        }
 
         public Task AddAsync(Auction auction,
             IReadOnlyCollection<AuctionLot> auctionLots,
@@ -80,7 +91,11 @@ namespace Auktionshuset.Infrastructure.Repositories
                 existingLots.ToDictionary(item => item.LotId);
 
             foreach (AuctionLot existing in existingLots)
-                if (selectedByLotId.TryGetValue(existing.LotId, out AuctionLot? selected)) existing.Quantity = selected.Quantity;
+                if (selectedByLotId.TryGetValue(existing.LotId, out AuctionLot? selected))
+                {
+                    existing.Quantity = selected.Quantity;
+                    existing.StartingPrice = selected.StartingPrice;
+                }
                 else context.AuctionLot.Remove(existing);
 
 

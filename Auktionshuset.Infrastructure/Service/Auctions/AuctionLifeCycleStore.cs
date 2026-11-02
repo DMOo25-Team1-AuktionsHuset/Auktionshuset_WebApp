@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.Admin.Auctions.UpdateAuction;
@@ -45,6 +45,20 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 throw new AuctionStateConflictException(
                     "Auktionen kan kun startes inden for sit planlagte tidsrum.");
 
+            var stockIds = auction.AuctionLots.Select(line => line.LotId).ToArray();
+            var stocks = await context.Lot.AsNoTracking().Where(lot => stockIds.Contains(lot.LotId))
+                .ToDictionaryAsync(lot => lot.LotId, cancellationToken);
+            var reserved = await new Auktionshuset.Infrastructure.Repositories.EFAuctionRepository(context)
+                .GetReservedQuantitiesAsync(null, cancellationToken);
+            foreach (var line in auction.AuctionLots)
+            {
+                if (line.ClosedAtTime is not null || line.Quantity <= 0 || line.StartingPrice < 0
+                    || line.StartingPrice > 9999999999999999.99m || decimal.Round(line.StartingPrice, 2) != line.StartingPrice
+                    || !stocks.TryGetValue(line.LotId, out var stock)
+                    || stock.Quantity < reserved.GetValueOrDefault(line.LotId))
+                    throw new AuctionStateConflictException($"Datakonflikt på auktionslinje {line.AuctionLotId}. Afstem antal, startpris og lager før start.");
+            }
+
             auction.StartedAtTime = nowUtc;
             auction.AuctionStatus = AuctionStatuses.Live;
 
@@ -64,7 +78,14 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
         public async Task<bool> CloseAsync(
             Guid auctionId,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken) =>
+            await CloseCoreAsync(auctionId, onlyWhenDue: false, cancellationToken);
+
+        public Task<bool> CloseDueAsync(Guid auctionId, CancellationToken cancellationToken) =>
+            CloseCoreAsync(auctionId, onlyWhenDue: true, cancellationToken);
+
+        private async Task<bool> CloseCoreAsync(
+            Guid auctionId, bool onlyWhenDue, CancellationToken cancellationToken)
         {
             await using IAuctionWriteSession session =
                 await sessions.BeginAsync(auctionId, cancellationToken);
@@ -76,11 +97,17 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
             if (auction.ClosedAtTime is not null) return true;
 
+            DateTime nowUtc = clock.GetUtcNow().UtcDateTime;
+
+            // Recheck after acquiring the write lock: discovery is only a hint.
+            if (onlyWhenDue && (auction.StartedAtTime is null
+                || auction.AuctionStatus != AuctionStatuses.Live
+                || auction.EndedAt is null || auction.EndedAt > nowUtc))
+                return false;
+
             if (auction.StartedAtTime is null || auction.AuctionStatus != AuctionStatuses.Live)
                 throw new AuctionStateConflictException(
                     "Auktionen kan ikke lukkes fra sin nuværende tilstand");
-
-            DateTime nowUtc = clock.GetUtcNow().UtcDateTime;
 
             foreach (var item in auction.AuctionLots)
                 await AuctionLotCloser.StageAsync(

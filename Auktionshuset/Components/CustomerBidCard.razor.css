@@ -1,0 +1,7 @@
+.bid-card { padding: 1.5rem; }
+.bid-card h2 { margin-top: 0; }
+.bid-card p { overflow-wrap: anywhere; }
+.bid-price { font-size: 1.15rem; }
+.bid-card form { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.bid-card input { border: 1px solid var(--border); border-radius: .4rem; padding: .7rem; max-width: 12rem; }
+@media (max-width: 600px) { .bid-card form { align-items: stretch; flex-direction: column; } .bid-card input { max-width: 100%; } }

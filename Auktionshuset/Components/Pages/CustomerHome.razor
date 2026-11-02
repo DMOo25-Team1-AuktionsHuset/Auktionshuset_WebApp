@@ -1,0 +1,116 @@
+@page "/kunde"
+@page "/kunde/auktioner"
+@attribute [Authorize(Policy = FrontendPolicies.Customer)]
+@layout Layout.CustomerLayout
+@rendermode InteractiveServer
+@using Auktionshuset.Services
+@using Auktionshuset.Contracts.Dto.Customer.Response
+@using Auktionshuset.Contracts.Time
+@inject CustomerAuctionService Auctions
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+@implements IAsyncDisposable
+@inject CustomerAuctionRealtimeService Realtime
+
+<PageTitle>Auktioner | Haderslev Auktionshus</PageTitle>
+<section class="customer-page" aria-labelledby="auction-heading">
+    <div class="page-heading">
+        <h1 id="auction-heading">Auktioner</h1>
+        <p>Tilmeld dig og se genstandene før start. Du kan byde, når auktionen er startet.</p>
+        <button class="btn btn-secondary" @onclick="LoadAsync" disabled="@busy">Opdatér auktioner</button>
+    </div>
+    @if (!Realtime.isConnected) { <p role="status">Liveforbindelsen er afbrudt. Forbinder automatisk igen…</p> }
+    @if (feedback is not null) { <p role="status">@feedback</p> }
+    @if (error is not null) { <p class="access-notice" role="alert">@error</p> }
+    @if (Navigation.Uri.Contains("access=denied", StringComparison.OrdinalIgnoreCase))
+    {
+        <p class="access-notice" role="status">Du har ikke rettighed til den side eller handling.</p>
+    }
+    @if (auctions is null && error is null) { <p role="status">Indlæser auktioner…</p> }
+    else if (auctions is not null)
+    {
+        @foreach (var status in new[] { "Live", "Kommende" })
+        {
+            <section aria-label="@(status == "Kommende" ? "Kommende auktioner" : "Igangværende auktioner")">
+            <h2>@(status == "Kommende" ? "Kommende auktioner" : "Igangværende auktioner")</h2>
+            @if (!auctions.Any(a => a.Status == status))
+            {
+                <p>@(status == "Kommende" ? "Ingen kommende auktioner" : "Ingen auktioner i gang")</p>
+            }
+            @foreach (var auction in auctions.Where(a => a.Status == status).OrderBy(a => a.StartsAt).ThenBy(a => a.AuctionId))
+            {
+            <article class="card customer-overview-card" @key="auction.AuctionId">
+                <p class="auction-status">Status: @auction.Status · @(auction.IsRegistered ? "Du er tilmeldt" : "Du er ikke tilmeldt")</p>
+                <h3>@auction.Name</h3>
+                <p>@auction.LotCount genstande · Start: @CopenhagenTime.FromUtc(DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc)).ToString("dd-MM-yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture) (dansk tid)</p>
+                @if (status == "Kommende" && auction.StartsAt <= Clock.GetUtcNow().UtcDateTime)
+                {
+                    <p role="status">Starttidspunktet er passeret, men auktionen er endnu ikke startet. Bud åbner først, når auktionshuset starter auktionen.</p>
+                }
+                @if (auction.IsRegistered)
+                {
+                    <a class="btn" href="@($"kunde/auktioner/{auction.AuctionId}")">@(status == "Kommende" ? "Se auktionens genstande" : "Gå til auktion og byd")</a>
+                    <Auktionshuset.Components.AuctionUnregister AuctionId="auction.AuctionId" OnChanged="UnregisteredAsync" />
+                }
+                else
+                {
+                    <button class="btn" disabled="@busy" @onclick="() => RegisterAsync(auction.AuctionId)">Tilmeld auktion</button>
+                }
+            </article>
+            }
+            </section>
+        }
+    }
+</section>
+@code {
+    private string? feedback;
+    private async Task UnregisteredAsync() { feedback = "Du er frameldt auktionen. Du kan tilmelde dig igen."; await LoadAsync(); }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Realtime.Invalidated += OnChangedAsync;
+        Realtime.ConnectionChanged += OnConnectionAsync;
+        await Realtime.StartAsync();
+    }
+    private Task OnChangedAsync() => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+    private Task OnConnectionAsync() => InvokeAsync(StateHasChanged);
+    public ValueTask DisposeAsync()
+    {
+        Realtime.Invalidated -= OnChangedAsync;
+        Realtime.ConnectionChanged -= OnConnectionAsync;
+        return ValueTask.CompletedTask;
+    }
+    private List<CustomerAuctionResponse>? auctions;
+    private string? error;
+    private bool busy;
+    private bool refreshPending;
+    protected override Task OnInitializedAsync() => LoadAsync();
+    private async Task LoadAsync()
+    {
+        if (busy) { refreshPending = true; return; }
+        busy = true;
+        error = null;
+        try
+        {
+            do
+            {
+                refreshPending = false;
+                try { auctions = await Auctions.GetAuctionsAsync(); error = null; }
+                catch (Exception ex) when (ex is ApiException or HttpRequestException or System.Text.Json.JsonException or OperationCanceledException)
+                { error = ex is ApiException ? ex.Message : "Auktionerne kunne ikke hentes. Prøv igen."; }
+            } while (refreshPending);
+        }
+        finally { busy = false; }
+    }
+    private async Task RegisterAsync(Guid id)
+    {
+        if (busy) return;
+        busy = true;
+        error = null;
+        try { await Auctions.RegisterAsync(id); auctions = await Auctions.GetAuctionsAsync(); }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or System.Text.Json.JsonException or OperationCanceledException)
+        { error = ex is ApiException ? ex.Message : "Tilmeldingen kunne ikke bekræftes. Prøv igen."; }
+        finally { busy = false; }
+        if (refreshPending) await LoadAsync();
+    }
+}

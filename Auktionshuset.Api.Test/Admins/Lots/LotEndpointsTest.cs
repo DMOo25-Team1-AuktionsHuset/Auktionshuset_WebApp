@@ -58,7 +58,7 @@ public class LotEndpointsTest
         var repository = new InMemoryLotRepository();
         await repository.AddAsync(lot, CancellationToken.None);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
-        UpdateLotHandler handler = new UpdateLotHandler(repository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
+        UpdateLotHandler handler = new UpdateLotHandler(repository, publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System, new InMemoryAuctionRepository());
         UpdateLotRequest request = new UpdateLotRequest
         {
             Name = "  Updated lot  ",
@@ -70,7 +70,7 @@ public class LotEndpointsTest
             AuctionHouseId = lot.AuctionHouseId
         };
 
-        Results<Ok<UpdateLotResponse>, NotFound> result = await UpdateLotEndpoint.HandleAsync(
+        Results<Ok<UpdateLotResponse>, NotFound, ValidationProblem> result = await UpdateLotEndpoint.HandleAsync(
             lot.LotId,
             request,
             handler,
@@ -93,7 +93,7 @@ public class LotEndpointsTest
     [Fact]
     public async Task Update_WithUnknownLot_ReturnsNotFound()
     {
-        Results<Ok<UpdateLotResponse>, NotFound> result = await UpdateLotEndpoint.HandleAsync(
+        Results<Ok<UpdateLotResponse>, NotFound, ValidationProblem> result = await UpdateLotEndpoint.HandleAsync(
             Guid.NewGuid(),
             new UpdateLotRequest
             {
@@ -105,7 +105,7 @@ public class LotEndpointsTest
                 Tags = [],
                 AuctionHouseId = Guid.NewGuid()
             },
-            new UpdateLotHandler(new InMemoryLotRepository(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System),
+            new UpdateLotHandler(new InMemoryLotRepository(), new RecordingEventPublisher(), new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System, new InMemoryAuctionRepository()),
             CancellationToken.None);
 
         Assert.IsType<NotFound>(result.Result);

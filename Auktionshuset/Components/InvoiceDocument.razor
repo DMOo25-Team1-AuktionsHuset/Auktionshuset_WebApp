@@ -1,0 +1,51 @@
+@using Auktionshuset.Contracts.Dto.Billing
+<article class="card invoice-document">
+    <h2>@(Receipt ? "Betalingskvittering pr. auktionslinje" : "Faktura") @Invoice.Number</h2>
+    <p>@Invoice.AuctionName · Udstedt: @Local(Invoice.IssuedAt) · @Invoice.Status</p>
+    <p><strong>@Invoice.SellerName</strong><br />@Invoice.SellerAddress<br />CVR: @Invoice.SellerCvr · @Invoice.SellerEmail</p>
+    <p><strong>@Invoice.CustomerName</strong><br />@Invoice.CustomerAddress<br />@Invoice.CustomerEmail</p>
+    <div style="overflow-x:auto">
+        <table class="table">
+            <thead><tr><th>Genstand</th><th>Antal</th><th>Hammerslag inkl. moms</th><th>Salær inkl. moms (@Invoice.PremiumPercent.ToString("0.##") %)</th><th>I alt</th><th>Status</th></tr></thead>
+            <tbody>
+            @foreach (var line in Invoice.Lines)
+            {
+                <tr><td>@line.Name<br /><small>@line.Description</small></td><td>@line.Quantity</td>
+                    <td>@Money(line.HammerPrice)</td><td>@Money(line.Premium)</td><td>@Money(line.Total)</td><td>@line.Status</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <p>Hammerslaget gælder hele auktionslinjen. Moms: @Invoice.VatPercent.ToString("0.##") %.</p>
+    @if (Receipt)
+    {
+        <p><strong>Betalt for denne linje: @Money(Invoice.Lines.Sum(l => l.Total))</strong><br />
+            Heraf moms: @Money(Invoice.Lines.Sum(l => l.HammerVat + l.PremiumVat))</p>
+        <p>Linjen indgår i den fuldt betalte samlefaktura @Invoice.Number på @Money(Invoice.Total).</p>
+    }
+    else
+    {
+        <p>Hammerslag: @Money(Invoice.HammerTotal) · Salær: @Money(Invoice.PremiumTotal)<br />
+            Ekskl. moms: @Money(Invoice.Total - Invoice.VatTotal) · Heraf moms: @Money(Invoice.VatTotal)<br />
+            <strong>Samlet beløb inkl. moms: @Money(Invoice.Total)</strong></p>
+    }
+    <p>@Invoice.PaymentTerms</p>
+    @if (Invoice.PaidAt is DateTime paid)
+    {
+        <p>Betalt: @Local(paid) · @(Invoice.PaymentMethod == "Card" ? "Kort" : "Kontant") · Registreret af @Invoice.PaidByName</p>
+    }
+    @foreach (var line in Invoice.Lines)
+    {
+        @if (line.CollectedAt is DateTime collected)
+        {
+            <p>@line.Name: Afhentet @Local(collected) · Registreret af @line.CollectedByName</p>
+        }
+    }
+</article>
+@code {
+    [Parameter, EditorRequired] public InvoiceResponse Invoice { get; set; } = null!;
+    [Parameter] public bool Receipt { get; set; }
+    private static string Money(decimal value) => $"{value:N2} DKK";
+    private static string Local(DateTime value) => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(value, DateTimeKind.Utc),
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Copenhagen")).ToString("dd-MM-yyyy HH:mm");
+}

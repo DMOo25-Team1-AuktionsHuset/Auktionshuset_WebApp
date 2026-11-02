@@ -16,7 +16,7 @@ public sealed class AuctionUtcHandlerTests
         var outbox = new RecordingEventPublisher();
         var unitOfWork = new RecordingUnitOfWork();
         var handler = new CreateAuctionHandler(repository, new InMemoryLotRepository(),
-            new TestEmployeeRepository(), outbox, unitOfWork, new FixedClock(now));
+            new TestEmployeeRepository(), outbox, new RecordingAuctionWriteSessionFactory(unitOfWork), new FixedClock(now));
         var start = DateTime.SpecifyKind(now.AddHours(1), kind);
 
         var result = await handler.HandleAsync(TestData.CreateCommand(null, start, start.AddHours(1)), CancellationToken.None);
@@ -34,7 +34,7 @@ public sealed class AuctionUtcHandlerTests
         var repository = new InMemoryAuctionRepository();
         var outbox = new RecordingEventPublisher();
         var handler = new CreateAuctionHandler(repository, new InMemoryLotRepository(),
-            new TestEmployeeRepository(), outbox, new RecordingUnitOfWork(), new FixedClock(now));
+            new TestEmployeeRepository(), outbox, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), new FixedClock(now));
 
         var result = await handler.HandleAsync(TestData.CreateCommand(null, now.AddHours(1), now.AddHours(2)), CancellationToken.None);
 
@@ -53,7 +53,7 @@ public sealed class AuctionUtcHandlerTests
         var repository = new InMemoryAuctionRepository();
         var outbox = new RecordingEventPublisher();
         var handler = new CreateAuctionHandler(repository, new InMemoryLotRepository(),
-            new TestEmployeeRepository(), outbox, new RecordingUnitOfWork(), new FixedClock(now));
+            new TestEmployeeRepository(), outbox, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), new FixedClock(now));
 
         var result = await handler.HandleAsync(TestData.CreateCommand(null, now.AddMinutes(-1), now.AddHours(1)), CancellationToken.None);
 

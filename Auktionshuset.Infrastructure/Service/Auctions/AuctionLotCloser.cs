@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Application.Abstraction;
@@ -27,6 +27,18 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 .ThenBy(bid => bid.SequenceNumber)
                 .Select(bid => new { bid.BidId, bid.Amount })
                 .FirstOrDefaultAsync(cancellationToken);
+
+            if (winner is not null)
+            {
+                var stock = await context.Lot.SingleAsync(lot => lot.LotId == item.LotId, cancellationToken);
+                var reservations = await new Auktionshuset.Infrastructure.Repositories.EFAuctionRepository(context)
+                    .GetReservedQuantitiesAsync(null, cancellationToken);
+                long reserved = reservations.GetValueOrDefault(item.LotId);
+                if (item.Quantity <= 0 || stock.Quantity < reserved || stock.Quantity < item.Quantity)
+                    throw new Auktionshuset.Application.Abstraction.Auction.AuctionStateConflictException(
+                        $"Lagerkonflikt for {stock.Name} ({stock.LotId}). Afstem beholdning og reservationer før salg.");
+                stock.Quantity -= item.Quantity;
+            }
 
             item.OpenForBids = false;
             item.ClosedAtTime = nowUtc;

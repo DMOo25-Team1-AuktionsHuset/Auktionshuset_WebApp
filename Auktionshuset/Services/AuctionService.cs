@@ -6,6 +6,25 @@ namespace Auktionshuset.Services;
 
 public sealed class AuctionService(BackendApiClient httpClient)
 {
+    public Task StartAsync(Guid auctionId, CancellationToken cancellationToken = default) =>
+        ExecuteAsync($"api/auctions/{auctionId}/start", "startes", cancellationToken);
+
+    public Task CloseAsync(Guid auctionId, CancellationToken cancellationToken = default) =>
+        ExecuteAsync($"api/auctions/{auctionId}/close", "afsluttes", cancellationToken);
+
+    public Task CloseLotAsync(Guid auctionLotId, CancellationToken cancellationToken = default) =>
+        ExecuteAsync($"api/auction-lots/{auctionLotId}", "lukkes", cancellationToken);
+
+    private async Task ExecuteAsync(string path, string action, CancellationToken cancellationToken)
+    {
+        using HttpResponseMessage response = await httpClient.PostAsJsonAsync(path, new { }, cancellationToken);
+        if (response.IsSuccessStatusCode) return;
+        string message = response.StatusCode == HttpStatusCode.NotFound
+            ? "Auktionen eller genstanden findes ikke længere. Opdatér visningen."
+            : await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Handlingen", action);
+        throw new AuctionApiException(message, response.StatusCode);
+    }
+
     /// <summary>
     /// Fetches every auction for the dashboard.
     /// </summary>

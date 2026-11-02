@@ -11,12 +11,13 @@ namespace Auktionshuset.Domain.Entities
         public Lot Lot { get; set; } = null!;
 
         /// <summary>
-        /// Number of units of the lot included in this auction. Kept because the application uses it
-        /// for stock validation and auction totals.
+        /// Units sold together as one line to one winner. Open lines on upcoming/live auctions
+        /// reserve this quantity; a sold close debits it once from physical stock.
         /// </summary>
         public required int Quantity { get; set; }
         public bool OpenForBids { get; set; } = false;
 
+        /// <summary>Total starting price for the whole line, never a per-unit price. Zero is valid.</summary>
         public decimal StartingPrice { get; set; }
 
         public DateTime? ClosedAtTime { get; set; }

@@ -89,7 +89,7 @@ public class DeleteAuctionHandlerTests
         employees.Add(employee);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher, new RecordingUnitOfWork(), TimeProvider.System);
+        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctions, lots, employees, publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System);
 
         CreateAuctionResult first = await createHandler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2)),
@@ -114,7 +114,7 @@ public class DeleteAuctionHandlerTests
 
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,

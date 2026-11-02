@@ -98,7 +98,13 @@ public partial class AuctionAdmin : IDisposable
     /// <summary>
     /// One genstand chosen for the auction, with the number of units the auction includes.
     /// </summary>
-    private sealed record SelectedLot(string Name, int Quantity, int? Available);
+    private sealed class SelectedLot(string name, int quantity, int? available, decimal startingPrice = 0m)
+    {
+        public string Name { get; } = name;
+        public int Quantity { get; set; } = quantity;
+        public int? Available { get; } = available;
+        public decimal StartingPrice { get; set; } = startingPrice;
+    }
 
     private IReadOnlyList<LotListItemResponse> FilteredPickerLots
     {
@@ -316,7 +322,7 @@ public partial class AuctionAdmin : IDisposable
         try
         {
             AuctionLotRequest[] requestLots = selectedLots
-                .Select(entry => new AuctionLotRequest(entry.Key, entry.Value.Quantity))
+                .Select(entry => new AuctionLotRequest(entry.Key, entry.Value.Quantity, entry.Value.StartingPrice))
                 .ToArray();
 
             string successMessage;
@@ -380,7 +386,7 @@ public partial class AuctionAdmin : IDisposable
     /// <param name="auction">The dashboard row that was activated.</param>
     private async Task BeginEditAsync(AuctionListItemResponse auction)
     {
-        if (!canUpdateAuctions)
+        if (!canUpdateAuctions || auction.Status != StatusUpcoming)
         {
             return;
         }
@@ -392,6 +398,14 @@ public partial class AuctionAdmin : IDisposable
             if (detail is null)
             {
                 statusMessage = "Auktionen findes ikke længere. Listen er opdateret.";
+                submissionSucceeded = false;
+                await LoadAuctionsAsync();
+                return;
+            }
+
+            if (detail.Status != StatusUpcoming)
+            {
+                statusMessage = "En startet eller afsluttet auktion kan ikke redigeres.";
                 submissionSucceeded = false;
                 await LoadAuctionsAsync();
                 return;
@@ -422,7 +436,7 @@ public partial class AuctionAdmin : IDisposable
             foreach (AuctionLotResponse line in detail.Lots)
             {
                 int? available = lots.FirstOrDefault(lot => lot.LotId == line.LotId)?.Quantity;
-                selectedLots[line.LotId] = new SelectedLot(line.Name, line.Quantity, available);
+                selectedLots[line.LotId] = new SelectedLot(line.Name, line.Quantity, available, line.StartingPrice);
             }
 
             pendingDeleteId = null;
@@ -489,6 +503,7 @@ public partial class AuctionAdmin : IDisposable
     {
         foreach ((Guid lotId, SelectedLot? line) in selectedLots)
         {
+            if (!AuctionPrice.IsValid(line.StartingPrice)) return AuctionPrice.ValidationMessage;
             if (line.Quantity < 1)
             {
                 return $"Antallet for \"{line.Name}\" skal være mindst 1.";
@@ -526,6 +541,8 @@ public partial class AuctionAdmin : IDisposable
                 return;
 
             auctions = result;
+            if (editingAuctionId is Guid editingId && !auctions.Any(a => a.AuctionId == editingId && a.Status == StatusUpcoming))
+                ResetForm();
             auctionPage = Math.Clamp(
                 auctionPage,
                 1,

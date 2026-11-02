@@ -1,0 +1,3 @@
+.customer-auction-page { display: grid; gap: 1.25rem; max-width: 62rem; margin: 0 auto; }
+.customer-auction-page > h1 { margin-bottom: 0; }
+.customer-auction-page > button { justify-self: start; }

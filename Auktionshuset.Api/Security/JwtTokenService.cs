@@ -60,6 +60,7 @@ public sealed class JwtTokenService(IConfiguration configuration, TimeProvider t
     private static IEnumerable<Claim> CreateClaims(AuthUser user)
     {
         yield return new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString());
+        yield return new Claim("session_version", user.SessionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
         yield return new Claim(JwtRegisteredClaimNames.Email, user.Email);
         yield return new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString());
 

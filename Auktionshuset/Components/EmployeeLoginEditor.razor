@@ -1,0 +1,71 @@
+@using Auktionshuset.Contracts.Dto.Admin.Employee
+@using Auktionshuset.Services
+@inject BackendApiClient Client
+
+<section class="card employee-login" aria-labelledby="employee-login-heading">
+    <h2 id="employee-login-heading">Medarbejderlogin</h2>
+    @if (loading) { <p role="status">Henter login…</p> }
+    else if (loaded)
+    {
+        <p>@(existing is null ? "Medarbejderen har ikke et login." : existing.IsActive ? "Login er aktivt." : "Login er deaktiveret.")</p>
+        <div class="login-fields">
+        <label>E-mail <input type="email" @bind="email" readonly="@(existing is not null)" autocomplete="off" maxlength="254" /></label>
+        <label>@(existing is null ? "Adgangskode (12–128 tegn)" : "Ny adgangskode (valgfri)") <input type="password" @bind="password" autocomplete="new-password" maxlength="128" /></label>
+        <label class="login-role">Rolle
+            <select @bind="role">
+                <option value="Admin">Administrator – alle rettigheder samt medarbejdere og login</option>
+                <option value="AuctionAdmin">Auktionsansvarlig – auktioner og genstande</option>
+                <option value="LotAdmin">Genstandsansvarlig – oprette, ændre og slette genstande</option>
+                <option value="Employee">Medarbejder – registrere betaling og afhentning</option>
+            </select>
+        </label>
+        </div>
+        <p>Alle medarbejderroller kan registrere betaling og afhentning. Kun administratorer kan administrere login og roller.</p>
+        <label class="login-active"><input type="checkbox" @bind="active" /> Aktivt login</label>
+        <p>Ved ændring af rolle, adgangskode eller aktiv status skal medarbejderen logge ind igen.</p>
+        <button class="btn" disabled="@saving" @onclick="SaveAsync">@(existing is null ? "Opret login" : "Gem login og rolle")</button>
+    }
+    @if (error is not null) { <p role="alert">@error</p><button class="btn btn-secondary" @onclick="LoadAsync">Prøv igen</button> }
+    @if (feedback is not null) { <p role="status">@feedback</p> }
+</section>
+
+@code {
+    [Parameter] public Guid EmployeeId { get; set; }
+    private EmployeeLoginResponse? existing;
+    private string email = "", password = "", role = "Employee";
+    private bool active = true, loading, saving, loaded;
+    private string? error, feedback;
+    protected override Task OnParametersSetAsync() => LoadAsync();
+    private async Task LoadAsync()
+    {
+        loading = true; loaded = false; error = null; feedback = null; password = "";
+        try
+        {
+            using var response = await Client.GetAsync($"api/employee/{EmployeeId}/login");
+            if (!response.IsSuccessStatusCode) throw new HttpRequestException(await ApiProblemReader.ReadMessageAsync(response, default, "Login", "hentes"));
+            existing = await response.Content.ReadFromJsonAsync<EmployeeLoginResponse>();
+            email = existing?.Email ?? ""; role = existing?.Role ?? "Employee"; active = existing?.IsActive ?? true;
+            loaded = true;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or System.Text.Json.JsonException)
+        { error = "Login kunne ikke hentes. " + ex.Message; }
+        finally { loading = false; }
+    }
+    private async Task SaveAsync()
+    {
+        if (saving) return;
+        saving = true; error = null; feedback = null;
+        try
+        {
+            using var response = await Client.PutAsJsonAsync($"api/employee/{EmployeeId}/login",
+                new SaveEmployeeLoginRequest(email, password.Length == 0 ? null : password, role, active));
+            if (!response.IsSuccessStatusCode) { error = await ApiProblemReader.ReadMessageAsync(response, default, "Login", "gemmes"); return; }
+            existing = await response.Content.ReadFromJsonAsync<EmployeeLoginResponse>();
+            password = "";
+            feedback = "Login og rolle er gemt.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or System.Text.Json.JsonException)
+        { error = "Login kunne ikke gemmes. Prøv igen."; }
+        finally { saving = false; }
+    }
+}
