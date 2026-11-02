@@ -104,7 +104,8 @@ public static class GetAuctionsEndpoint
                     CurrentPrice: line.CurrentPrice,
                     SequenceNumber: line.SequenceNumber,
                     CurrentHighestBidId: line.CurrentHighestBidId,
-                    ClosedAtTime: line.ClosedAtTime))
+                    ClosedAtTime: line.ClosedAtTime,
+                    StartingPrice: line.StartingPrice))
                 .ToArray());
 
         return TypedResults.Ok(response);

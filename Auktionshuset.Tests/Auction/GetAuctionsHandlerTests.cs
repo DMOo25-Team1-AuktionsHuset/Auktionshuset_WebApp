@@ -120,7 +120,7 @@ public class GetAuctionsHandlerTests
         var employeeRepository = new TestEmployeeRepository();
         employeeRepository.Add(employee);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
-        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
+        CreateAuctionHandler createHandler = new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System);
 
         CreateAuctionResult earliest = await createHandler.HandleAsync(
             TestData.CreateCommand(employee.EmployeeId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2)) with { Name = "Tidlig" },
@@ -177,7 +177,7 @@ public class GetAuctionsHandlerTests
         employeeRepository.Add(employee);
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,

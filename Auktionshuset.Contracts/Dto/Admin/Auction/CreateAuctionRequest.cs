@@ -42,6 +42,9 @@ public sealed class CreateAuctionRequest : IValidatableObject
                 [nameof(Lots)]);
         }
 
+        if (Lots is not null && Lots.Any(lot => lot.StartingPrice is decimal price && !AuctionPrice.IsValid(price)))
+            yield return new ValidationResult(AuctionPrice.ValidationMessage, [nameof(Lots)]);
+
         if (Lots is not null && Lots.Any(lot => lot.Quantity < 1))
         {
             yield return new ValidationResult(

@@ -6,6 +6,7 @@ using Auktionshuset.Api.Endpoints.Admin.LotImage;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Messaging;
 using Auktionshuset.Api.Endpoints.Auth;
+using Auktionshuset.Api.Endpoints.Customer;
 using Auktionshuset.Api.Extensions;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
@@ -63,6 +64,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
+app.MapCustomerEndpoints();
+Auktionshuset.Api.Endpoints.Billing.InvoiceEndpoints.MapInvoiceEndpoints(app);
 app.MapLotEndpoints();
 app.MapStoredLotImages();
 app.MapAuctionEndpoints();
@@ -97,6 +100,9 @@ app.MapHealthChecks("/health/messaging", new HealthCheckOptions
         }
 }).RequireAuthorization(SecurityPolicies.Admin);
 
+
+app.MapHub<CustomerAuctionHub>("/hubs/customer-auctions", options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization(SecurityPolicies.Customer);
 
 app.MapHub<AuctionHub>("/hubs/auction", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.CanViewAuctions);

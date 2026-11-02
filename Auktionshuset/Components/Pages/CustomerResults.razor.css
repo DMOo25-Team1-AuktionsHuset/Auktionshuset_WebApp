@@ -1,0 +1,3 @@
+.customer-results { display: grid; gap: 1rem; margin: 0 auto; max-width: 62rem; }
+.result-card { padding: 1.5rem; overflow-wrap: anywhere; }
+.result-card h2 { margin-top: 0; }

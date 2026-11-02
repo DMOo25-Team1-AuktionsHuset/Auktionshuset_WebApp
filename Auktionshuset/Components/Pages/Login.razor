@@ -10,7 +10,12 @@
 <section class="login-card" aria-labelledby="login-heading">
     <p class="eyebrow">Haderslev Auktionshus</p>
     <h1 id="login-heading">Log ind</h1>
-    <p class="login-intro">Log ind for at åbne administrationen.</p>
+    <p class="login-intro">Log ind for at åbne administrationen eller din kundeside.</p>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <p class="login-success" role="status">@successMessage</p>
+    }
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
@@ -29,22 +34,37 @@
         </div>
         <button class="btn login-submit" type="submit">Log ind</button>
     </form>
+
+    <div class="login-alt-action">
+        <a class="btn btn-secondary login-create-link" href="registrer">Opret ny bruger</a>
+    </div>
 </section>
 
 @code {
     private string requestToken = string.Empty;
     private string? errorMessage;
+    private string? successMessage;
 
     [SupplyParameterFromQuery(Name = "error")]
     public string? ErrorCode { get; set; }
+
+    [SupplyParameterFromQuery(Name = "oprettet")]
+    public string? Oprettet { get; set; }
 
     protected override void OnInitialized()
     {
         HttpContext? context = HttpContextAccessor.HttpContext;
         if (context?.User.Identity?.IsAuthenticated == true)
         {
-            Navigation.NavigateTo("/", forceLoad: true);
-            return;
+            // Same destination logic as after login, based on server-validated roles.
+            // The history entry for /login is replaced, so the back button does not
+            // keep returning to the login page.
+            string? destination = AuthDestination.For(context.User);
+            if (destination is not null)
+            {
+                Navigation.NavigateTo(destination, forceLoad: true, replace: true);
+                return;
+            }
         }
 
         if (context is not null)
@@ -56,10 +76,14 @@
 
     protected override void OnParametersSet()
     {
+        successMessage = Oprettet is not null
+            ? "Din konto er oprettet. Log ind med din email og adgangskode."
+            : null;
         errorMessage = ErrorCode switch
         {
             "rate-limited" => "Der er foretaget for mange loginforsøg. Vent et øjeblik og prøv igen.",
             "invalid" => "Email eller adgangskode er forkert.",
+            "norole" => "Din konto har ingen gyldig rolle. Kontakt auktionshuset, hvis problemet fortsætter.",
             "unavailable" => "Login kunne ikke gennemføres, fordi serveren ikke er tilgængelig. Prøv igen om lidt.",
             _ => null
         };

@@ -1,0 +1,6 @@
+.customer-page { display: grid; gap: 1.5rem; margin: 0 auto; max-width: 62rem; width: 100%; }
+.customer-overview-card { padding: 1.5rem; }
+.customer-overview-card h3 { margin-top: 0; }
+.customer-overview-card + .customer-overview-card { margin-top: 1rem; }
+.auction-status { color: var(--camel-dark); font-weight: 700; }
+@media (max-width: 760px) { .customer-overview-card { padding: 1rem; } }

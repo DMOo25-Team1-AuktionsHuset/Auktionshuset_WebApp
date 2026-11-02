@@ -1,4 +1,5 @@
-﻿using Auktionshuset.Api.Security;
+using Auktionshuset.Api.Security;
+using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Lots.UpdateLot;
 using Auktionshuset.Contracts.Dto.Admin.Lot.UpdateLot;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -33,7 +34,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot
         /// <param name="request">The replacement values supplied by the client.</param>
         /// <param name="handler">The handler that updates the lot.</param>
         /// <returns>The updated lot identifier, or 404 when the lot does not exist.</returns>
-        public static async Task<Results<Ok<UpdateLotResponse>, NotFound>> HandleAsync(
+        public static async Task<Results<Ok<UpdateLotResponse>, NotFound, ValidationProblem>> HandleAsync(
             [FromRoute] Guid lotId,
             [FromBody] UpdateLotRequest request,
             [FromServices] UpdateLotHandler handler,
@@ -52,9 +53,15 @@ namespace Auktionshuset.Api.Endpoints.Admin.Lot.UpdateLot
                     .ToArray(),
                 AuctionHouseId: request.AuctionHouseId);
 
-            UpdateLotResult? result = await handler.HandleAsync(command, cancellationToken);
-
-            return result == null ? TypedResults.NotFound() : TypedResults.Ok(new UpdateLotResponse(result.LotId));
+            try
+            {
+                UpdateLotResult? result = await handler.HandleAsync(command, cancellationToken);
+                return result == null ? TypedResults.NotFound() : TypedResults.Ok(new UpdateLotResponse(result.LotId));
+            }
+            catch (AuctionStateConflictException exception)
+            {
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["Quantity"] = [exception.Message] });
+            }
         }
     }
 }

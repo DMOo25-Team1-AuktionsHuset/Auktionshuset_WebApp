@@ -1,0 +1,124 @@
+@page "/kunde/profil"
+@attribute [Authorize(Policy = FrontendPolicies.Customer)]
+@layout Layout.CustomerLayout
+@using Auktionshuset.Services
+@inject CustomerService CustomerProfiles
+
+<PageTitle>Min profil | Haderslev Auktionshus</PageTitle>
+
+<section class="customer-page" aria-labelledby="profile-heading">
+    <div class="page-heading">
+        
+        <h1 id="profile-heading">Min profil</h1>
+        <p>Se og redigér dine oplysninger. Din login-email kan ikke ændres her.</p>
+    </div>
+
+    @if (loadFailed)
+    {
+        <p class="access-notice" role="alert">@loadErrorMessage</p>
+    }
+    else if (Model is not null && profile is not null)
+    {
+        <section class="card form-card" aria-labelledby="profile-form-heading">
+            <EditForm Model="Model" OnValidSubmit="SubmitAsync" FormName="customer-profile" class="customer-profile-form" novalidate>
+                <DataAnnotationsValidator />
+                <div class="card-heading">
+                    <h2 id="profile-form-heading">Dine oplysninger</h2>
+                </div>
+
+                <div class="customer-profile-grid">
+                    <div class="field">
+                        <label for="profile-first-name">Fornavn</label>
+                        <InputText id="profile-first-name" @bind-Value="Model.FirstName" autocomplete="given-name" maxlength="100" />
+                        <ValidationMessage For="@(() => Model.FirstName)" />
+                    </div>
+                    <div class="field">
+                        <label for="profile-last-name">Efternavn</label>
+                        <InputText id="profile-last-name" @bind-Value="Model.LastName" autocomplete="family-name" maxlength="100" />
+                        <ValidationMessage For="@(() => Model.LastName)" />
+                    </div>
+                    <div class="field">
+                        <label for="profile-email">Email (skrivebeskyttet)</label>
+                        <output id="profile-email" class="profile-readonly-email">@profile.Email</output>
+                    </div>
+                    <div class="field">
+                        <label for="profile-phone">Telefonnummer</label>
+                        <InputText id="profile-phone" @bind-Value="Model.PhoneNumber" autocomplete="tel" />
+                        <ValidationMessage For="@(() => Model.PhoneNumber)" />
+                    </div>
+                    <div class="field customer-profile-address">
+                        <label for="profile-address">Adresse</label>
+                        <InputText id="profile-address" @bind-Value="Model.Address" autocomplete="street-address" maxlength="200" />
+                        <ValidationMessage For="@(() => Model.Address)" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(statusMessage))
+                {
+                    <div class="status-message @(submissionSucceeded ? "success" : "error")" role="@(submissionSucceeded ? "status" : "alert")" aria-live="polite">@statusMessage</div>
+                }
+
+                <button type="submit" class="btn profile-submit">Gem ændringer</button>
+            </EditForm>
+        </section>
+    }
+
+    <div class="profile-back-link">
+        <a href="kunde">Tilbage til auktioner</a>
+    </div>
+</section>
+
+@code {
+    [SupplyParameterFromForm]
+    public Auktionshuset.Contracts.Dto.Customer.Request.UpdateCustomerProfileRequest? Model { get; set; }
+
+    private Auktionshuset.Contracts.Dto.Customer.Response.CustomerProfileResponse? profile;
+    private bool loadFailed;
+    private string loadErrorMessage = "Dine oplysninger kunne ikke hentes. Prøv igen om lidt.";
+    private string? statusMessage;
+    private bool submissionSucceeded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            profile = await CustomerProfiles.GetOwnProfileAsync();
+        }
+        catch (CustomerApiException exception)
+        {
+            loadFailed = true;
+            loadErrorMessage = exception.Message;
+            return;
+        }
+
+        // On a form POST the model is already bound from the submitted values;
+        // only a fresh page load is prefilled from the stored profile.
+        if (Model is null)
+        {
+            Model = new Auktionshuset.Contracts.Dto.Customer.Request.UpdateCustomerProfileRequest
+            {
+                FirstName = profile.FirstName,
+                LastName = profile.LastName,
+                PhoneNumber = profile.PhoneNumber,
+                Address = profile.Address
+            };
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        statusMessage = null;
+        try
+        {
+            profile = await CustomerProfiles.UpdateOwnProfileAsync(Model!);
+            submissionSucceeded = true;
+            statusMessage = "Dine oplysninger er gemt.";
+        }
+        catch (CustomerApiException exception)
+        {
+            submissionSucceeded = false;
+            statusMessage = exception.Message;
+        }
+    }
+}
+

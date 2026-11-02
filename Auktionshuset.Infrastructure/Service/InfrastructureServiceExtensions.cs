@@ -101,6 +101,10 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuctionWriteSessionFactory, PostgresAuctionWriteSessionFactory>();
             services.AddScoped<IAuctionLifeCycleStore, AuctionLifeCycleStore>();
+            services.AddScoped<AuctionLifeCycleStore>();
+            services.AddHostedService<AuctionExpirationWorker>();
+            services.AddScoped<Auktionshuset.Infrastructure.Service.Billing.AuctionInvoiceStore>();
+            services.AddHostedService<Auktionshuset.Infrastructure.Service.Billing.AuctionInvoiceWorker>();
 
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();

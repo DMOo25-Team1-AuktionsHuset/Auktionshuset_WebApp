@@ -1,6 +1,8 @@
 ﻿@page "/"
 @attribute [Authorize]
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using Auktionshuset.Contracts.Security
 
 <PageTitle>Haderslev Auktionshus</PageTitle>
 
@@ -17,6 +19,15 @@
     }
 
     <div class="home-links">
+        <AuthorizeView Policy="@FrontendPolicies.BillingStaff">
+            <Authorized>
+                <a class="card home-link" href="admin/invoices">
+                    <h2>Betaling og afhentning</h2>
+                    <p>Se fakturaer, registrér fuld betaling og udlever de betalte auktionslinjer.</p>
+                    <span class="home-link-action">Gå til fakturaer</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
         <AuthorizeView Policy="@FrontendPolicies.CanViewLots">
             <Authorized>
                 <a class="card home-link" href="warehouse">
@@ -48,3 +59,16 @@
         </AuthorizeView>
     </div>
 </section>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (state.User.IsInRole(RoleNames.Customer))
+        {
+            // Replace the history entry so the back button does not bounce customers
+            // between the administration start page and their own area.
+            Navigation.NavigateTo(AuthDestination.CustomerHome, forceLoad: true, replace: true);
+        }
+    }
+}

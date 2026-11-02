@@ -8,7 +8,7 @@
         public const int MaxMessagesPerCycle = 50;
 
         public static readonly TimeSpan PollInterval =
-            TimeSpan.FromSeconds(2);
+            TimeSpan.FromSeconds(0.01);
 
         public static int RetryDelaySeconds(int attempt)
         {

@@ -260,7 +260,7 @@ public class CreateAuctionHandlerTests
             CancellationToken.None);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Errors, error => error.Contains("kun 2 stk."));
+        Assert.Contains(result.Errors, error => error.Contains("kun 2 ledige stk."));
     }
 
     /// <summary>
@@ -361,7 +361,7 @@ public class CreateAuctionHandlerTests
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
         return (
-            new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System),
+            new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System),
             auctionRepository,
             employeeRepository,
             publisher);

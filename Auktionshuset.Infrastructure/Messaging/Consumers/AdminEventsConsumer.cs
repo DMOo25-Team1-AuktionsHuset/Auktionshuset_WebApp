@@ -17,7 +17,7 @@ internal sealed class AdminEventsConsumer(
     MessagingRuntime runtime)
     : BackgroundService
 {
-    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(0.01);
 
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)

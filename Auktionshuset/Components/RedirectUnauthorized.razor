@@ -1,4 +1,5 @@
 @inject NavigationManager Navigation
+@using Auktionshuset.Contracts.Security
 
 <p class="route-loading" role="status">Kontrollerer adgang...</p>
 
@@ -9,6 +10,10 @@
     protected override void OnInitialized()
     {
         bool authenticated = AuthenticationState.User.Identity?.IsAuthenticated == true;
-        Navigation.NavigateTo(authenticated ? "/?access=denied" : "/login", forceLoad: !authenticated);
+        string destination = !authenticated ? "/login"
+            : AuthenticationState.User.IsInRole(RoleNames.Customer)
+                ? AuthDestination.CustomerHome + "?access=denied"
+                : "/?access=denied";
+        Navigation.NavigateTo(destination, forceLoad: !authenticated);
     }
 }

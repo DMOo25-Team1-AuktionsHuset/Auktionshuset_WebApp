@@ -76,7 +76,9 @@ internal static class AuctionValidation
         IReadOnlyCollection<AuctionLotSelection> selections,
         IReadOnlyDictionary<Guid, Lot> lotsById,
         AuctionEntity auction,
-        List<string> errors)
+        List<string> errors,
+        IReadOnlyDictionary<Guid, long>? reserved = null,
+        IReadOnlyDictionary<Guid, decimal>? existingPrices = null)
     {
         if (selections.Select(selection => selection.LotId).Distinct().Count() != selections.Count)
         {
@@ -99,10 +101,25 @@ internal static class AuctionValidation
                 continue;
             }
 
-            if (selection.Quantity > lot.Quantity)
+            decimal startingPrice = selection.StartingPrice ?? existingPrices?.GetValueOrDefault(selection.LotId) ?? 0m;
+            if (startingPrice < 0 || startingPrice > 9999999999999999.99m
+                || decimal.Round(startingPrice, 2) != startingPrice)
+            {
+                errors.Add($"Startprisen for {lot.Name} skal være mellem 0 og 9999999999999999,99 kr. med højst to decimaler.");
+                continue;
+            }
+
+            long reservedQuantity = reserved?.GetValueOrDefault(lot.LotId) ?? 0;
+            if (reservedQuantity == long.MaxValue)
+            {
+                errors.Add($"Lagerdata for {lot.Name} indeholder ugyldige reserverede antal. Afstem data før reservation.");
+                continue;
+            }
+            long available = lot.Quantity - reservedQuantity;
+            if (selection.Quantity > available)
             {
                 errors.Add(
-                    $"Der er kun {lot.Quantity} stk. af \"{lot.Name}\" på lageret.");
+                    $"Der er kun {available} ledige stk. af \"{lot.Name}\" på lageret.");
                 continue;
             }
 
@@ -114,6 +131,7 @@ internal static class AuctionValidation
                 LotId = lot.LotId,
                 Lot = lot,
                 Quantity = selection.Quantity,
+                StartingPrice = startingPrice,
                 OpenForBids = false,
                 CurrentHighestBid = null
             });

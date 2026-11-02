@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Auktionshuset.Application.Abstraction;
+﻿using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Messaging.InboxServices;
@@ -25,7 +24,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
             CancellationToken cancellationToken)
         {
             List<QueueStatus> rows = await db.Database
-                .SqlQuery<QueueStatus>(FormattableStringFactory.Create($"""
+                .SqlQuery<QueueStatus>($"""
                 WITH messages AS (
                     SELECT
                         'outbox'::text AS "Pipeline",
@@ -92,7 +91,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
                     ) AS "OldestReadyAtTime"
                 FROM classified
                 GROUP BY "Pipeline"
-                """))
+                """)
                 .ToListAsync(cancellationToken);
 
             QueueStatus[] queues =

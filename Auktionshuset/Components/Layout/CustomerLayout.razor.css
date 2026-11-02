@@ -1,0 +1,179 @@
+.customer-shell {
+    background: var(--page-background);
+    box-sizing: border-box;
+    min-height: 100vh;
+}
+
+.customer-header {
+    background: var(--dark-slate-grey);
+    color: var(--text-inverse);
+}
+
+.customer-header-content {
+    align-items: center;
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin: 0 auto;
+    max-width: 75rem;
+    min-height: 4rem;
+    padding: 0.6rem 1.5rem;
+    width: 100%;
+}
+
+.customer-brand-area {
+    align-items: center;
+    display: flex;
+    gap: 0.9rem;
+    min-width: 0;
+}
+
+.customer-brand {
+    align-items: center;
+    color: var(--text-inverse);
+    display: flex;
+    gap: 0.6rem;
+    text-decoration: none;
+}
+
+.customer-brand:focus-visible {
+    border-radius: var(--radius);
+    box-shadow: var(--focus-ring);
+    outline: none;
+}
+
+.customer-brand-logo {
+    background: var(--surface);
+    border-radius: 50%;
+    flex: 0 0 auto;
+    height: 2.4rem;
+    object-fit: contain;
+    padding: 0.12rem;
+    width: 2.4rem;
+}
+
+.customer-brand .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+}
+
+.customer-brand .brand-text strong {
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.customer-brand .brand-text span {
+    color: var(--camel);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.customer-area-badge {
+    background: rgba(182, 144, 109, 0.22);
+    border: 1px solid var(--camel);
+    border-radius: 999px;
+    color: var(--camel-soft);
+    flex: 0 0 auto;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 0.28rem 0.7rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.customer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.customer-nav ::deep a {
+    border-bottom: 3px solid transparent;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    color: #D7E0E3;
+    display: inline-flex;
+    font-weight: 600;
+    min-height: 2.6rem;
+    padding: 0 0.8rem;
+    text-decoration: none;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.customer-nav ::deep a:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-inverse);
+}
+
+.customer-nav ::deep a:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.customer-nav ::deep a.active {
+    border-bottom-color: var(--camel);
+    color: var(--text-inverse);
+}
+
+.customer-account {
+    align-items: center;
+    display: flex;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.customer-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.customer-account form {
+    margin: 0;
+}
+
+.customer-content {
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 62rem;
+    min-width: 0;
+    padding: 2.25rem 1.5rem 4rem;
+    width: 100%;
+}
+
+@media (max-width: 860px) {
+    .customer-header-content {
+        gap: 0.6rem;
+        padding: 0.6rem 0.9rem;
+    }
+
+    .customer-brand .brand-text {
+        display: none;
+    }
+
+    .customer-area-badge {
+        font-size: 0.68rem;
+        padding: 0.22rem 0.55rem;
+    }
+
+    .customer-nav ::deep a {
+        min-height: 2.4rem;
+        padding: 0 0.55rem;
+    }
+
+    .customer-name {
+        display: none;
+    }
+
+    .customer-content {
+        padding: 1.5rem 0.9rem 3rem;
+    }
+}

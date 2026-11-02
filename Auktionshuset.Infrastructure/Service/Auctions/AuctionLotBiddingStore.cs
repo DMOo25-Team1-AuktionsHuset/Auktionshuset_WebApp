@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.Auction;
@@ -18,7 +18,8 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
         public async Task<PlaceBidResult> PlaceBidAsync(PlaceBidCommand command, CancellationToken cancellationToken)
         {
             // Checks the requests basic values
-            if (command.RequestId == Guid.Empty || command.Amount <= 0)
+            if (command.RequestId == Guid.Empty || command.Amount <= 0 || command.Amount > 9999999999999999.99m
+                || decimal.Round(command.Amount, 2) != command.Amount)
             {
                 return Rejected("InvalidBidRequest", 0m);
             }
@@ -72,6 +73,13 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 }
 
                 DateTime nowUtc = clock.GetUtcNow().UtcDateTime;
+
+                if (command.DeviceSessionId is null && !await db.AuctionRegistrations.AnyAsync(
+                    r => r.AuctionId == item.AuctionId && r.CustomerId == command.CustomerId, cancellationToken))
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return Rejected("NotRegistered", 0m);
+                }
 
                 DeviceSession? session = null;
 

@@ -1,0 +1,7 @@
+@page "/kunde/mine-auktioner"
+@attribute [StreamRendering]
+@attribute [Authorize(Policy = FrontendPolicies.Customer)]
+@layout Layout.CustomerLayout
+@rendermode InteractiveServer
+
+<CustomerResults PurchasesPage="false" />

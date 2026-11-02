@@ -124,10 +124,19 @@
                             </p>
                             <button type="button" class="btn btn-secondary btn-sm" @onclick="ClearSelection">Ryd valg</button>
                         </div>
+                        <p>Alle enheder på en linje sælges samlet til én vinder. Startpris og bud gælder hele linjen. Andre auktioners reservationer kontrolleres ved gemning.</p>
                         <ul class="selection-list">
                             @foreach (SelectedLot line in SelectedLotLines)
                             {
-                                <li>@line.Name &mdash; @line.Quantity stk.</li>
+                                <li>
+                                    <strong>@line.Name</strong>
+                                    <label>Antal enheder (sælges samlet)
+                                        <InputNumber @bind-Value="line.Quantity" min="1" step="1" />
+                                    </label>
+                                    <label>Startpris for hele linjen i kr.
+                                        <InputNumber @bind-Value="line.StartingPrice" min="0" step="0.01" />
+                                    </label>
+                                </li>
                             }
                         </ul>
                     }
@@ -425,7 +434,8 @@
                                 <td class="cell-date" data-label="Slut">@(auction.EndsAt is DateTime endUtc ? CopenhagenTime.FromUtc(endUtc).ToString("g", DanishCulture) : "Ikke fastsat")</td>
 
                                 <td class="cell-actions" data-label="Handlinger">
-                                    @if (canDeleteAuctions && pendingDeleteId == auction.AuctionId)
+                                    <a class="btn btn-secondary btn-sm" href="@($"/admin/auctions/{auction.AuctionId}/run")" @onclick:stopPropagation="true">Vis genstande / afvikl</a>
+                                    @if (auction.Status == StatusUpcoming && canDeleteAuctions && pendingDeleteId == auction.AuctionId)
                                     {
                                         <div class="row-confirm" role="group" aria-label="@($"Bekræft sletning af {auction.Name}")">
                                             <span class="row-confirm-text">Slet auktionen?</span>
@@ -444,7 +454,7 @@
                                             </button>
                                         </div>
                                     }
-                                    else if (canUpdateAuctions || canDeleteAuctions)
+                                    else if (auction.Status == StatusUpcoming && (canUpdateAuctions || canDeleteAuctions))
                                     {
                                         <div class="row-actions">
                                             @if (canUpdateAuctions)

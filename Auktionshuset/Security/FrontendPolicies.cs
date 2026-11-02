@@ -2,7 +2,9 @@ namespace Auktionshuset.Security;
 
 public static class FrontendPolicies
 {
+    public const string Customer = "Customer";
     public const string Admin = "Admin";
+    public const string BillingStaff = "BillingStaff";
     public const string CanViewLots = "CanViewLots";
     public const string CanCreateLot = "CanCreateLot";
     public const string CanUpdateLot = "CanUpdateLot";

@@ -1,0 +1,35 @@
+@using Auktionshuset.Services
+@inject CustomerAuctionService Auctions
+
+@if (confirm)
+{
+    <p>Vil du framelde dig auktionen? Du kan kun framelde dig, hvis du ikke har afgivet bud.</p>
+    <button class="btn btn-danger" disabled="@busy" @onclick="UnregisterAsync">Ja, frameld auktion</button>
+    <button class="btn btn-secondary" disabled="@busy" @onclick="() => confirm = false">Annuller</button>
+}
+else
+{
+    <button class="btn btn-secondary" disabled="@busy" @onclick="() => confirm = true">Frameld auktion</button>
+}
+@if (message is not null) { <p role="alert">@message</p> }
+
+@code {
+    [Parameter] public Guid AuctionId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+    private bool confirm, busy;
+    private string? message;
+    private async Task UnregisterAsync()
+    {
+        busy = true;
+        message = null;
+        try
+        {
+            await Auctions.UnregisterAsync(AuctionId);
+            confirm = false;
+            await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or OperationCanceledException)
+        { message = ex is ApiException ? ex.Message : "Frameldingen kunne ikke bekræftes. Prøv igen."; }
+        finally { busy = false; }
+    }
+}

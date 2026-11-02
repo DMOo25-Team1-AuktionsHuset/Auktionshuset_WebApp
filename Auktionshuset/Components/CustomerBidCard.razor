@@ -1,0 +1,66 @@
+@using System.ComponentModel.DataAnnotations
+@using Auktionshuset.Contracts.Dto.Customer.Response
+@using Auktionshuset.Services
+@inject CustomerAuctionService Auctions
+
+<article class="card bid-card">
+    <h2>@Lot.Name</h2>
+    <p>@Lot.Description</p>
+    <p>Antal: @Lot.Quantity · Startpris for hele linjen: @Lot.StartingPrice.ToString("N2") kr.</p>
+    <p>Alle @Lot.Quantity enheder sælges samlet til én vinder. Dit bud gælder hele linjen.</p>
+    <p class="bid-price">@(Lot.HasBids ? "Højeste bud" : "Startpris"): <strong>@Lot.CurrentPrice.ToString("N2") kr.</strong></p>
+    <p>Dit højeste bud: <strong>@(Lot.OwnHighestBid is decimal own ? $"{own:N2} kr." : "Du har ikke budt")</strong></p>
+    <p class="bid-status" role="status" aria-live="polite"><strong>@Lot.BidStatus</strong></p>
+    @if (Lot.IsClosed && Lot.HammerPrice is decimal hammer)
+    {
+        <p>Hammerslagspris for hele linjen: <strong>@hammer.ToString("N2") kr.</strong></p>
+    }
+    else if (!Lot.IsClosed && !Lot.OpenForBids)
+    {
+        <p>Vinderen er endnu ikke fastlagt.</p>
+    }
+    @if (Lot.OpenForBids)
+    {
+        <EditForm Model="model" OnValidSubmit="SubmitAsync" FormName="place-bid">
+            <DataAnnotationsValidator />
+            <label for="@($"bid-{Lot.AuctionLotId}")">Dit bud for hele linjen i kr.</label>
+            <InputNumber id="@($"bid-{Lot.AuctionLotId}")" @bind-Value="model.Amount" step="0.01" min="0.01" disabled="@busy" />
+            <ValidationMessage For="@(() => model.Amount)" />
+            <button type="submit" class="btn" disabled="@busy">@(busy ? "Sender bud…" : "Afgiv bud")</button>
+        </EditForm>
+    }
+    else { <p>Der er lukket for bud på denne genstand.</p> }
+    @if (message is not null) { <p role="status" aria-live="polite">@message</p> }
+</article>
+@code {
+    [Parameter, EditorRequired] public CustomerAuctionLotResponse Lot { get; set; } = default!;
+    [Parameter] public EventCallback OnBid { get; set; }
+    [SupplyParameterFromForm(FormName = "place-bid")]
+    private BidModel model { get; set; } = default!;
+    protected override void OnInitialized() => model ??= new();
+    private bool busy;
+    private string? message;
+    private Guid requestId = Guid.NewGuid();
+    private decimal? requestedAmount;
+    private async Task SubmitAsync()
+    {
+        if (busy || !Lot.OpenForBids) return;
+        busy = true;
+        if (requestedAmount != model.Amount) { requestId = Guid.NewGuid(); requestedAmount = model.Amount; }
+        try
+        {
+            await Auctions.PlaceBidAsync(Lot.AuctionLotId, requestId, model.Amount);
+            message = $"Dit bud på {model.Amount:N2} kr. er modtaget.";
+            requestId = Guid.NewGuid();
+        }
+        catch (ApiException ex) { message = ex.Message; requestId = Guid.NewGuid(); }
+        catch (HttpRequestException) { message = "Buddet kunne ikke bekræftes. Prøv igen med samme beløb for at kontrollere det."; }
+        finally { busy = false; }
+        await OnBid.InvokeAsync();
+    }
+    public sealed class BidModel
+    {
+        [Range(typeof(decimal), "0.01", "9999999999999999.99", ParseLimitsInInvariantCulture = true, ErrorMessage = "Indtast et gyldigt bud større end 0 kr.")]
+        public decimal Amount { get; set; }
+    }
+}

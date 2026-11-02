@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Api.Hubs;
+using Auktionshuset.Api.Hubs;
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.EventHandling;
 using Auktionshuset.Contracts.Dto.Admin.Auction;
@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Auktionshuset.Api.Events.Admin.Auction
 {
-    public class BidPlacedRealTimeHandler(IHubContext<AuctionHub, IAuctionClient> hubContext) : IIntegrationEventHandler<BidPlacedIntegrationEvent>
+    public class BidPlacedRealTimeHandler(IHubContext<AuctionHub, IAuctionClient> hubContext, IHubContext<CustomerAuctionHub> customers) : IIntegrationEventHandler<BidPlacedIntegrationEvent>
     {
-        public Task HandleAsync(BidPlacedIntegrationEvent message, CancellationToken cancellationToken)
+        public async Task HandleAsync(BidPlacedIntegrationEvent message, CancellationToken cancellationToken)
         {
             var notification = new BidPlacedNotification(
                 EventId: message.EventId,
@@ -18,7 +18,8 @@ namespace Auktionshuset.Api.Events.Admin.Auction
                 SequenceNumber: message.SequenceNumber,
                 OccurredAt: message.OccurredAt);
 
-            return hubContext.Clients.All.BidPlacedAsync(notification);
+            await customers.Clients.All.SendAsync("AuctionsChanged", Guid.Empty, cancellationToken);
+            await hubContext.Clients.All.BidPlacedAsync(notification);
         }
     }
 }

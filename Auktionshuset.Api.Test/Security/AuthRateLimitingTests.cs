@@ -27,6 +27,20 @@ public sealed class AuthRateLimitingTests
         Assert.Equal(HttpStatusCode.NoContent, otherClient.StatusCode);
     }
 
+    [Fact]
+    public async Task RegistrationIsRateLimitedPerClient()
+    {
+        using IHost host = await StartAsync(trustFrontend: true);
+        using HttpClient client = host.GetTestClient();
+        for (int i = 0; i < 6; i++)
+        {
+            using HttpResponseMessage response = await RegisterAsync(client, "192.0.2.10");
+            Assert.Equal(i < 5 ? HttpStatusCode.NoContent : HttpStatusCode.TooManyRequests, response.StatusCode);
+        }
+        using HttpResponseMessage otherClient = await RegisterAsync(client, "192.0.2.20");
+        Assert.Equal(HttpStatusCode.NoContent, otherClient.StatusCode);
+    }
+
     [Theory]
     [InlineData(false, "127.0.0.1")]
     [InlineData(true, "203.0.113.50")]
@@ -44,6 +58,14 @@ public sealed class AuthRateLimitingTests
     private static Task<HttpResponseMessage> LoginAsync(HttpClient client, string clientAddress, string remoteAddress = "127.0.0.1")
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "/login");
+        request.Headers.Add("X-Forwarded-For", clientAddress);
+        request.Headers.Add("Test-Remote-Address", remoteAddress);
+        return client.SendAsync(request);
+    }
+
+    private static Task<HttpResponseMessage> RegisterAsync(HttpClient client, string clientAddress, string remoteAddress = "127.0.0.1")
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/register");
         request.Headers.Add("X-Forwarded-For", clientAddress);
         request.Headers.Add("Test-Remote-Address", remoteAddress);
         return client.SendAsync(request);
@@ -69,8 +91,13 @@ public sealed class AuthRateLimitingTests
                     return next();
                 });
                 app.UseForwardedHeaders(); app.UseRouting(); app.UseRateLimiter();
-                app.UseEndpoints(endpoints => endpoints.MapPost("/login", () => Results.NoContent())
-                    .RequireRateLimiting(AuthRateLimitingExtensions.Login));
+                app.UseEndpoints(endpoints =>
+                {
+                    endpoints.MapPost("/login", () => Results.NoContent())
+                        .RequireRateLimiting(AuthRateLimitingExtensions.Login);
+                    endpoints.MapPost("/register", () => Results.NoContent())
+                        .RequireRateLimiting(AuthRateLimitingExtensions.Register);
+                });
             });
         }).StartAsync();
     }

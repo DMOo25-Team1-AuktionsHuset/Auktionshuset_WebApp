@@ -53,6 +53,10 @@ public sealed class BackendApiClient(
         }
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        // Customer-area endpoints report denied access to the page itself instead of
+        // redirecting, so a broken account cannot create a redirect loop.
+        bool isCustomerAreaRequest = request.RequestUri?.ToString()
+            .StartsWith("api/customer", StringComparison.OrdinalIgnoreCase) == true;
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             sessionCancellation.Token);
@@ -67,6 +71,7 @@ public sealed class BackendApiClient(
             await ExpireSessionAsync();
         }
         else if (response.StatusCode == HttpStatusCode.Forbidden
+            && !isCustomerAreaRequest
             && Interlocked.Exchange(ref redirectStarted, 1) == 0)
         {
             Redirect("/?access=denied");

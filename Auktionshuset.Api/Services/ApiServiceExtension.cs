@@ -19,6 +19,8 @@ namespace Auktionshuset.Api.Services
             services.AddEmployeeHandler();
             services.AddAuctionHandlers();
             services.AddScoped<PlaceBidHandler>();
+            services.AddScoped<CustomerProfileService>();
+            services.AddScoped<CustomerRegistrationService>();
             services.AddScoped<IIntegrationEventHandler<BidPlacedIntegrationEvent>,
                 BidPlacedRealTimeHandler>();
 

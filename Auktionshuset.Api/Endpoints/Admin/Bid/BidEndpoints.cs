@@ -3,6 +3,8 @@ using Auktionshuset.Application.Auction;
 using Auktionshuset.Contracts.Dto.Auction;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using Auktionshuset.Infrastructure.Database;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Bid
 {
@@ -13,7 +15,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Bid
             group.MapPost("/api/bids/{auctionLotId:guid}", HandleAsync)
                 .WithName("Bid")
                 .WithSummary("Creates a new bid")
-                .AllowAnonymous()
+                .RequireAuthorization(Auktionshuset.Api.Security.SecurityPolicies.Customer)
                 .WithTags("Bidding");
 
             return group;
@@ -24,14 +26,22 @@ namespace Auktionshuset.Api.Endpoints.Admin.Bid
             [FromBody] PlaceBidRequest request,
             ClaimsPrincipal user,
             [FromServices] PlaceBidHandler handler,
+            [FromServices] Auktionshuset.Api.Services.CustomerProfileService profiles,
+            [FromServices] AHDBContext db,
             CancellationToken cancellationToken)
         {
-            if (!Guid.TryParse(
-                user.FindFirst("customer_id")?.Value,
-                out Guid customerId))
+            var own = await profiles.GetOwnProfileAsync(user, cancellationToken);
+            if (own.Profile is null)
             {
-                return Results.Unauthorized();
+                return Results.Problem(Auktionshuset.Api.Endpoints.Customer.CustomerProfileProblems.NoCustomerLink());
             }
+            Guid customerId = own.Profile.CustomerId;
+            Guid? auctionId = await db.AuctionLot.Where(l => l.AuctionLotId == auctionLotId)
+                .Select(l => (Guid?)l.AuctionId).SingleOrDefaultAsync(cancellationToken);
+            if (auctionId is null) return Results.NotFound();
+            if (!await db.AuctionRegistrations.AnyAsync(r => r.AuctionId == auctionId
+                && r.CustomerId == customerId, cancellationToken))
+                return Results.Problem(statusCode: 403, detail: "Du er ikke tilmeldt denne auktion.");
 
             Guid? deviceSessionId = null;
 
@@ -54,6 +64,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Bid
                 "AuctionItemNotFound" => Results.NotFound(result),
                 "InvalidCustomer" => Results.Unauthorized(),
                 "InvalidDeviceSession" => Results.Unauthorized(),
+                "NotRegistered" => Results.Problem(statusCode: 403, detail: "Du er ikke tilmeldt denne auktion."),
                 _ => Results.Conflict(result)
             };
         }
