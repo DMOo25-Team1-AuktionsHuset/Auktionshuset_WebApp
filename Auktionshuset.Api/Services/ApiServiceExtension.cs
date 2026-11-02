@@ -4,6 +4,7 @@ using Auktionshuset.Api.Events.Admin.Auction;
 using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Services
 {
@@ -26,6 +27,7 @@ namespace Auktionshuset.Api.Services
 
             services.AddScoped<RegisterDeviceHandler>();
             services.AddScoped<AuthenticateDeviceHandler>();
+            services.AddSingleton<DeviceJwtTokenService>();
             return services;
         }
     }
