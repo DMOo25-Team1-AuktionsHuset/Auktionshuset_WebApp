@@ -1,11 +1,13 @@
-﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Admin.Lots.Images;
 using Auktionshuset.Domain.Entities;
+using Auktionshuset.Application.Abstraction.Auction;
+using Auktionshuset.Application.Abstraction.Admin.Auctions;
 
 namespace Auktionshuset.Application.Admin.Lots.UpdateLot
 {
-    public class UpdateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IUnitOfWork unitOfWork, TimeProvider clock)
+    public class UpdateLotHandler(ILotRepository lotRepository, IOutboxWriter outboxWriter, IAuctionWriteSessionFactory sessions, TimeProvider clock, IAuctionRepository auctions)
     {
         /// <summary>
         /// Applies the command's values to an already stored lot and publishes an integration event
@@ -14,6 +16,11 @@ namespace Auktionshuset.Application.Admin.Lots.UpdateLot
         /// <returns>The identifier of the updated lot, or <see langword="null"/> when no lot matches the command.</returns>
         public async Task<UpdateLotResult?> HandleAsync(UpdateLotCommand command, CancellationToken cancellationToken)
         {
+            await using var session = await sessions.BeginAsync(Guid.Empty, cancellationToken);
+            var reserved = await auctions.GetReservedQuantitiesAsync(null, cancellationToken);
+            if (command.Quantity < 0 || command.Quantity < reserved.GetValueOrDefault(command.LotId))
+                throw new AuctionStateConflictException("Lagerantallet kan ikke være mindre end de reserverede enheder.");
+
             Lot? lot = await lotRepository.GetByIdAsync(command.LotId, cancellationToken);
 
             if (lot == null)
@@ -33,7 +40,7 @@ namespace Auktionshuset.Application.Admin.Lots.UpdateLot
 
             await LotNotificationPublisher.AddUpdatedAsync(lot, outboxWriter, clock.GetUtcNow().UtcDateTime, cancellationToken);
 
-            await unitOfWork.CommitBatchAsync(cancellationToken);
+            await session.CommitAsync(cancellationToken);
 
             return new UpdateLotResult(lot.LotId);
         }

@@ -18,7 +18,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Auction
             lots is null
                 ? []
                 : lots
-                    .Select(lot => new AuctionLotSelection(lot.LotId, lot.Quantity))
+                    .Select(lot => new AuctionLotSelection(lot.LotId, lot.Quantity, lot.StartingPrice))
                     .ToArray();
 
         /// <summary>

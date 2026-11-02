@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Domain.Entities;
+using Auktionshuset.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Auktionshuset.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +26,11 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<Bid> Bids => Set<Bid>();
         public DbSet<BidCommandKey> BidCommandKeys => Set<BidCommandKey>();
         public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<AuctionRegistration> AuctionRegistrations => Set<AuctionRegistration>();
+        public DbSet<LoginUser> LoginUsers => Set<LoginUser>();
+        public DbSet<AuctionInvoice> AuctionInvoices => Set<AuctionInvoice>();
+        public DbSet<AuctionInvoiceLine> AuctionInvoiceLines => Set<AuctionInvoiceLine>();
+        public DbSet<BillingSequence> BillingSequences => Set<BillingSequence>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
         public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();

@@ -1,0 +1,43 @@
+{
+  "description": "Lightweight repository state sync. No model calls and no Stop continuation.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/state_sync.py\" start",
+            "commandWindows": "py -3 \"$(git rev-parse --show-toplevel)/scripts/state_sync.py\" start",
+            "timeout": 8,
+            "additionalContextLimit": 1600
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/state_sync.py\" sync",
+            "commandWindows": "py -3 \"$(git rev-parse --show-toplevel)/scripts/state_sync.py\" sync",
+            "timeout": 8
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/state_sync.py\" sync",
+            "commandWindows": "py -3 \"$(git rev-parse --show-toplevel)/scripts/state_sync.py\" sync",
+            "timeout": 8
+          }
+        ]
+      }
+    ]
+  }
+}

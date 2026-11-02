@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Auktionshuset.Application.Abstraction;
+﻿using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Infrastructure.Data;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Messaging.InboxServices;

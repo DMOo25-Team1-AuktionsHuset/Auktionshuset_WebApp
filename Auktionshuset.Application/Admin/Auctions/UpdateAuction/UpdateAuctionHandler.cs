@@ -65,12 +65,16 @@ public sealed class UpdateAuctionHandler(
             return UpdateAuctionResult.Invalid(errors);
         }
 
+        IReadOnlyList<AuctionLot> existingLots =
+            await auctionRepository.GetAuctionLotsAsync(auction.AuctionId, cancellationToken);
         var lots = await lotRepository.GetAllAsync(cancellationToken);
         var auctionLots = AuctionValidation.BuildAuctionLots(
             command.Lots,
             lots.ToDictionary(lot => lot.LotId),
             auction,
-            errors);
+            errors,
+            await auctionRepository.GetReservedQuantitiesAsync(command.AuctionId, cancellationToken),
+            existingLots.ToDictionary(line => line.LotId, line => line.StartingPrice));
 
         if (errors.Count > 0)
         {
@@ -86,22 +90,17 @@ public sealed class UpdateAuctionHandler(
             ?? employee?.AuctionHouseId
             ?? auction.AuctionHouseId;
 
-        IReadOnlyList<AuctionLot> existingLots =
-            await auctionRepository.GetAuctionLotsAsync(
-                auction.AuctionId,
-                cancellationToken);
-
         var selectedQuantities = auctionLots.ToDictionary(
             item => item.LotId,
-            item => item.Quantity);
+            item => (item.Quantity, item.StartingPrice));
 
         bool sameLots =
             existingLots.Count == auctionLots.Count
             && existingLots.All(item =>
                 selectedQuantities.TryGetValue(
                     item.LotId, 
-                    out int quantity)
-                && item.Quantity == quantity);
+                    out var selected)
+                && item.Quantity == selected.Quantity && item.StartingPrice == selected.StartingPrice);
 
         bool unchanged =
             auction.Name == newName
@@ -131,6 +130,11 @@ public sealed class UpdateAuctionHandler(
         {
             return UpdateAuctionResult.Missing();
         }
+
+        auction.AuctionRevision = checked(auction.AuctionRevision + 1);
+        await outboxWriter.AddAsync(new AuctionRevisionChangedIntegrationEvent(
+            Guid.NewGuid(), auction.AuctionId, auction.SelectedAuctionLotId,
+            auction.AuctionRevision, clock.GetUtcNow().UtcDateTime), cancellationToken);
 
         await outboxWriter.AddAsync(
             new AuctionUpdatedIntegrationEvent(

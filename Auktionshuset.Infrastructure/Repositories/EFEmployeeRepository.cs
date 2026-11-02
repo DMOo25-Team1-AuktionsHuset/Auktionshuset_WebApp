@@ -39,8 +39,8 @@ namespace Auktionshuset.Infrastructure.Repositories
 
         public async Task<Employee?> GetByIdAsync(Guid employeeId, CancellationToken cancellationToken)
         {
+            // Reuse any employee already tracked through an auction navigation.
             return await context.Employee
-                .AsNoTracking()
                 .FirstOrDefaultAsync(employee => employee.EmployeeId == employeeId, cancellationToken);
         }
 

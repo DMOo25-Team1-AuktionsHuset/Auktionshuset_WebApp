@@ -1,0 +1,89 @@
+@page "/registrer"
+@attribute [AllowAnonymous]
+@layout Layout.LoginLayout
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IAntiforgery Antiforgery
+
+<PageTitle>Opret kunde | Haderslev Auktionshus</PageTitle>
+
+<section class="login-card" aria-labelledby="register-heading">
+    <p class="eyebrow">Haderslev Auktionshus</p>
+    <h1 id="register-heading">Opret ny bruger</h1>
+    <p class="login-intro">Opret en kundekonto, og log ind for at følge auktionerne.</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="login-error" role="alert">@errorMessage</p>
+    }
+
+    <form method="post" action="/auth/register" id="register-form">
+        <input type="hidden" name="__RequestVerificationToken" value="@requestToken" />
+        <div class="field">
+            <label for="register-firstname">Fornavn</label>
+            <input id="register-firstname" name="firstName" type="text" autocomplete="given-name" required maxlength="100" autofocus />
+        </div>
+        <div class="field">
+            <label for="register-lastname">Efternavn</label>
+            <input id="register-lastname" name="lastName" type="text" autocomplete="family-name" required maxlength="100" />
+        </div>
+        <div class="field">
+            <label for="register-email">Email</label>
+            <input id="register-email" name="email" type="email" autocomplete="email" required maxlength="254" />
+        </div>
+        <div class="field">
+            <label for="register-phone">Telefonnummer</label>
+            <input id="register-phone" name="phoneNumber" type="tel" autocomplete="tel" required />
+        </div>
+        <div class="field">
+            <label for="register-address">Adresse</label>
+            <input id="register-address" name="address" type="text" autocomplete="street-address" required maxlength="200" />
+        </div>
+        <div class="field">
+            <label for="register-birthdate">Fødselsdato</label>
+            <input id="register-birthdate" name="birthDate" type="date" autocomplete="bday" required />
+        </div>
+        <div class="field">
+            <label for="register-password">Adgangskode</label>
+            <input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="8" />
+        </div>
+        <div class="field">
+            <label for="register-confirm-password">Gentag adgangskode</label>
+            <input id="register-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" />
+        </div>
+        <button class="btn login-submit" type="submit">Opret kunde</button>
+    </form>
+
+    <div class="login-alt-action">
+        <a class="login-back-link" href="login">Tilbage til login</a>
+    </div>
+</section>
+
+@code {
+    private string requestToken = string.Empty;
+    private string? errorMessage;
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorCode { get; set; }
+
+    protected override void OnInitialized()
+    {
+        HttpContext? context = HttpContextAccessor.HttpContext;
+        if (context is not null)
+        {
+            requestToken = Antiforgery.GetAndStoreTokens(context).RequestToken ?? string.Empty;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        errorMessage = ErrorCode switch
+        {
+            "form" => "Tjek de indtastede oplysninger. Alle felter skal udfyldes med gyldige værdier.",
+            "password" => "Adgangskoderne er ikke ens, eller adgangskoden er under 8 tegn.",
+            "duplicate" => "Der findes allerede en konto med denne emailadresse.",
+            "rate-limited" => "Der er foretaget for mange forsøg. Vent et øjeblik og prøv igen.",
+            "unavailable" => "Kontoen kunne ikke oprettes, fordi serveren ikke er tilgængelig. Prøv igen om lidt.",
+            _ => null
+        };
+    }
+}

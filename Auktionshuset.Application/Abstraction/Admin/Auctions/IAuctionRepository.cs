@@ -5,6 +5,23 @@ namespace Auktionshuset.Application.Abstraction.Admin.Auctions;
 
 public interface IAuctionRepository
 {
+    // Open lines reserve stock until explicitly closed, even after the planned end.
+    async Task<IReadOnlyDictionary<Guid, long>> GetReservedQuantitiesAsync(Guid? excludingAuctionId, CancellationToken cancellationToken)
+    {
+        var totals = new Dictionary<Guid, long>();
+        foreach (var auction in await GetAllAsync(cancellationToken))
+        {
+            if (auction.AuctionId == excludingAuctionId || auction.ClosedAtTime is not null
+                || (auction.AuctionStatus != "Kommende" && auction.AuctionStatus != "Live")) continue;
+            foreach (var line in await GetAuctionLotsAsync(auction.AuctionId, cancellationToken))
+                if (line.ClosedAtTime is null)
+                    totals[line.LotId] = line.Quantity <= 0 || totals.GetValueOrDefault(line.LotId) == long.MaxValue
+                        ? long.MaxValue // Invalid legacy counts block new reservations for this stock.
+                        : totals.GetValueOrDefault(line.LotId) + line.Quantity;
+        }
+        return totals;
+    }
+
     Task AddAsync(
         AuctionEntity auction,
         IReadOnlyCollection<AuctionLot> auctionLots,

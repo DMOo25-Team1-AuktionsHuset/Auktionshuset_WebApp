@@ -31,6 +31,12 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Property<Guid>("AuctionHouseId")
                         .HasColumnType("uuid");
 
+                    b.Property<long?>("AuctionNumber")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("AuctionRevision")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("AuctionStatus")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -50,6 +56,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<Guid?>("SelectedAuctionLotId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("StartedAtTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -59,6 +68,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.HasKey("AuctionId");
 
                     b.HasIndex("AuctionHouseId");
+
+                    b.HasIndex("AuctionNumber")
+                        .IsUnique();
 
                     b.HasIndex("EmployeeId");
 
@@ -93,6 +105,194 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.HasKey("AuctionHouseId");
 
                     b.ToTable("AuctionHouse");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuctionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AuctionName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CustomerAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CustomerEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("HammerTotal")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("PaidAmount")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaidByName")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("PaidByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentTerms")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("PremiumPercent")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("numeric(7,4)");
+
+                    b.Property<decimal>("PremiumTotal")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<string>("SellerAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SellerCvr")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SellerEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SellerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<decimal>("VatPercent")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("numeric(7,4)");
+
+                    b.Property<decimal>("VatTotal")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("Sequence")
+                        .IsUnique();
+
+                    b.HasIndex("AuctionId", "CustomerId")
+                        .IsUnique();
+
+                    b.ToTable("AuctionInvoices");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionInvoiceLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuctionLotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CollectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CollectedByName")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("CollectedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("HammerPrice")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<decimal>("HammerVat")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Premium")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<decimal>("PremiumVat")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(20, 2)
+                        .HasColumnType("numeric(20,2)");
+
+                    b.Property<Guid>("WinningBidId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("WonAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuctionLotId")
+                        .IsUnique();
+
+                    b.HasIndex("InvoiceId");
+
+                    b.HasIndex("WinningBidId")
+                        .IsUnique();
+
+                    b.ToTable("AuctionInvoiceLines");
                 });
 
             modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionLot", b =>
@@ -135,6 +335,24 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.ToTable("AuctionLot");
                 });
 
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionRegistration", b =>
+                {
+                    b.Property<Guid>("AuctionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("AuctionId", "CustomerId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("AuctionRegistrations");
+                });
+
             modelBuilder.Entity("Auktionshuset.Domain.Entities.Bid", b =>
                 {
                     b.Property<Guid>("BidId")
@@ -172,6 +390,22 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsDescending(false, true, false);
 
                     b.ToTable("Bids");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.BillingSequence", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("LastAuction")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("LastInvoice")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BillingSequences");
                 });
 
             modelBuilder.Entity("Auktionshuset.Domain.Entities.Customer", b =>
@@ -247,6 +481,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<long>("SessionRevision")
+                        .HasColumnType("bigint");
+
                     b.HasKey("DeviceId");
 
                     b.ToTable("DeviceCredentials", (string)null);
@@ -280,6 +517,14 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.HasIndex("CustomerId");
 
                     b.HasIndex("DeviceId");
+
+                    b.HasIndex(new[] { "CustomerId", "AuctionId" }, "IX_DeviceSessions_Active_CustomerId_AuctionId")
+                        .IsUnique()
+                        .HasFilter("\"EndedAt\" IS NULL");
+
+                    b.HasIndex(new[] { "DeviceId" }, "IX_DeviceSessions_Active_DeviceId")
+                        .IsUnique()
+                        .HasFilter("\"EndedAt\" IS NULL");
 
                     b.ToTable("DeviceSessions");
                 });
@@ -354,6 +599,55 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.ToTable("Invoice");
                 });
 
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.LoginUser", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("EmployeeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SessionVersion")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("CustomerId")
+                        .IsUnique();
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("EmployeeId")
+                        .IsUnique();
+
+                    b.ToTable("LoginUsers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LoginUser_Owner", "(\"CustomerId\" IS NOT NULL AND \"EmployeeId\" IS NULL AND \"Role\" = 'Customer') OR (\"CustomerId\" IS NULL AND \"EmployeeId\" IS NOT NULL AND \"Role\" IN ('Admin', 'AuctionAdmin', 'LotAdmin', 'Employee'))");
+                        });
+                });
+
             modelBuilder.Entity("Auktionshuset.Domain.Entities.Lot", b =>
                 {
                     b.Property<Guid>("LotId")
@@ -420,6 +714,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("SessionVersion")
+                        .HasColumnType("integer");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -452,6 +749,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Property<Guid>("AuctionLotId")
                         .HasColumnType("uuid");
 
+                    b.Property<long?>("AuctionRevision")
+                        .HasColumnType("bigint");
+
                     b.Property<Guid?>("BidId")
                         .HasColumnType("uuid");
 
@@ -478,6 +778,9 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Property<decimal>("RequestedAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<long?>("ResultAuctionRevision")
+                        .HasColumnType("bigint");
 
                     b.Property<int?>("SequenceNumber")
                         .HasColumnType("integer");
@@ -899,6 +1202,52 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionInvoice", b =>
+                {
+                    b.HasOne("Auktionshuset.Domain.Entities.Auction", "Auction")
+                        .WithMany()
+                        .HasForeignKey("AuctionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Auktionshuset.Domain.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Auction");
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionInvoiceLine", b =>
+                {
+                    b.HasOne("Auktionshuset.Domain.Entities.AuctionLot", "AuctionLot")
+                        .WithMany()
+                        .HasForeignKey("AuctionLotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Auktionshuset.Domain.Entities.AuctionInvoice", "Invoice")
+                        .WithMany("Lines")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Auktionshuset.Domain.Entities.Bid", "WinningBid")
+                        .WithMany()
+                        .HasForeignKey("WinningBidId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AuctionLot");
+
+                    b.Navigation("Invoice");
+
+                    b.Navigation("WinningBid");
+                });
+
             modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionLot", b =>
                 {
                     b.HasOne("Auktionshuset.Domain.Entities.Auction", "Auction")
@@ -923,6 +1272,25 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Navigation("CurrentHighestBid");
 
                     b.Navigation("Lot");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionRegistration", b =>
+                {
+                    b.HasOne("Auktionshuset.Domain.Entities.Auction", "Auction")
+                        .WithMany()
+                        .HasForeignKey("AuctionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Auktionshuset.Domain.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Auction");
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("Auktionshuset.Domain.Entities.Bid", b =>
@@ -1038,6 +1406,23 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Navigation("WinningBid");
                 });
 
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.LoginUser", b =>
+                {
+                    b.HasOne("Auktionshuset.Domain.Entities.Customer", "Customer")
+                        .WithOne()
+                        .HasForeignKey("Auktionshuset.Domain.Entities.LoginUser", "CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Auktionshuset.Domain.Entities.Employee", "Employee")
+                        .WithOne()
+                        .HasForeignKey("Auktionshuset.Domain.Entities.LoginUser", "EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("Auktionshuset.Domain.Entities.Lot", b =>
                 {
                     b.HasOne("Auktionshuset.Domain.Entities.AuctionHouse", "AuctionHouse")
@@ -1125,6 +1510,11 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.Navigation("Employees");
 
                     b.Navigation("Lots");
+                });
+
+            modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionInvoice", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("Auktionshuset.Domain.Entities.AuctionLot", b =>

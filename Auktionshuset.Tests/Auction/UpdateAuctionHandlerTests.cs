@@ -234,7 +234,7 @@ public class UpdateAuctionHandlerTests
     /// </summary>
     [Theory]
     [InlineData(0, "mindst 1")]
-    [InlineData(9, "kun 4 stk.")]
+    [InlineData(9, "kun 4 ledige stk.")]
     public async Task HandleAsync_WithInvalidQuantity_ReturnsInvalid(int quantity, string expectedMessage)
     {
         Employee employee = TestData.CreateEmployee();
@@ -320,7 +320,7 @@ public class UpdateAuctionHandlerTests
 
         RecordingEventPublisher publisher = new RecordingEventPublisher();
 
-        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingUnitOfWork(), TimeProvider.System)
+        CreateAuctionResult created = await new CreateAuctionHandler(auctionRepository, lotRepository, employeeRepository, publisher, new RecordingAuctionWriteSessionFactory(new RecordingUnitOfWork()), TimeProvider.System)
             .HandleAsync(
                 TestData.CreateCommand(
                     employee.EmployeeId,

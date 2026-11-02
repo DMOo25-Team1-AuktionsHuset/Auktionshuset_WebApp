@@ -1,4 +1,4 @@
-﻿using Auktionshuset.Application.Abstraction;
+using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.Auction;
@@ -18,14 +18,19 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
         public async Task<PlaceBidResult> PlaceBidAsync(PlaceBidCommand command, CancellationToken cancellationToken)
         {
             // Checks the requests basic values
-            if (command.RequestId == Guid.Empty || command.Amount <= 0)
+            if (command.RequestId == Guid.Empty || command.Amount <= 0 || command.Amount > 9999999999999999.99m
+                || decimal.Round(command.Amount, 2) != command.Amount)
             {
                 return Rejected("InvalidBidRequest", 0m);
             }
 
-            // Returns a receipt promptly, if it exists
-            PlaceBidResult? previousResult = await FindPreviousResultAsync(command, cancellationToken);
-            if (previousResult is not null) return previousResult;
+            // Web retries do not require device credential validation.
+            PlaceBidResult? previousResult = null;
+            if (command.DeviceSessionId is null)
+            {
+                previousResult = await FindPreviousResultAsync(command, cancellationToken);
+                if (previousResult is not null) return previousResult;
+            }
 
             // Starts the transaction for a new bid
             await using IDbContextTransaction transaction =
@@ -44,6 +49,27 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     db,
                     command.AuctionLotId,
                     cancellationToken);
+
+                if (command.DeviceSessionId is Guid authenticatedSessionId)
+                {
+                    if (command.DeviceId is not Guid deviceId || command.CredentialVersion is not int credentialVersion)
+                        return Rejected("InvalidDeviceCredentials", 0m);
+
+                    // Hold the credential row through commit, including against credential updates
+                    // that do not take the auction lock. SQLite already holds a write lock.
+                    if (db.Database.IsNpgsql())
+                        await db.Database.ExecuteSqlInterpolatedAsync(
+                            $"SELECT \"DeviceId\" FROM \"DeviceCredentials\" WHERE \"DeviceId\" = {deviceId} FOR SHARE",
+                            cancellationToken);
+
+                    if (!await db.DeviceCredentials.AnyAsync(c => c.DeviceId == deviceId
+                            && c.IsEnabled && c.CredentialVersion == credentialVersion, cancellationToken))
+                        return Rejected("InvalidDeviceCredentials", 0m);
+
+                    if (!await db.DeviceSessions.AnyAsync(s => s.DeviceSessionId == authenticatedSessionId
+                            && s.DeviceId == deviceId && s.CustomerId == command.CustomerId, cancellationToken))
+                        return Rejected("InvalidDeviceSession", 0m);
+                }
 
                 // The receipt may have been created while waiting for the lock, so check again
                 previousResult = await FindPreviousResultAsync(command, cancellationToken);
@@ -71,15 +97,28 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     return Rejected("AuctionItemNotFound", 0m);
                 }
 
+                // A reused context may have tracked values from before the auction lock.
+                await db.Entry(item).ReloadAsync(cancellationToken);
+                await db.Entry(item.Auction).ReloadAsync(cancellationToken);
+
                 DateTime nowUtc = clock.GetUtcNow().UtcDateTime;
+
+                if (command.DeviceSessionId is null && !await db.AuctionRegistrations.AnyAsync(
+                    r => r.AuctionId == item.AuctionId && r.CustomerId == command.CustomerId, cancellationToken))
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return Rejected("NotRegistered", 0m);
+                }
 
                 DeviceSession? session = null;
 
                 if (command.DeviceSessionId is Guid deviceSessionId)
                 {
-                    session = await db.DeviceSessions.SingleOrDefaultAsync(
+
+                    session = await db.DeviceSessions.AsNoTracking().SingleOrDefaultAsync(
                         s => s.DeviceSessionId == deviceSessionId
                           && s.CustomerId == command.CustomerId
+                          && s.DeviceId == command.DeviceId
                           && s.AuctionId == item.AuctionId
                           && s.StartedAt <= nowUtc
                           && (s.EndedAt == null || s.EndedAt > nowUtc),
@@ -90,6 +129,14 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                         await transaction.RollbackAsync(cancellationToken);
                         return Rejected("InvalidDeviceSession", 0m);
                     }
+
+                    if (!await db.AuctionRegistrations.AnyAsync(
+                        r => r.AuctionId == item.AuctionId && r.CustomerId == command.CustomerId, cancellationToken))
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return Rejected("NotRegistered", 0m);
+                    }
+
                 }
 
                 var leader = await db.Bids
@@ -115,7 +162,16 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
                 string? errorCode = null;
 
-                if (!item.OpenForBids || !auctionIsLive)
+                if (session is not null && command.AuctionRevision is null)
+                {
+                    errorCode = "AuctionRevisionRequired";
+                }
+                else if (session is not null && (command.AuctionRevision != item.Auction.AuctionRevision
+                    || item.Auction.SelectedAuctionLotId != item.AuctionLotId))
+                {
+                    errorCode = "AuctionContextChanged";
+                }
+                else if (!item.OpenForBids || !auctionIsLive)
                 {
                     errorCode = "BiddingClosed";
                 }
@@ -126,7 +182,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
                 if (errorCode != null)
                 {
-                    PlaceBidResult rejected = Rejected(errorCode, currentLeaderPrice);
+                    PlaceBidResult rejected = Rejected(errorCode, currentLeaderPrice, item.Auction.AuctionRevision);
                     await SaveKeyAsync(
                         command, 
                         rejected, 
@@ -153,13 +209,14 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     CustomerId = customer.CustomerId,
                     Customer = customer,
                     DeviceSessionId = session?.DeviceSessionId,
-                    DeviceSession = session
+                    DeviceSession = null!
                 };
 
                 db.Bids.Add(bid);
 
                 item.CurrentHighestBidId = bid.BidId;
                 item.CurrentHighestBid = bid;
+                await AuctionRevision.AdvanceAsync(item.Auction, outboxWriter, nowUtc, cancellationToken);
 
                 var accepted = new PlaceBidResult(
                 Accepted: true,
@@ -167,7 +224,8 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 BidId: bid.BidId,
                 SequenceNumber: bid.SequenceNumber,
                 CurrentPrice: bid.Amount,
-                ErrorCode: null);
+                ErrorCode: null,
+                AuctionRevision: item.Auction.AuctionRevision);
 
                 await outboxWriter.AddAsync(new BidPlacedIntegrationEvent(
                         EventId: Guid.NewGuid(),
@@ -206,7 +264,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     throw;
                 }
 
-                return previous.Matches(command.AuctionLotId, command.Amount)
+                return previous.Matches(command)
                     ? previous.ToResult(duplicate: true)
                     : Rejected(
                         "RequestIdReuseWithDifferentPayload",
@@ -227,7 +285,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
             if (previous is null) return null;
 
-            return previous.Matches(command.AuctionLotId, command.Amount)
+            return previous.Matches(command)
                 ? previous.ToResult(duplicate: true)
                 : Rejected(
                     "RequestIdReuseWithDifferentPayload",
@@ -291,11 +349,13 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 RequestId = command.RequestId,
                 AuctionLotId = command.AuctionLotId,
                 RequestedAmount = command.Amount,
+                AuctionRevision = command.DeviceSessionId is null ? null : command.AuctionRevision,
                 Accepted = result.Accepted,
                 BidId = result.BidId,
                 SequenceNumber = result.SequenceNumber,
                 CurrentPrice = result.CurrentPrice,
                 ErrorCode = result.ErrorCode,
+                ResultAuctionRevision = result.AuctionRevision,
                 ProcessedAt = now
             });
 
@@ -310,13 +370,14 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                     SqlState: PostgresErrorCodes.UniqueViolation
                 };
 
-        private static PlaceBidResult Rejected(string errorCode, decimal currentPrice) =>
+        private static PlaceBidResult Rejected(string errorCode, decimal currentPrice, long? auctionRevision = null) =>
                 new(
                     Accepted: false,
                     Duplicate: false,
                     BidId: null,
                     SequenceNumber: null,
                     CurrentPrice: currentPrice,
-                    ErrorCode: errorCode);
+                    ErrorCode: errorCode,
+                    AuctionRevision: auctionRevision);
     }
 }

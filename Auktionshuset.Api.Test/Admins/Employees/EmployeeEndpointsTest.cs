@@ -140,7 +140,7 @@ public class EmployeeEndpointsTest
         var publisher = new RecordingEventPublisher();
         var handler = new DeleteEmployeeHandler(repository, publisher, new RecordingUnitOfWork(), TimeProvider.System);
 
-        Results<NoContent, NotFound> result = await DeleteEmployeeEndpoint.HandleAsync(
+        var result = await DeleteEmployeeEndpoint.HandleAsync(
             employee.EmployeeId,
             handler,
             CancellationToken.None);
@@ -153,7 +153,7 @@ public class EmployeeEndpointsTest
     [Fact]
     public async Task Delete_WithUnknownEmployee_ReturnsNotFound()
     {
-        Results<NoContent, NotFound> result = await DeleteEmployeeEndpoint.HandleAsync(
+        var result = await DeleteEmployeeEndpoint.HandleAsync(
             Guid.NewGuid(),
             new DeleteEmployeeHandler(new TestEmployeeRepository(), new RecordingEventPublisher(), new RecordingUnitOfWork(), TimeProvider.System),
             CancellationToken.None);

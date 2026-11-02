@@ -1,3 +1,5 @@
+using Auktionshuset.Api.Services;
+
 using Auktionshuset.Contracts.Security;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -5,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
 
 
 namespace Auktionshuset.Api.Security;
@@ -21,10 +25,12 @@ public static class SecurityServiceExtensions
         services.AddSingleton<
             IPasswordHasher<AuthUser>,
             PasswordHasher<AuthUser>>();
-        
-        services.AddSingleton<
-            IAuthUserStore,
-            ConfiguredAuthUserStore>();
+
+        services.AddSingleton<ConfiguredAuthUserStore>();
+        services.AddSingleton<LoginConnections>();
+        services.Configure<HubOptions>(options => options.AddFilter<LoginConnections>());
+        services.AddScoped<IAuthUserStore, PersistentAuthUserStore>();
+        services.AddScoped<CustomerRegistrationService>();
         services.AddSingleton<
             IAccessTokenService,
             JwtTokenService>();
@@ -34,7 +40,8 @@ public static class SecurityServiceExtensions
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration));
+            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration))
+            .AddJwtBearer(DeviceGatewayAuthentication.Scheme, options => DeviceGatewayAuthentication.Configure(options, configuration));
 
         services.AddAuthorization(options =>
         {
@@ -42,11 +49,26 @@ public static class SecurityServiceExtensions
                 .RequireAuthenticatedUser()
                 .Build();
 
+            options.AddPolicy(SecurityPolicies.DeviceGateway, policy =>
+            {
+                policy.AddAuthenticationSchemes(DeviceGatewayAuthentication.Scheme);
+                policy.RequireAuthenticatedUser();
+                policy.RequireClaim("scope", DeviceGatewayAuthentication.Scope);
+            });
+
             options.AddPolicy(SecurityPolicies.Admin, policy =>
             {
                 policy.RequireAuthenticatedUser();
                 policy.RequireRole(SecurityRoles.Admin);
             });
+
+            options.AddPolicy(SecurityPolicies.Customer, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireRole(SecurityRoles.Customer);
+            });
+            options.AddPolicy(SecurityPolicies.BillingStaff, policy => policy.RequireAuthenticatedUser()
+                .RequireRole(SecurityRoles.Employee, SecurityRoles.LotAdmin, SecurityRoles.AuctionAdmin, SecurityRoles.Admin));
 
             options.AddPolicy(SecurityPolicies.CanReadEmployees, policy =>
                 policy.RequireAuthenticatedUser().RequireRole(SecurityRoles.AuctionAdmin, SecurityRoles.Admin));
@@ -100,6 +122,17 @@ public static class SecurityServiceExtensions
 
         options.Events = new JwtBearerEvents
         {
+            OnTokenValidated = async context =>
+            {
+                var principal = context.Principal!;
+                var id = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("sub");
+                if (!Guid.TryParse(id, out var userId)) { context.Fail("Invalid user."); return; }
+                var store = context.HttpContext.RequestServices.GetRequiredService<IAuthUserStore>();
+                var current = await store.FindByIdAsync(userId, context.HttpContext.RequestAborted);
+                if (current is null || principal.FindFirstValue("session_version") != current.SessionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    || !principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToHashSet().SetEquals(current.Roles))
+                    context.Fail("Login er ændret eller deaktiveret. Log ind igen.");
+            },
             OnMessageReceived = context =>
             {
                 StringValues accessToken = context.Request.Query["access_token"];

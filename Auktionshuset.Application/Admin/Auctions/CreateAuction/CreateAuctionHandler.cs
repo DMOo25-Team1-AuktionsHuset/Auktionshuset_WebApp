@@ -3,6 +3,7 @@ using Auktionshuset.Application.Abstraction.Admin.Employees;
 using Auktionshuset.Application.Abstraction.Admin.Lots;
 using Auktionshuset.Application.Abstraction;
 using Auktionshuset.Domain;
+using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Domain.Entities;
 using AuctionEntity = Auktionshuset.Domain.Entities.Auction;
 
@@ -13,13 +14,14 @@ public sealed class CreateAuctionHandler(
     ILotRepository lotRepository,
     IEmployeeRepository employeeRepository,
     IOutboxWriter outboxWriter,
-    IUnitOfWork unitOfWork,
+    IAuctionWriteSessionFactory sessions,
     TimeProvider clock)
 {
     public async Task<CreateAuctionResult> HandleAsync(
         CreateAuctionCommand command,
         CancellationToken cancellationToken)
     {
+        await using var session = await sessions.BeginAsync(Guid.Empty, cancellationToken);
         var errors = new List<string>();
 
         Employee? employee = command.EmployeeId is { } employeeId
@@ -71,7 +73,8 @@ public sealed class CreateAuctionHandler(
                 command.Lots,
                 lots.ToDictionary(lot => lot.LotId),
                 auction,
-                errors);
+                errors,
+                await auctionRepository.GetReservedQuantitiesAsync(null, cancellationToken));
         }
 
         if (errors.Count > 0)
@@ -95,7 +98,7 @@ public sealed class CreateAuctionHandler(
             OccurredAt: clock.GetUtcNow().UtcDateTime);
 
         await outboxWriter.AddAsync(integrationEvent, cancellationToken);
-        await unitOfWork.CommitBatchAsync(cancellationToken);
+        await session.CommitAsync(cancellationToken);
 
         return CreateAuctionResult.Created(auction.AuctionId, auctionLots.Count, itemCount);
     }

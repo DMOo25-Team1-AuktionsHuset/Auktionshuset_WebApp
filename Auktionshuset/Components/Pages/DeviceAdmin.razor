@@ -1,0 +1,107 @@
+@page "/admin/devices"
+@attribute [Authorize(Policy = FrontendPolicies.BillingStaff)]
+@rendermode InteractiveServer
+@using Auktionshuset.Services
+@using Auktionshuset.Contracts.Time
+@inject DeviceAdministrationService Devices
+
+<PageTitle>Deviceadministration</PageTitle>
+<section class="card" aria-busy="@busy">
+    <h1>Deviceadministration</h1>
+    <button type="button" class="btn btn-secondary" disabled="@busy" @onclick="LoadAsync">Opdatér</button>
+    @if (message is not null) { <p role="@(failed ? "alert" : "status")">@message</p> }
+    <h2>Registrér device</h2>
+    <label for="house-id">Auktionshus-id</label>
+    <input id="house-id" list="auction-houses" @bind="houseIdText" disabled="@busy" />
+    <datalist id="auction-houses">
+        @foreach (var house in overview?.Auctions.Select(a => a.AuctionHouseId).Distinct() ?? [])
+        { <option value="@house"></option> }
+    </datalist>
+    <label for="device-number">Devicenummer</label>
+    <input id="device-number" type="number" min="1" @bind="deviceNumber" disabled="@busy" />
+    <button type="button" class="btn btn-primary" disabled="@(busy || registration is not null || deviceNumber < 1 || !ValidHouseId)" @onclick="RegisterAsync">Registrér</button>
+    @if (registration is not null)
+    {
+        <div role="status">
+            <p>Device @registration.DeviceNumber er registreret. Hemmeligheden vises kun denne ene gang. Overfør den sikkert til devicet; del den ikke i logfiler eller beskeder.</p>
+            <p>Device-id: <code>@registration.DeviceId</code></p>
+            <p>Hemmelighed: <code>@registration.Secret</code></p>
+            <button type="button" class="btn btn-secondary" @onclick="() => registration = null">Jeg har gemt hemmeligheden sikkert</button>
+        </div>
+    }
+    @if (overview is not null)
+    {
+        <h2>Udlever device</h2>
+        <p>Kunden skal allerede eksistere. Udlevering opretter eller genbruger kundens tilmelding til auktionen.</p>
+        <label for="customer">Kunde</label>
+        <select id="customer" @bind="customerId" disabled="@busy">
+            <option value="">Vælg kunde</option>
+            @foreach (var customer in overview.Customers) { <option value="@customer.CustomerId">@customer.FirstName @customer.LastName · @customer.Email</option> }
+        </select>
+        <label for="auction">Auktion</label>
+        <select id="auction" @bind="auctionId" disabled="@busy">
+            <option value="">Vælg auktion</option>
+            @foreach (var auction in overview.Auctions) { <option value="@auction.AuctionId">@auction.Name · @auction.AuctionStatus</option> }
+        </select>
+        <label for="device">Ledigt device fra auktionens auktionshus</label>
+        <select id="device" @bind="deviceId" disabled="@busy">
+            <option value="">Vælg device</option>
+            @foreach (var device in overview.Available.Where(d => d.AuctionHouseId == SelectedAuction?.AuctionHouseId))
+            { <option value="@device.DeviceId">@device.DeviceNumber</option> }
+        </select>
+        <button type="button" class="btn btn-primary" disabled="@(!CanIssue)" @onclick="IssueAsync">Udlever</button>
+        <h2>Aktive sessioner</h2>
+        @if (overview.Sessions.Count == 0) { <p>Ingen aktive sessioner.</p> }
+        @foreach (var session in overview.Sessions)
+        {
+            <section class="card" @key="session.SessionId">
+                <h3>Device @session.DeviceNumber</h3>
+                <p>Kunde: @CustomerName(session.CustomerId) · Auktion: @AuctionName(session.AuctionId)</p>
+                <p>Session: @session.SessionId · Start: @CopenhagenTime.FromUtc(DateTime.SpecifyKind(session.StartedAt, DateTimeKind.Utc)).ToString("g")</p>
+                <button type="button" class="btn btn-secondary" disabled="@busy" @onclick="() => ReleaseAsync(session)">Frigiv device</button>
+            </section>
+        }
+        <h2>Ledige devices</h2>
+        @if (overview.Available.Count == 0) { <p>Ingen ledige devices.</p> }
+        @foreach (var device in overview.Available)
+        { <p>Device @device.DeviceNumber · Auktionshus @device.AuctionHouseId</p> }
+    }
+</section>
+
+@code {
+    private DeviceOverview? overview;
+    private DeviceRegistration? registration;
+    private Guid? deviceId, auctionId, customerId;
+    private string houseIdText = "";
+    private int deviceNumber = 1;
+    private bool busy, failed;
+    private string? message;
+    private bool ValidHouseId => Guid.TryParse(houseIdText, out var id) && id != Guid.Empty;
+    private DeviceAuction? SelectedAuction => overview?.Auctions.FirstOrDefault(a => a.AuctionId == auctionId);
+    private bool CanIssue => !busy && customerId is Guid c && c != Guid.Empty && SelectedAuction is { } auction
+        && overview!.Available.Any(d => d.DeviceId == deviceId && d.AuctionHouseId == auction.AuctionHouseId);
+    private string CustomerName(Guid id) => overview?.Customers.FirstOrDefault(c => c.CustomerId == id) is { } c ? $"{c.FirstName} {c.LastName}" : id.ToString();
+    private string AuctionName(Guid id) => overview?.Auctions.FirstOrDefault(a => a.AuctionId == id)?.Name ?? id.ToString();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+    private Task LoadAsync() => RunAsync(null, null);
+    private Task RegisterAsync() => !ValidHouseId || deviceNumber < 1 || registration is not null ? Task.CompletedTask
+        : RunAsync(async () => registration = await Devices.RegisterAsync(Guid.Parse(houseIdText), deviceNumber), "Devicet er registreret.");
+    private Task IssueAsync() => !CanIssue || deviceId is not Guid d || auctionId is not Guid a || customerId is not Guid c
+        ? Task.CompletedTask : RunAsync(() => Devices.IssueAsync(d, a, c), "Devicet er udleveret.");
+    private Task ReleaseAsync(DeviceSessionItem session) =>
+        RunAsync(() => Devices.ReleaseAsync(session.DeviceId, session.AuctionId, session.SessionId), "Devicet er frigivet. Tilmelding og bud bevares.");
+
+    private async Task RunAsync(Func<Task>? operation, string? success)
+    {
+        if (busy) return;
+        busy = true; message = null; failed = false;
+        try { if (operation is not null) await operation(); message = success; }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        { failed = true; message = ex is ApiException ? ex.Message : "Forbindelsen eller svaret svigtede. Resultatet kan være ukendt; kontrollér den opdaterede oversigt. En mistet registreringshemmelighed kan ikke vises igen."; }
+        try { overview = await Devices.GetOverviewAsync(); deviceId = null; }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        { overview = null; failed = true; message = $"{message} Oversigten kunne ikke hentes. Prøv Opdatér igen.".Trim(); }
+        finally { busy = false; }
+    }
+}

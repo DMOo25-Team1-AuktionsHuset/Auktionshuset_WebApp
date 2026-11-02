@@ -1,0 +1,59 @@
+@using Auktionshuset.Contracts.Dto.Admin.Auction
+@using Auktionshuset.Services
+@inject AuctionService Auctions
+
+<section aria-busy="@busy">
+    <h2>Fælles genstand for devices</h2>
+    <p>Valget gælder alle devices på auktionen. Opdatér for at se det seneste valg.</p>
+    <button type="button" class="btn btn-secondary" disabled="@busy" @onclick="RefreshAsync">Opdatér fælles genstand</button>
+    @if (message is not null) { <p role="@(failed ? "alert" : "status")">@message</p> }
+    @if (loaded)
+    {
+        <p>Aktuelt valg: @(selectedId is null ? "Ingen" : Auction.Lots.FirstOrDefault(l => l.AuctionLotId == selectedId)?.Name ?? "Ukendt genstand – opdatér auktionen")</p>
+        @if (CanUpdate)
+        {
+            <label for="shared-lot">Vælg fælles genstand</label>
+            <select id="shared-lot" @bind="draftId" disabled="@busy">
+                <option value="">Ingen genstand</option>
+                @if (Auction.Status == "Live")
+                {
+                    @foreach (var lot in Auction.Lots.Where(l => l.ClosedAtTime is null && l.OpenForBids))
+                    { <option value="@lot.AuctionLotId">@lot.Name</option> }
+                }
+            </select>
+            <button type="button" class="btn btn-primary" disabled="@(busy || draftId == selectedId)" @onclick="SaveAsync">Gem valg</button>
+        }
+        else { <p>Du har kun læseadgang til valget.</p> }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public AuctionDetailResponse Auction { get; set; } = default!;
+    [Parameter] public bool CanUpdate { get; set; }
+    private Guid? selectedId, draftId;
+    private bool busy, loaded, failed;
+    private string? message;
+    protected override Task OnInitializedAsync() => RefreshAsync();
+    private Task RefreshAsync() => RunAsync(false);
+    private Task SaveAsync() => !CanUpdate ? Task.CompletedTask : RunAsync(true);
+    private async Task RunAsync(bool save)
+    {
+        if (busy) return;
+        busy = true; failed = false; message = null;
+        try
+        {
+            if (save) { await Auctions.SelectSharedLotAsync(Auction.AuctionId, draftId); message = "Valget er gemt."; }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        { failed = true; message = ex is ApiException ? ex.Message : "Resultatet er ukendt. Kontrollér det opdaterede valg."; }
+        try
+        {
+            var state = await Auctions.GetSharedLotAsync(Auction.AuctionId);
+            if (state.AuctionId != Auction.AuctionId) throw new HttpRequestException("Ugyldigt auktions-id i svaret.");
+            selectedId = state.AuctionLotId; draftId = selectedId; loaded = true;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        { loaded = false; failed = true; message = $"{message} Valget kunne ikke hentes. Prøv at opdatere igen.".Trim(); }
+        finally { busy = false; }
+    }
+}

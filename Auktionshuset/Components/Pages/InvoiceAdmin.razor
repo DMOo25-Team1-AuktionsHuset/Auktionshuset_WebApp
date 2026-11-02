@@ -1,0 +1,51 @@
+@page "/admin/invoices"
+@attribute [Authorize(Policy = FrontendPolicies.BillingStaff)]
+@rendermode InteractiveServer
+@using Auktionshuset.Services
+@using Auktionshuset.Contracts.Dto.Billing
+@inject InvoiceService Invoices
+<PageTitle>Betaling og afhentning</PageTitle>
+<h1>Betaling og afhentning</h1>
+<button class="btn btn-secondary" @onclick="LoadAsync" disabled="@busy">Opdatér</button>
+@if (error is not null) { <p role="alert">@error</p> }
+@if (items is { Count: 0 }) { <p>Ingen fakturaer endnu. Fakturaer dannes automatisk efter afslutning af hele auktionen.</p> }
+@foreach (var invoice in items ?? [])
+{
+    <section class="card" @key="invoice.Id">
+        <details>
+            <summary>@invoice.Number · @invoice.CustomerName · @invoice.Total.ToString("N2") kr. · @invoice.Status</summary>
+            <InvoiceDocument Invoice="invoice" />
+            @if (invoice.PaidAt is null)
+            {
+                <p>Registrér først, når hele beløbet er modtaget.</p>
+                <button class="btn btn-primary" disabled="@busy" @onclick='() => PayAsync(invoice, "Card")'>Registrér fuld betaling med kort</button>
+                <button class="btn btn-secondary" disabled="@busy" @onclick='() => PayAsync(invoice, "Cash")'>Registrér fuld kontant betaling</button>
+            }
+            @foreach (var line in invoice.Lines.Where(l => l.CollectedAt is null))
+            {
+                <p>@line.Name · @line.Quantity stk.
+                    <button class="btn btn-secondary" disabled="@(busy || invoice.PaidAt is null)"
+                        @onclick="() => CollectAsync(invoice.Id, line.Id)">Registrér afhentning af linjen</button></p>
+            }
+        </details>
+    </section>
+}
+@code {
+    private List<InvoiceResponse>? items;
+    private string? error;
+    private bool busy;
+    protected override Task OnInitializedAsync() => LoadAsync();
+    private Task LoadAsync() => RunAsync(async () => items = await Invoices.GetAsync(staff: true));
+    private Task PayAsync(InvoiceResponse invoice, string method) => RunAsync(async () =>
+    { await Invoices.PayAsync(invoice, method); items = await Invoices.GetAsync(staff: true); });
+    private Task CollectAsync(Guid id, Guid lineId) => RunAsync(async () =>
+    { await Invoices.CollectAsync(id, lineId); items = await Invoices.GetAsync(staff: true); });
+    private async Task RunAsync(Func<Task> action)
+    {
+        if (busy) return;
+        busy = true;
+        try { await action(); error = null; }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or System.Text.Json.JsonException) { error = ex.Message; }
+        finally { busy = false; }
+    }
+}

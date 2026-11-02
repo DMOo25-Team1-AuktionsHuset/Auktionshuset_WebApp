@@ -1,0 +1,57 @@
+# Architecture
+
+## Status
+- **Target direction, not verified implementation.** Inspect the repository before asserting components exist.
+
+## Intended components
+- UI: Blazor; API/services: ASP.NET Core / C#.
+- Persistence: EF Core with PostgreSQL (verify actual provider).
+- Messaging: RabbitMQ pub/sub; client updates: SignalR.
+- Identity: ASP.NET Core Identity / authorization (verify configuration).
+
+## Boundaries
+- Keep domain rules outside UI and transport handlers.
+- Keep database and messaging adapters behind explicit service boundaries.
+- Treat external messages as at-least-once unless confirmed otherwise.
+
+## Decisions to verify
+- Bid concurrency strategy and database transaction boundaries.
+- Message reliability (outbox/idempotency/retries) and SignalR event ownership.
+- Actual solution/project structure and integration-test setup.
+
+## Device contract v1 (agreed target, not yet implemented)
+
+### Scope and ownership
+- Admin, AuctionAdmin, LotAdmin and Employee may issue/release a device. The customer must already exist; issuance creates or reuses the customer/auction registration atomically. An active assignment is unique both by (customerId, auctionId) and by deviceId. Release ends only the assignment/session; registration and bids remain. Enforce these invariants transactionally in persistent storage, not solely in the gateway.
+- The auctioneer selects one shared active auctionLotId per auction, not one per device. Selection, clearing and closing a lot invalidate the previous context. No device can select it. Server-side bid validation remains authoritative; device encoder rules are not minimum increments for web bids.
+- Deployment assumes one API instance. ESP32 uses ordinary RFC 6455 WebSocket with the gateway, not the SignalR protocol. Real-time changes MUST travel API -> SignalR hub -> gateway's .NET SignalR client -> translated WebSocket messages; direct in-process callbacks or bypassing SignalR do not satisfy this contract. Reconnect must restore subscriptions and fetch an authoritative snapshot. Neither gateway nor device transport exists yet.
+- Authenticate provisioned device credentials over a protected local network; use TLS/WSS or an equivalently protected trusted link, never log credentials, and do not expose an unauthenticated gateway to untrusted networks. The gateway authenticates to SignalR with a scoped service identity; authorization must prevent cross-device/customer disclosure. Credential provisioning and exact deployment trust configuration remain implementation work.
+
+### Wire protocol
+- JSON UTF-8, one object per WebSocket text message, protocolVersion integer 1, type as below. UUIDs are canonical strings; requestId is a client-generated UUID and is reused on retries of the same operation, never reused with another payload. Omitted optional values are represented as null in the examples. Reject unsupported versions, invalid fields and out-of-range values explicitly; do not silently reinterpret versions. Amounts are nonnegative integer øre encoded as decimal digit strings (no sign, fraction or exponent), not JSON floating point. Implementations must check range and preserve backend øre exactly. All revision/sequence values are unsigned decimal digit strings, compared numerically, not lexicographically.
+- Every post-auth message carries deviceId and sessionId. The server derives customerId and auctionId from the active assignment, never trusts device-supplied identity for authorization. sessionId changes on every issuance; stale sessions are rejected. Request/ack correlation is per session; bid RequestId must reach the existing backend bid operation unchanged. Retrying the same bid/payload returns its original result; changed payload with the same RequestId is rejected. Persist deduplication atomically with the bid, including across gateway restart. A missing acknowledgement means unknown outcome, not rejection.
+- auctionRevision is an authoritative, monotonically increasing per-auction revision for each observable selection, state or bid change, persisted atomically with that change. sessionRevision is a monotonically increasing per-device assignment revision, including release/reissue. bidSequence is the authoritative per-lot bid sequence and null before the first bid. These are proposed requirements, not claims that current storage supplies them. A snapshot is a consistent view at its stated revisions. Release invalidates the session even if the socket remains open.
+- On connect/auth/reconnect, buffer updates while fetching a snapshot and apply only updates newer than its auctionRevision, in contiguous order. Ignore duplicate/older revisions; on a gap, unknown sessionRevision, changed session, malformed message or reconnect, stop accepting bids until a new authenticated snapshot is applied. Compare bidSequence within the same auctionLotId, never across lots. A selection change replaces lot state and draft, even if a delayed old-lot update arrives. If synchronization fails, show disconnected/stale and do not send bids. Revisions must be generated/ordered at the authoritative API, not invented by the gateway. Gateway must reconcile missed SignalR events via snapshots; SignalR delivery alone is not durable.
+- Examples below define required payload fields. `state` is a full replacement; `update` is also a full replacement of auction state for its revision (not a partial patch). `highestBidOre`, `customerBidOre` and `draftOre` are distinct: highest is auction-wide, customer bid is the last accepted bid by this customer for this lot, and draft is device-local and never presented as an accepted bid. A newly selected lot initializes draft to startingPriceOre. A later highest bid changes draft to max(draft, highest); it does not change customerBidOre. Null lot means no selected lot; all lot-specific amounts and bidSequence are null. The server is authoritative for accepted bids and state; draftOre in state/update is not server-owned and is therefore omitted.
+
+```json
+{"protocolVersion":1,"type":"authenticate","requestId":"10000000-0000-0000-0000-000000000001","deviceId":"20000000-0000-0000-0000-000000000001","credential":"<provisioned-secret>"}
+{"protocolVersion":1,"type":"authResult","requestId":"10000000-0000-0000-0000-000000000001","deviceId":"20000000-0000-0000-0000-000000000001","accepted":true,"errorCode":null,"sessionId":"30000000-0000-0000-0000-000000000001","sessionRevision":"1"}
+{"protocolVersion":1,"type":"state","deviceId":"20000000-0000-0000-0000-000000000001","sessionId":"30000000-0000-0000-0000-000000000001","sessionRevision":"1","customerId":"40000000-0000-0000-0000-000000000001","auctionId":"50000000-0000-0000-0000-000000000001","auctionRevision":"12","auctionLotId":"60000000-0000-0000-0000-000000000001","openForBids":true,"startingPriceOre":"10025","highestBidOre":"11050","customerBidOre":"10500","bidSequence":"3"}
+{"protocolVersion":1,"type":"update","deviceId":"20000000-0000-0000-0000-000000000001","sessionId":"30000000-0000-0000-0000-000000000001","sessionRevision":"1","customerId":"40000000-0000-0000-0000-000000000001","auctionId":"50000000-0000-0000-0000-000000000001","auctionRevision":"13","auctionLotId":"60000000-0000-0000-0000-000000000001","openForBids":true,"startingPriceOre":"10025","highestBidOre":"12000","customerBidOre":"10500","bidSequence":"4"}
+{"protocolVersion":1,"type":"placeBid","requestId":"70000000-0000-0000-0000-000000000001","deviceId":"20000000-0000-0000-0000-000000000001","sessionId":"30000000-0000-0000-0000-000000000001","sessionRevision":"1","auctionId":"50000000-0000-0000-0000-000000000001","auctionLotId":"60000000-0000-0000-0000-000000000001","auctionRevision":"13","amountOre":"13000"}
+{"protocolVersion":1,"type":"bidReceipt","requestId":"70000000-0000-0000-0000-000000000001","deviceId":"20000000-0000-0000-0000-000000000001","sessionId":"30000000-0000-0000-0000-000000000001","sessionRevision":"1","auctionId":"50000000-0000-0000-0000-000000000001","auctionLotId":"60000000-0000-0000-0000-000000000001","accepted":true,"duplicate":false,"bidId":"80000000-0000-0000-0000-000000000001","bidSequence":"5","auctionRevision":"14","errorCode":null}
+{"protocolVersion":1,"type":"connectionStatus","deviceId":"20000000-0000-0000-0000-000000000001","sessionId":"30000000-0000-0000-0000-000000000001","sessionRevision":"1","status":"synchronized","reason":null}
+```
+
+- Authentication failure has accepted=false, errorCode set, sessionId/sessionRevision null. A rejected bid receipt has accepted=false, bidId/bidSequence null, and a stable errorCode; requestId and context are echoed. A receipt is not a state update: only matching authoritative state/update changes displayed accepted bids. Stale auctionRevision or changed lot must reject a new bid with a resynchronization error, without placing it. Duplicate retries are resolved before stale-revision rejection. `connectionStatus.status` is `synchronizing`, `synchronized`, `unavailable` or `released`; only synchronized allows bidding. A disconnected socket itself means unavailable. A released status terminates the session. Implementations must define and test concrete error codes before deployment.
+
+### Encoder behavior
+- All arithmetic uses exact decimal/integers, never float/double; incoming øre are preserved. Reference is highest bid if present, otherwise positive starting price. Starting price can currently be zero: with no bid and zero start there is no reference, so rotation, encoder press and bidding are disabled pending a positive highest bid. Draft begins exactly at the start price for a newly selected lot.
+- Each detent changes draft by max(1 kr, 1% of reference rounded to the nearest whole krone); clamp downward movement to the exact reference, including øre. On a new highest bid set draft=max(draft, highest). Encoder press sets draft to reference × 1.10 rounded to nearest whole krone; if an existing highest bid would not be exceeded, use the smallest whole-krone amount at least 1 kr above it. All midpoint rounding is away from zero. Encoder operations only change the draft; only the separate bid button sends `placeBid`. The API may still reject the bid.
+
+## Accepted decisions
+- Customer SignalR uses invalidation-only messages through a Customer-policy hub with an active persisted profile check. Reads remain customer-scoped HTTP calls; reconnect refetches state. My-auctions/purchases route wrappers pass an explicit mode to their shared component.
+- LoginUser links exactly one Customer or Employee, enforced by role/owner check and unique nullable FKs. Staff login mutations serialize on advisory lock 704291032 and protect the last active admin, including configured admins. JWTs and refresh tokens carry session versions; role/status/password changes invalidate old sessions. Employee deletion is restricted while a login exists.
+- Billing uses AuctionInvoice headers and AuctionInvoiceLine snapshots, with unique source/customer-auction links, transactional persisted counters and PostgreSQL locking shared with auction stock writes. The legacy single-line Invoice table remains intact and blocks duplicate automatic issuance until reconciled.
+- Invoice discovery is a persisted database scan on startup/every five seconds, independent of RabbitMQ. Staff payment and per-line collection preserve authenticated login UserId/email and UTC timestamps; customer reads filter using the persisted customer-login link. See BILLING.md for the confirmed business rules and verification limits.

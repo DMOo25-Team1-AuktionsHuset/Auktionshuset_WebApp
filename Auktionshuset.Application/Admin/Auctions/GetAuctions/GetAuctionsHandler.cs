@@ -76,7 +76,8 @@ public sealed class GetAuctionsHandler(
                 SequenceNumber:
                     auctionLot.CurrentHighestBid?.SequenceNumber ?? 0,
                 CurrentHighestBidId: auctionLot.CurrentHighestBidId,
-                ClosedAtTime: auctionLot.ClosedAtTime))
+                ClosedAtTime: auctionLot.ClosedAtTime,
+                StartingPrice: auctionLot.StartingPrice))
             .ToArray();
 
         return new AuctionDetail(

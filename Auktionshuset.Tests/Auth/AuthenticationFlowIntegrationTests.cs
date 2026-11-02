@@ -376,8 +376,9 @@ public sealed class AuthenticationFlowIntegrationTests
                 "configured-lot-admin@example.test" => ["LotAdmin"],
                 "configured-auction-admin@example.test" => ["AuctionAdmin"],
                 "configured-admin@example.test" => ["Admin"],
+                _ when email.StartsWith("kunde-", StringComparison.Ordinal) => ["Customer"],
                 _ when email.StartsWith("auction-", StringComparison.Ordinal) => ["AuctionAdmin"],
-                _ => []
+                _ => ["Employee"]
             };
             var response = new LoginResponse(
                 $"backend-jwt-{email}",

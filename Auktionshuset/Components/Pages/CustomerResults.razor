@@ -1,0 +1,143 @@
+@implements IAsyncDisposable
+@using Auktionshuset.Services
+@using Auktionshuset.Contracts.Dto.Customer.Response
+@inject CustomerAuctionService Auctions
+@inject InvoiceService Invoices
+@inject CustomerAuctionRealtimeService Realtime
+
+<PageTitle>@Title | Haderslev Auktionshus</PageTitle>
+<section class="customer-results">
+    <h1>@Title</h1>
+    @if (busy) { <p role="status">Indlæser @Title.ToLowerInvariant()…</p> }
+    @if (feedback is not null) { <p role="status">@feedback</p> }
+    <button class="btn btn-secondary" @onclick="RefreshAsync" disabled="@busy">Prøv igen / opdatér</button>
+    @if (error is not null) { <p role="alert">@error</p> }
+    @if (PurchasesPage)
+    {
+        <p>Fakturaer samler dine køb pr. afsluttet auktion. Fuld betaling før afhentning; linjerne kan derefter afhentes hver for sig.</p>
+        @foreach (var invoice in invoices ?? [])
+        {
+            <article class="card result-card" @key="invoice.Id">
+                <h2>@invoice.AuctionName · @invoice.Number</h2>
+                <p>@invoice.Status · Samlet beløb inkl. moms: <strong>@invoice.Total.ToString("N2") kr.</strong></p>
+                <a href="@($"kunde/fakturaer/{invoice.Id}")">Se faktura og betalingsoplysninger</a>
+                @foreach (var line in invoice.Lines)
+                {
+                    <p>@line.Name · Antal: @line.Quantity · @line.Status · @line.Total.ToString("N2") kr.
+                        @if (invoice.PaidAt is not null)
+                        {
+                            <a href="@($"kunde/fakturaer/{invoice.Id}/kvittering/{line.Id}")">Kvittering</a>
+                        }
+                    </p>
+                }
+            </article>
+        }
+        @if (purchases is { Count: 0 } && invoices is { Count: 0 }) { <p>Du har ingen køb endnu.</p> }
+        @foreach (var purchase in (purchases ?? []).Where(p => !(invoices ?? []).Any(i => i.Lines.Any(l => l.AuctionLotId == p.AuctionLotId))))
+        {
+            <article class="card result-card" @key="purchase.AuctionLotId">
+                <h2>@purchase.Name</h2>
+                <p>Vundet · Antal: @purchase.Quantity · Faktura afventer afslutning og behandling af hele auktionen.</p>
+                <p>Hammerslagspris: <strong>@purchase.HammerPrice.ToString("N2") kr.</strong></p>
+                <a href="@($"kunde/auktioner/{purchase.AuctionId}")">Se resultat på @purchase.AuctionName</a>
+            </article>
+        }
+    }
+    else
+    {
+        <p>Dine tilmeldte auktioner, inklusive afsluttede auktioner og deres resultater.</p>
+        @if (auctions is { Count: 0 }) { <p>Du er endnu ikke tilmeldt nogen auktioner. <a href="kunde/auktioner">Find auktioner</a></p> }
+        @foreach (var auction in auctions ?? [])
+        {
+            <article class="card result-card" @key="auction.AuctionId">
+                <h2>@auction.Name</h2>
+                <p>Status: @auction.Status · @auction.LotCount genstande</p>
+                <a href="@($"kunde/auktioner/{auction.AuctionId}")">Se genstande, bud og resultater</a>
+                <Auktionshuset.Components.AuctionUnregister AuctionId="auction.AuctionId" OnChanged="UnregisteredAsync" />
+            </article>
+        }
+    }
+</section>
+@code {
+    [Parameter] public bool PurchasesPage { get; set; }
+    private string Title => PurchasesPage ? "Mine køb" : "Mine auktioner";
+    private List<CustomerAuctionResponse>? auctions;
+    private List<CustomerPurchaseResponse>? purchases;
+    private List<Auktionshuset.Contracts.Dto.Billing.InvoiceResponse>? invoices;
+    private string? error;
+    private bool busy;
+    private string? feedback;
+    private int version;
+    private CancellationTokenSource? loading;
+    private bool disposed;
+    private bool refreshPending;
+    protected override async Task OnParametersSetAsync()
+    {
+        await RefreshAsync();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Realtime.Invalidated += OnChangedAsync;
+        await Realtime.StartAsync();
+    }
+    private Task OnChangedAsync() => InvokeAsync(async () =>
+    {
+        if (disposed) return;
+        if (busy) { refreshPending = true; return; }
+        await RefreshAsync();
+        StateHasChanged();
+    });
+    private async Task UnregisteredAsync() { feedback = "Du er frameldt auktionen. Du kan tilmelde dig igen på auktionsoversigten."; await RefreshAsync(); }
+    private async Task RefreshAsync()
+    {
+        int request = ++version;
+        loading?.Cancel();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        loading = timeout;
+        busy = true;
+        error = null;
+        bool purchasesRoute = PurchasesPage;
+        var failures = new List<string>();
+        async Task Fetch<T>(string label, Func<CancellationToken, Task<T>> fetch, Action<T> assign)
+        {
+            try
+            {
+                var result = await fetch(timeout.Token);
+                if (!disposed && request == version) assign(result);
+            }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException or System.Text.Json.JsonException or OperationCanceledException)
+            {
+                failures.Add(ex is OperationCanceledException ? $"{label}: Serveren svarede ikke inden for 20 sekunder. Prøv igen."
+                    : $"{label}: " + (ex is ApiException ? ex.Message : "Kunne ikke hentes. Prøv igen."));
+            }
+        }
+        try
+        {
+            if (purchasesRoute)
+                await Task.WhenAll(
+                    Fetch("Køb", ct => Auctions.GetPurchasesAsync(ct), data => purchases = data),
+                    Fetch("Fakturaer", ct => Invoices.GetAsync(cancellationToken: ct), data => invoices = data));
+            else
+                await Fetch("Mine auktioner", ct => Auctions.GetMyAuctionsAsync(ct), data => auctions = data);
+            if (!disposed && request == version) error = failures.Count == 0 ? null : string.Join(" ", failures);
+        }
+        finally
+        {
+            if (request == version) { busy = false; loading = null; }
+        }
+        if (!disposed && request == version && refreshPending)
+        {
+            refreshPending = false;
+            await RefreshAsync();
+        }
+    }
+    public ValueTask DisposeAsync()
+    {
+        disposed = true;
+        version++;
+        loading?.Cancel();
+        Realtime.Invalidated -= OnChangedAsync;
+        return ValueTask.CompletedTask;
+    }
+}

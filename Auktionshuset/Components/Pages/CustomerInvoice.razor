@@ -1,0 +1,52 @@
+@page "/kunde/fakturaer/{Id:guid}"
+@page "/kunde/fakturaer/{Id:guid}/kvittering/{LineId:guid}"
+@attribute [Authorize(Policy = FrontendPolicies.Customer)]
+@layout Layout.CustomerLayout
+@rendermode InteractiveServer
+@using Auktionshuset.Services
+@using Auktionshuset.Contracts.Dto.Billing
+@inject InvoiceService Invoices
+<PageTitle>@(LineId is null ? "Faktura" : "Kvittering")</PageTitle>
+<h1>@(LineId is null ? "Faktura" : "Kvittering")</h1>
+<a href="kunde/mine-koeb">Tilbage til Mine køb</a>
+<button class="btn btn-secondary" @onclick="LoadAsync" disabled="@busy">@(error is null ? "Opdatér" : "Prøv igen")</button>
+@if (busy) { <p role="status">Indlæser dokument…</p> }
+@if (error is not null) { <p role="alert">@error</p> }
+@if (invoice is not null)
+{
+    <InvoiceDocument Invoice="invoice" Receipt="@(LineId is not null)" />
+    @if (LineId is null && invoice.PaidAt is not null)
+    {
+        @foreach (var line in invoice.Lines)
+        {
+            <p><a href="@($"kunde/fakturaer/{Id}/kvittering/{line.Id}")">Kvittering for @line.Name</a></p>
+        }
+    }
+}
+@code {
+    [Parameter] public Guid Id { get; set; }
+    [Parameter] public Guid? LineId { get; set; }
+    private InvoiceResponse? invoice;
+    private string? error;
+    private bool busy;
+    private int version;
+    private (Guid, Guid?)? loadedRoute;
+    protected override Task OnParametersSetAsync()
+    {
+        if (loadedRoute != (Id, LineId)) { invoice = null; loadedRoute = (Id, LineId); }
+        return LoadAsync();
+    }
+    private async Task LoadAsync()
+    {
+        int request = ++version;
+        busy = true;
+        try
+        {
+            var current = await Invoices.GetOwnAsync(Id, LineId);
+            if (request == version) { invoice = current; error = null; }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or System.Text.Json.JsonException or OperationCanceledException)
+        { if (request == version) error = ex is OperationCanceledException ? "Dokumentet kunne ikke hentes i tide. Prøv igen." : ex.Message; }
+        finally { if (request == version) busy = false; }
+    }
+}

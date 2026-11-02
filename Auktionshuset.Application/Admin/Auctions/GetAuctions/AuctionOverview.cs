@@ -30,7 +30,8 @@ public sealed record AuctionLotLine(
     decimal CurrentPrice,
     int SequenceNumber,
     Guid? CurrentHighestBidId,
-    DateTime? ClosedAtTime);
+    DateTime? ClosedAtTime,
+    decimal StartingPrice = 0m);
 
 /// <summary>
 /// The full detail view of a single auction.

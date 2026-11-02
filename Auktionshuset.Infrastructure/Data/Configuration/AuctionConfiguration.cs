@@ -19,6 +19,7 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
         public void Configure(EntityTypeBuilder<Auction> entity)
         {
             entity.HasKey(a => a.AuctionId);
+            entity.HasIndex(a => a.AuctionNumber).IsUnique();
             entity.Property(a => a.Name).IsRequired().HasMaxLength(120);
             entity.Property(a => a.StartsAt).HasColumnType("timestamp with time zone").IsRequired();
             entity.Property(a => a.EndedAt).HasColumnType("timestamp with time zone");

@@ -1,0 +1,6 @@
+.auction-run { padding: 1.5rem; display: grid; gap: 1rem; }
+.auction-run h1, .auction-run h2, .auction-run p { margin: 0; }
+.auction-run .btn { justify-self: start; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--border-color, #ddd); }

@@ -1,0 +1,25 @@
+# ripgrep search noise (NOT an access-control policy)
+**/bin/
+**/obj/
+**/TestResults/
+**/coverage/
+**/coverage-report/
+**/node_modules/
+**/dist/
+**/tmp/
+**/temp/
+**/trash/
+**/.vs/
+**/.idea/
+**/.git/
+**/*.log
+**/*.tmp
+**/*.bak
+**/*.cache
+**/*.dll
+**/*.pdb
+**/*.exe
+**/*.nupkg
+**/.agent/.state_sync.lock
+**/__pycache__/
+**/*.pyc

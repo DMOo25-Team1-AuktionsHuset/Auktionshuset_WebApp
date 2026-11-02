@@ -1,0 +1,163 @@
+@page "/admin/auctions/{AuctionId:guid}/run"
+@attribute [Authorize(Policy = FrontendPolicies.CanViewAuctions)]
+@rendermode InteractiveServer
+@implements IDisposable
+@using Auktionshuset.Contracts.Dto.Admin.Auction
+@using Auktionshuset.Contracts.Time
+@using Auktionshuset.Services
+@inject AuctionService Auctions
+@inject AuthenticationStateProvider Authentication
+@inject TimeProvider Clock
+
+<PageTitle>Afvikling | Auktionshuset</PageTitle>
+
+<section class="card auction-run" aria-busy="@busy">
+    <a href="/admin/auctions">Tilbage til auktioner</a>
+    <h1>@(auction?.Name ?? "Afvikling af auktion")</h1>
+    <button type="button" class="btn btn-secondary" disabled="@busy" @onclick="RefreshAsync">Opdatér visning</button>
+    @if (message is not null)
+    {
+        <p role="@(failed ? "alert" : "status")" aria-live="polite">@message</p>
+    }
+    @if (auction is not null)
+    {
+        <p>Status: <strong>@auction.Status</strong></p>
+        <p>Planlagt start: @FormatTime(auction.StartsAt) · Planlagt slut: @(auction.EndsAt is DateTime end ? FormatTime(end) : "Ikke fastsat")</p>
+        @if (canUpdate && auction.Status == "Kommende")
+        {
+            <button type="button" class="btn" disabled="@(busy || !CanStart)" @onclick="StartAsync">Start auktion</button>
+            <p>@StartHelp</p>
+        }
+        @if (canUpdate && auction.Status == "Live")
+        {
+            @if (confirmClose)
+            {
+                <div role="group" aria-label="Bekræft afslutning">
+                    <p>Afslut auktionen og luk alle resterende genstande? Handlingen kan ikke fortrydes.</p>
+                    <button type="button" class="btn btn-danger" disabled="@busy" @onclick="CloseAsync">Ja, afslut auktion</button>
+                    <button type="button" class="btn btn-secondary" disabled="@busy" @onclick="() => confirmClose = false">Fortryd</button>
+                </div>
+            }
+            else
+            {
+                <button type="button" class="btn btn-danger" disabled="@busy" @onclick="() => confirmClose = true">Afslut auktion</button>
+            }
+        }
+        @if (!canUpdate)
+        {
+            <p>Du har kun læseadgang til auktionen.</p>
+        }
+        <SharedLotPicker @key="auction.AuctionId" Auction="auction" CanUpdate="canUpdate" />
+        <h2>Auktionens genstande</h2>
+        @if (auction.Lots.Count == 0)
+        {
+            <p>Auktionen har ingen genstande.</p>
+        }
+        else
+        {
+            <p>Alle enheder på en linje sælges samlet til én vinder. Startpris og bud gælder hele linjen.</p>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Genstand</th><th>Antal</th><th>Startpris for hele linjen</th><th>Aktuel pris for hele linjen</th><th>Status</th><th>Handling</th></tr></thead>
+                    <tbody>
+                        @foreach (var lot in auction.Lots)
+                        {
+                            <tr @key="lot.AuctionLotId">
+                                <td>@lot.Name</td><td>@lot.Quantity</td><td>@lot.StartingPrice.ToString("C", Danish)</td><td>@lot.CurrentPrice.ToString("C", Danish)</td>
+                                <td>@(lot.ClosedAtTime is not null ? "Lukket" : lot.OpenForBids && auction.Status == "Live" ? "Åben for bud" : "Ikke åben")</td>
+                                <td>
+                                    @if (canUpdate && auction.Status == "Live" && lot.ClosedAtTime is null && lot.OpenForBids)
+                                    {
+                                        <button type="button" class="btn btn-secondary" disabled="@busy" @onclick="() => CloseLotAsync(lot)">Luk genstand</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</section>
+
+@code {
+    [Parameter] public Guid AuctionId { get; set; }
+    private static readonly System.Globalization.CultureInfo Danish = System.Globalization.CultureInfo.GetCultureInfo("da-DK");
+    private readonly CancellationTokenSource lifetime = new();
+    private AuctionDetailResponse? auction;
+    private bool busy, canUpdate, confirmClose, failed;
+    private string? message;
+    private bool CanStart => auction is { Status: "Kommende", LotCount: > 0 }
+        && Clock.GetUtcNow().UtcDateTime >= auction.StartsAt
+        && (auction.EndsAt is null || Clock.GetUtcNow().UtcDateTime < auction.EndsAt);
+    private string StartHelp => auction?.LotCount == 0 ? "Tilføj mindst én genstand før start."
+        : auction?.EndsAt is DateTime end && Clock.GetUtcNow().UtcDateTime >= end ? "Det planlagte tidsrum er udløbet."
+        : CanStart ? "Auktionen er klar til manuel start." : "Start bliver mulig ved det planlagte starttidspunkt.";
+    private static string FormatTime(DateTime value) => CopenhagenTime.FromUtc(value).ToString("g", Danish);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        canUpdate = (await Authentication.GetAuthenticationStateAsync()).User
+            .HasClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateAuctionPermission);
+        auction = null;
+        await RefreshAsync();
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) _ = UpdateClockAsync();
+        return Task.CompletedTask;
+    }
+
+    private async Task UpdateClockAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(0.01));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(lifetime.Token))
+                await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+    }
+
+    private Task StartAsync() => !canUpdate || !CanStart ? Task.CompletedTask
+        : ExecuteAsync(() => Auctions.StartAsync(AuctionId), "Auktionen er startet.");
+    private Task CloseAsync() => !canUpdate || !confirmClose || auction?.Status != "Live" ? Task.CompletedTask
+        : ExecuteAsync(() => Auctions.CloseAsync(AuctionId), "Auktionen er afsluttet. Alle genstande er lukket.");
+    private Task CloseLotAsync(AuctionLotResponse lot) => !canUpdate || auction?.Status != "Live" || lot.ClosedAtTime is not null || !lot.OpenForBids
+        ? Task.CompletedTask : ExecuteAsync(() => Auctions.CloseLotAsync(lot.AuctionLotId), $"Genstanden »{lot.Name}« er lukket.");
+    private Task RefreshAsync() => ExecuteAsync(null, null);
+
+    private async Task ExecuteAsync(Func<Task>? operation, string? success)
+    {
+        if (busy) return;
+        busy = true;
+        message = null;
+        failed = false;
+        try
+        {
+            if (operation is not null) await operation();
+            message = success;
+        }
+        catch (Exception ex) when (ex is AuctionApiException or HttpRequestException or TaskCanceledException)
+        {
+            failed = true;
+            message = ex is AuctionApiException ? ex.Message : "Forbindelsen til serveren svigtede. Opdatér visningen for at kontrollere resultatet.";
+        }
+        // Refresh after both success and conflict, including a timeout where the server may have completed.
+        try
+        {
+            auction = await Auctions.GetByIdAsync(AuctionId);
+            if (auction is null) { failed = true; message = "Auktionen findes ikke længere."; }
+        }
+        catch (Exception ex) when (ex is AuctionApiException or HttpRequestException or TaskCanceledException)
+        {
+            auction = null;
+            failed = true;
+            message = $"{message} Visningen kunne ikke opdateres. Prøv Opdatér visning igen.".Trim();
+        }
+        finally { busy = false; confirmClose = false; }
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

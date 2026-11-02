@@ -3,6 +3,7 @@
     public sealed class AuthUser
     {
         public required Guid UserId { get; init; }
+        public int SessionVersion { get; init; }
         //public required Guid CustomerId { get; init; }
         public required string Email { get; init; }
         public required string PasswordHash { get; set; }

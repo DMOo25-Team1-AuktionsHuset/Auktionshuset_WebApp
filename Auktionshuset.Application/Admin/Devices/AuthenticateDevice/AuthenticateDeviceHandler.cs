@@ -45,9 +45,26 @@ public sealed class AuthenticateDeviceHandler(
             return null;
         }
 
+        ActiveDeviceSession? session = await deviceRepository.GetActiveSessionAsync(
+            credential.DeviceId, null, cancellationToken);
+
+        // The credential can be disabled or replaced while the secret is being verified.
+        DeviceCredential? currentCredential = await deviceRepository.GetCredentialAsync(command.DeviceId, cancellationToken);
+        if (currentCredential is null || !currentCredential.IsEnabled ||
+            currentCredential.CredentialVersion != credential.CredentialVersion ||
+            currentCredential.SecretHash != credential.SecretHash ||
+            currentCredential.SessionRevision != credential.SessionRevision ||
+            (session is not null && session.SessionRevision != currentCredential.SessionRevision))
+        {
+            return null;
+        }
+
         return new AuthenticateDeviceResult(
             credential.DeviceId,
             credential.Device.DeviceNumber,
-            credential.CredentialVersion);
+            credential.CredentialVersion)
+        {
+            Session = session
+        };
     }
 }

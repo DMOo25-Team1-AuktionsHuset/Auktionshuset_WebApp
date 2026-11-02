@@ -12,7 +12,8 @@ public sealed record AuctionLotResponse(
     decimal CurrentPrice,
     int SequenceNumber,
     Guid? CurrentHighestBidId,
-    DateTime? ClosedAtTime);
+    DateTime? ClosedAtTime,
+    decimal StartingPrice = 0m);
 
 public sealed record AuctionDetailResponse(
     Guid AuctionId,

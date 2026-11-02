@@ -12,6 +12,15 @@ namespace Auktionshuset.Infrastructure.Data.Configuration
             entity.Property(session => session.StartedAt).IsRequired();
             entity.Property(session => session.EndedAt);
 
+            entity.HasIndex(session => session.CustomerId);
+            entity.HasIndex(session => session.DeviceId);
+            entity.HasIndex(session => session.DeviceId, "IX_DeviceSessions_Active_DeviceId")
+                .IsUnique()
+                .HasFilter("\"EndedAt\" IS NULL");
+            entity.HasIndex(session => new { session.CustomerId, session.AuctionId }, "IX_DeviceSessions_Active_CustomerId_AuctionId")
+                .IsUnique()
+                .HasFilter("\"EndedAt\" IS NULL");
+
             entity.HasOne(session => session.Customer)
                 .WithMany(customer => customer.DeviceSessions)
                 .HasForeignKey(session => session.CustomerId)

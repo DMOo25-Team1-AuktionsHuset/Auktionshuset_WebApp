@@ -1,0 +1,85 @@
+@page "/kunde/auktioner/{AuctionId:guid}"
+@attribute [Authorize(Policy = FrontendPolicies.Customer)]
+@layout Layout.CustomerLayout
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using Auktionshuset.Services
+@using Auktionshuset.Contracts.Dto.Customer.Response
+@using Auktionshuset.Contracts.Time
+@inject CustomerAuctionService Auctions
+@inject TimeProvider Clock
+@inject CustomerAuctionRealtimeService Realtime
+
+<PageTitle>@(auction?.Name ?? "Auktion") | Haderslev Auktionshus</PageTitle>
+<section class="customer-auction-page">
+    <a href="kunde/mine-auktioner">Tilbage til Mine auktioner</a>
+    <h1>@(auction?.Name ?? "Auktion")</h1>
+    <p>Bud og resultater opdateres automatisk. Bud gælder hammerslagsprisen i danske kroner. Gebyrer og samlet betalingsbeløb er endnu ikke beregnet.</p>
+    @if (!Realtime.isConnected) { <p role="status">Liveforbindelsen er afbrudt. Forbinder automatisk igen og henter de seneste bud…</p> }
+    @if (error is not null) { <p class="access-notice" role="alert">@error</p><button class="btn btn-secondary" @onclick="RefreshAsync" disabled="@busy">Prøv igen</button> }
+    @if (auction is not null)
+    {
+        <p>Status: @auction.Status · Du er tilmeldt</p>
+        <p>Start: @CopenhagenTime.FromUtc(DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc)).ToString("dd-MM-yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture) (dansk tid)</p>
+        @if (auction.Status == "Kommende")
+        {
+            <p role="status">@(auction.StartsAt <= Clock.GetUtcNow().UtcDateTime
+                ? "Starttidspunktet er passeret, men auktionen er endnu ikke startet. Bud åbner først, når auktionshuset starter auktionen."
+                : "Auktionen er endnu ikke startet. Du kan se genstandene nu, men først byde, når auktionshuset starter auktionen.")</p>
+        }
+        else if (auction.Status == "Afventer resultat") { <p role="status">Budperioden er afsluttet. Afventer fastlæggelse af resultater. Der kan ikke længere bydes.</p> }
+        else if (!auction.IsLive) { <p role="status">Auktionen er afsluttet. Se de fastlagte resultater nedenfor.</p> }
+        @if (auction.Lots.Count == 0) { <p>Der er ingen genstande på auktionen.</p> }
+        @foreach (var lot in auction.Lots)
+        {
+            <FormMappingScope @key="lot.AuctionLotId" Name="@($"bid-{lot.AuctionLotId}")">
+                <Auktionshuset.Components.CustomerBidCard Lot="lot" OnBid="RefreshAsync" />
+            </FormMappingScope>
+        }
+    }
+</section>
+@code {
+    [Parameter] public Guid AuctionId { get; set; }
+    private CustomerAuctionDetailResponse? auction;
+    private string? error;
+    private bool busy;
+    private bool refreshPending;
+
+    protected override async Task OnParametersSetAsync() { auction = null; await RefreshAsync(); }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Realtime.Invalidated += OnChangedAsync;
+        Realtime.ConnectionChanged += OnConnectionAsync;
+        await Realtime.StartAsync();
+    }
+    private Task OnChangedAsync() => InvokeAsync(async () => { await RefreshAsync(); StateHasChanged(); });
+    private Task OnConnectionAsync() => InvokeAsync(StateHasChanged);
+    private async Task RefreshAsync()
+    {
+        if (busy) { refreshPending = true; return; }
+        busy = true;
+        try
+        {
+            do
+            {
+                refreshPending = false;
+                Guid id = AuctionId;
+                try
+                {
+                    var current = await Auctions.GetAuctionAsync(id);
+                    if (id == AuctionId) { auction = current; error = null; }
+                }
+                catch (Exception ex) when (ex is ApiException or HttpRequestException or System.Text.Json.JsonException or OperationCanceledException)
+                { if (id == AuctionId) error = ex is ApiException ? ex.Message : "Priserne kunne ikke opdateres. Prøv igen."; }
+            } while (refreshPending);
+        }
+        finally { busy = false; }
+    }
+    public ValueTask DisposeAsync()
+    {
+        Realtime.Invalidated -= OnChangedAsync;
+        Realtime.ConnectionChanged -= OnConnectionAsync;
+        return ValueTask.CompletedTask;
+    }
+}

@@ -61,6 +61,8 @@ public sealed class ConfiguredAuthUserStore : IAuthUserStore
         return Task.FromResult(user);
     }
 
+    public bool HasAdministrator => users.Values.Any(user => user.Roles.Contains(SecurityRoles.Admin));
+
     public Task<AuthUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

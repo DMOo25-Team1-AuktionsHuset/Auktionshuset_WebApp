@@ -6,6 +6,40 @@ namespace Auktionshuset.Services;
 
 public sealed class AuctionService(BackendApiClient httpClient)
 {
+    public async Task<SharedAuctionLotResponse> GetSharedLotAsync(Guid auctionId, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.GetAsync($"api/auctions/{auctionId}/shared-lot", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new AuctionApiException(await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Valget", "hentes"), response.StatusCode);
+        return await ReadAsync<SharedAuctionLotResponse>(response, "Serveren returnerede ikke et gyldigt valg.", cancellationToken);
+    }
+
+    public async Task SelectSharedLotAsync(Guid auctionId, Guid? auctionLotId, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PutAsJsonAsync($"api/auctions/{auctionId}/shared-lot", new SelectSharedAuctionLotRequest(auctionLotId), cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new AuctionApiException(await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Valget", "gemmes"), response.StatusCode);
+    }
+
+    public Task StartAsync(Guid auctionId, CancellationToken cancellationToken = default) =>
+        ExecuteAsync($"api/auctions/{auctionId}/start", "startes", cancellationToken);
+
+    public Task CloseAsync(Guid auctionId, CancellationToken cancellationToken = default) =>
+        ExecuteAsync($"api/auctions/{auctionId}/close", "afsluttes", cancellationToken);
+
+    public Task CloseLotAsync(Guid auctionLotId, CancellationToken cancellationToken = default) =>
+        ExecuteAsync($"api/auction-lots/{auctionLotId}", "lukkes", cancellationToken);
+
+    private async Task ExecuteAsync(string path, string action, CancellationToken cancellationToken)
+    {
+        using HttpResponseMessage response = await httpClient.PostAsJsonAsync(path, new { }, cancellationToken);
+        if (response.IsSuccessStatusCode) return;
+        string message = response.StatusCode == HttpStatusCode.NotFound
+            ? "Auktionen eller genstanden findes ikke længere. Opdatér visningen."
+            : await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Handlingen", action);
+        throw new AuctionApiException(message, response.StatusCode);
+    }
+
     /// <summary>
     /// Fetches every auction for the dashboard.
     /// </summary>

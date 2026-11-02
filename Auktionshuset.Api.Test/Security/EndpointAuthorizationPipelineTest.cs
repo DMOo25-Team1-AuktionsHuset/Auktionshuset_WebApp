@@ -248,7 +248,22 @@ public class EndpointAuthorizationPipelineTest
                 ["Security:EnforceAuthorization"] = "false",
                 ["Authentication:SigningKey"] = "test-signing-key-with-at-least-32-characters",
                 ["Authentication:Issuer"] = "Auktionshuset.Api.Test",
-                ["Authentication:Audience"] = "Auktionshuset.Client.Test"
+                ["Authentication:Audience"] = "Auktionshuset.Client.Test",
+                ["Authentication:Users:0:Email"] = "admin-role@example.test",
+                ["Authentication:Users:0:Password"] = "test-password",
+                ["Authentication:Users:0:Role"] = "Admin",
+                ["Authentication:Users:1:Email"] = "auctionadmin-role@example.test",
+                ["Authentication:Users:1:Password"] = "test-password",
+                ["Authentication:Users:1:Role"] = "AuctionAdmin",
+                ["Authentication:Users:2:Email"] = "lotadmin-role@example.test",
+                ["Authentication:Users:2:Password"] = "test-password",
+                ["Authentication:Users:2:Role"] = "LotAdmin",
+                ["Authentication:Users:3:Email"] = "employee-role@example.test",
+                ["Authentication:Users:3:Password"] = "test-password",
+                ["Authentication:Users:3:Role"] = "Employee",
+                ["Authentication:Users:4:Email"] = "customer-role@example.test",
+                ["Authentication:Users:4:Password"] = "test-password",
+                ["Authentication:Users:4:Role"] = "Customer"
             })
             .Build();
 
@@ -306,15 +321,8 @@ public class EndpointAuthorizationPipelineTest
     private static string CreateToken(IHost host, string role)
     {
         IAccessTokenService tokenService = host.Services.GetRequiredService<IAccessTokenService>();
-        var user = new AuthUser
-        {
-            UserId = Guid.NewGuid(),
-            Email = $"{role.ToLowerInvariant()}@example.test",
-            PasswordHash = string.Empty,
-            Roles = [role],
-            Permissions = SecurityRolePermissions.GetPermissions(role)
-        };
-
+        var user = host.Services.GetRequiredService<ConfiguredAuthUserStore>()
+            .FindByEmailAsync($"{role.ToLowerInvariant()}-role@example.test", default).GetAwaiter().GetResult()!;
         return tokenService.Issue(user).Value;
     }
 

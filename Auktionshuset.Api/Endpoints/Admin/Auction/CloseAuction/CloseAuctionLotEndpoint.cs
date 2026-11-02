@@ -1,6 +1,7 @@
 ﻿using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions.CloseAuction;
 using Microsoft.AspNetCore.Mvc;
+using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction
 {
@@ -9,7 +10,7 @@ namespace Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction
         public static IEndpointRouteBuilder MapCloseAuctionLotEndpoint(this IEndpointRouteBuilder group)
         {
             group.MapPost("/api/auction-lots/{auctionLotId:guid}", HandleAsync)
-                .AllowAnonymous()
+                .RequireAuthorization(SecurityPolicies.CanUpdateAuction)
                 .WithTags("Bidding");
 
             return group;

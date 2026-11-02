@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Auktionshuset.Api.Events.Admin.Auction
 {
-    public class DeleteAuctionRealTimeHandler(IHubContext<AuctionHub, IAuctionClient> hubContext)
+    public class DeleteAuctionRealTimeHandler(IHubContext<AuctionHub, IAuctionClient> hubContext, IHubContext<CustomerAuctionHub> customers)
         : IIntegrationEventHandler<AuctionDeletedIntegrationEvent>
     {
         /// <summary>
@@ -15,14 +15,15 @@ namespace Auktionshuset.Api.Events.Admin.Auction
         /// <param name="message">The integration event describing the deleted auction.</param>
         /// <param name="cancellationToken">The token used to cancel the operation.</param>
         /// <returns>A task that completes once the notification has been broadcast.</returns>
-        public Task HandleAsync(AuctionDeletedIntegrationEvent message, CancellationToken cancellationToken)
+        public async Task HandleAsync(AuctionDeletedIntegrationEvent message, CancellationToken cancellationToken)
         {
             DeleteAuctionNotification notification = new DeleteAuctionNotification(
                 EventId: message.EventId,
                 AuctionId: message.AuctionId,
                 OccurredAt: message.OccurredAt);
 
-            return hubContext.Clients.All.AuctionDeletedAsync(notification);
+            await customers.Clients.All.SendAsync("AuctionsChanged", Guid.Empty, cancellationToken);
+            await hubContext.Clients.All.AuctionDeletedAsync(notification);
         }
     }
 }

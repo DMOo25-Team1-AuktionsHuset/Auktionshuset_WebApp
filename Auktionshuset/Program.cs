@@ -17,6 +17,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddFrontendRateLimiting();
 builder.Services.AddSingleton<ServerTicketStore>();
 builder.Services.AddSingleton<BackendSessionService>();
 builder.Services.AddSingleton<ITicketStore>(services => services.GetRequiredService<ServerTicketStore>());
@@ -60,7 +61,9 @@ builder.Services
         };
         options.Events.OnRedirectToAccessDenied = context =>
         {
-            context.Response.Redirect("/?access=denied");
+            context.Response.Redirect(context.HttpContext.User.IsInRole(RoleNames.Customer)
+                ? AuthDestination.CustomerHome + "?access=denied"
+                : "/?access=denied");
             return Task.CompletedTask;
         };
     });
@@ -69,6 +72,10 @@ builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDef
     .Configure<TimeProvider>((options, clock) => options.TimeProvider = clock);
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy(FrontendPolicies.BillingStaff, policy => policy.RequireAuthenticatedUser()
+        .RequireRole(RoleNames.Employee, RoleNames.LotAdmin, RoleNames.AuctionAdmin, RoleNames.Admin));
+    options.AddPolicy(FrontendPolicies.Customer, policy =>
+        policy.RequireAuthenticatedUser().RequireRole(RoleNames.Customer));
     options.AddPolicy(FrontendPolicies.Admin, policy =>
         policy.RequireAuthenticatedUser().RequireRole(RoleNames.Admin));
     options.AddPolicy(FrontendPolicies.CanViewLots, policy =>
@@ -97,6 +104,7 @@ string apiBaseUrl = builder.Configuration["Api:BaseUrl"]
 builder.Services.AddHttpClient("BackendApi", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(20);
 });
 builder.Services.AddHttpClient("BackendAuthentication", client =>
 {
@@ -122,6 +130,11 @@ builder.Services.AddScoped(services => new BackendApiClient(
 builder.Services.AddScoped<LotService>();
 builder.Services.AddScoped<AuctionService>();
 builder.Services.AddScoped<EmployeeService>();
+builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<CustomerAuctionService>();
+builder.Services.AddScoped<CustomerAuctionRealtimeService>();
+builder.Services.AddScoped<InvoiceService>();
+builder.Services.AddScoped<DeviceAdministrationService>();
 
 builder.Services.AddScoped<AuctionRealtimeService>();
 builder.Services.AddScoped<EmployeeRealtimeService>();
@@ -140,6 +153,7 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseMiddleware<FrontendRedirectMiddleware>();
 app.UseAntiforgery();
 

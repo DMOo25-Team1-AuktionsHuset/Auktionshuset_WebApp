@@ -1,0 +1,72 @@
+@inherits LayoutComponentBase
+@using System.Security.Claims
+@using Auktionshuset.Contracts.Dto.Customer.Response
+@using Auktionshuset.Services
+@inject CustomerService CustomerProfiles
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="customer-shell">
+    <header class="customer-header">
+        <div class="customer-header-content">
+            <div class="customer-brand-area">
+                <NavLink href="kunde" class="customer-brand" aria-label="Haderslev Auktionshus">
+                    <img class="customer-brand-logo" src="images/logo.png" alt="" width="40" height="40" />
+                    <span class="brand-text">
+                        <strong>Haderslev</strong>
+                        <span>Auktionshus</span>
+                    </span>
+                </NavLink>
+                
+            </div>
+
+            <nav class="customer-nav" aria-label="Kundenavigation">
+                <NavLink href="kunde/auktioner" Match="NavLinkMatch.Prefix">Auktioner</NavLink>
+                <NavLink href="kunde/mine-auktioner">Mine auktioner</NavLink>
+                <NavLink href="kunde/mine-koeb">Mine køb</NavLink>
+                <NavLink href="kunde/profil" Match="NavLinkMatch.Prefix">Min profil</NavLink>
+            </nav>
+
+            <div class="customer-account">
+                @if (profile is not null)
+                {
+                    <span class="customer-name">@profile.FirstName @profile.LastName</span>
+                }
+                else
+                {
+                    <span class="customer-name">@customerEmail</span>
+                }
+                <form method="post" action="/auth/logout">
+                    <AntiforgeryToken />
+                    <button type="submit" class="btn btn-secondary btn-sm">Log ud</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <main class="customer-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    private CustomerProfileResponse? profile;
+    private string customerEmail = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        customerEmail = state.User.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+
+        try
+        {
+            profile = await CustomerProfiles.GetOwnProfileAsync();
+        }
+        catch (Exception ex) when (ex is CustomerApiException or HttpRequestException or OperationCanceledException or System.Text.Json.JsonException)
+        {
+            // Without a readable profile the header falls back to the login email.
+            profile = null;
+        }
+    }
+}
+
+

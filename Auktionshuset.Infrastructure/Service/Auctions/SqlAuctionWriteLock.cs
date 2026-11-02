@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Infrastructure.Database;
@@ -6,16 +6,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Auktionshuset.Infrastructure.Service.Auctions
 {
-    internal static class SqlAuctionWriteLock
+    public static class SqlAuctionWriteLock
     {
-        public static Task AcquireAsync(
+        public static async Task AcquireAsync(
             AHDBContext context,
             Guid auctionId,
             CancellationToken cancellationToken)
         {
             RequireTransaction(context);
 
-            return context.Database.ExecuteSqlInterpolatedAsync(
+            // SQLite serializes writers at the database level (used by integration tests).
+            if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+            {
+                await context.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"Auction\" SET \"Name\" = \"Name\" WHERE \"AuctionId\" = {auctionId}", cancellationToken);
+                return;
+            }
+
+            // One transaction-scoped lock serializes stock decisions across different auctions.
+            // Always acquire before the auction row lock to keep a single lock order.
+            if (context.Database.IsNpgsql())
+                await context.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(704291031)", cancellationToken);
+
+            await context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                 SELECT "AuctionId"
                 FROM "Auction"

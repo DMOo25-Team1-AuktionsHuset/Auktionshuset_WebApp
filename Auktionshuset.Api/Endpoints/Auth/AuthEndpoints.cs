@@ -1,7 +1,9 @@
 ﻿using Auktionshuset.Api.Security;
+using Auktionshuset.Api.Services;
 using Auktionshuset.Contracts.Dto.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace Auktionshuset.Api.Endpoints.Auth
@@ -22,6 +24,14 @@ namespace Auktionshuset.Api.Endpoints.Auth
                 .WithName("Login")
                 .Produces<LoginResponse>()
                 .Produces(StatusCodes.Status401Unauthorized)
+                .Produces(StatusCodes.Status429TooManyRequests)
+                .ProducesValidationProblem();
+
+            group.MapPost("/register", HandleRegisterAsync)
+                .RequireRateLimiting(AuthRateLimitingExtensions.Register)
+                .WithName("RegisterCustomer")
+                .Produces<RegisterCustomerResponse>(StatusCodes.Status201Created)
+                .Produces(StatusCodes.Status409Conflict)
                 .Produces(StatusCodes.Status429TooManyRequests)
                 .ProducesValidationProblem();
 
@@ -84,6 +94,27 @@ namespace Auktionshuset.Api.Endpoints.Auth
             LoginResponse response = await refreshTokens.CreateSessionAsync(user, cancellationToken);
 
             return TypedResults.Ok(response);
+        }
+
+        public static async Task<Results<
+            Created<RegisterCustomerResponse>,
+            Conflict<ProblemDetails>,
+            ValidationProblem>> HandleRegisterAsync(
+            RegisterCustomerRequest request,
+            CustomerRegistrationService registrations,
+            HttpContext context,
+            CancellationToken cancellationToken)
+        {
+            DisableCaching(context);
+            if (RegisterCustomerValidation.Validate(request) is ValidationProblem invalid)
+            {
+                return invalid;
+            }
+
+            RegistrationOutcome outcome = await registrations.RegisterAsync(request, cancellationToken);
+            return outcome.Failure == RegistrationFailure.DuplicateEmail
+                ? TypedResults.Conflict(RegisterCustomerValidation.DuplicateEmailProblem())
+                : TypedResults.Created("/api/auth/register", outcome.Account!);
         }
 
         private static void DisableCaching(HttpContext context)
