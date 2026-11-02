@@ -25,7 +25,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
             CancellationToken cancellationToken)
         {
             List<QueueStatus> rows = await db.Database
-                .SqlQuery<QueueStatus>(FormattableStringFactory.Create($"""
+                .SqlQuery<QueueStatus>($"""
                 WITH messages AS (
                     SELECT
                         'outbox'::text AS "Pipeline",
@@ -92,7 +92,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
                     ) AS "OldestReadyAtTime"
                 FROM classified
                 GROUP BY "Pipeline"
-                """))
+                """)
                 .ToListAsync(cancellationToken);
 
             QueueStatus[] queues =
