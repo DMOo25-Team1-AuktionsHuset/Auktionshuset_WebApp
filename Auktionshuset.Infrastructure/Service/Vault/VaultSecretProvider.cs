@@ -1,5 +1,6 @@
 ﻿using VaultSharp;
 using VaultSharp.V1.Commons;
+using System.Text;
 
 namespace Auktionshuset.Infrastructure.Service.Vault
 {
@@ -53,6 +54,34 @@ namespace Auktionshuset.Infrastructure.Service.Vault
             }
 
             return new RabbitMqCredentials(username, password);
+        }
+
+        public async Task<string> GetDeviceSigningKeyAsync()
+        {
+            Secret<SecretData> secret =
+                await vaultClient.V1.Secrets.KeyValue.V2
+                    .ReadSecretAsync(
+                        path: "development/device-auth",
+                        mountPoint: "auction");
+
+            IDictionary<string, object> data = secret.Data.Data;
+
+            data.TryGetValue(
+                "signingKey",
+                out object? signingKeyValue);
+
+            string? signingKey = signingKeyValue?.ToString();
+
+            if (
+                string.IsNullOrWhiteSpace(signingKey) ||
+                Encoding.UTF8.GetByteCount(signingKey) < 32
+            )
+            {
+                throw new InvalidOperationException(
+                    "Device signingKey mangler eller er for kort i Vault.");
+            }
+
+            return signingKey;
         }
     }
 }

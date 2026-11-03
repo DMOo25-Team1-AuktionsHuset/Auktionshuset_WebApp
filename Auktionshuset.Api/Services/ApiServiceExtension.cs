@@ -8,6 +8,7 @@ using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Application.Admin.Auctions.Bids;
 using Auktionshuset.Application.Admin.Auctions;
 using Auktionshuset.Application.EventHandling;
+using Auktionshuset.Api.Security;
 
 namespace Auktionshuset.Api.Services
 {
@@ -43,6 +44,7 @@ namespace Auktionshuset.Api.Services
             services.AddScoped<IIntegrationEventHandler<DeviceReleasedIntegrationEvent>, DeviceEventAuditHandler>();
             services.AddScoped<RegisterDeviceHandler>();
             services.AddScoped<AuthenticateDeviceHandler>();
+            services.AddSingleton<DeviceJwtTokenService>();
             services.AddScoped<IssueDeviceHandler>();
             services.AddScoped<ReleaseDeviceHandler>();
             services.AddScoped<DeactivateDeviceHandler>();

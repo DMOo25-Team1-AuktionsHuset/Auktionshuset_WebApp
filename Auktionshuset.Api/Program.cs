@@ -27,6 +27,7 @@ builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
+builder.Services.AddDeviceSecurity(builder.Configuration);
 
 //API Services
 builder.Services.AddApiServices();
@@ -77,6 +78,7 @@ app.MapCustomerEndpoints();
 app.MapDeviceAdministrationEndpoints();
 app.MapDeviceWebSocket();
 Auktionshuset.Api.Endpoints.Billing.InvoiceEndpoints.MapInvoiceEndpoints(app);
+app.MapDeviceEndpoints();
 app.MapLotEndpoints();
 app.MapStoredLotImages();
 app.MapAuctionEndpoints();

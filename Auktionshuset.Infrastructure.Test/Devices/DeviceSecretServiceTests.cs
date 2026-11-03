@@ -2,7 +2,7 @@
 using Auktionshuset.Infrastructure.Service.Auth;
 using Xunit;
 
-namespace Auktionshuset.Infrastructure.Test;
+namespace Auktionshuset.Infrastructure.Test.Devices;
 
 public sealed class DeviceSecretServiceTests
 {

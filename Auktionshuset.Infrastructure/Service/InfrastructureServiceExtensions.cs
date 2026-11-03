@@ -55,6 +55,10 @@ namespace Auktionshuset.Infrastructure.Service
 
             RabbitMqCredentials rabbitMqCredentials =
                 await secretProvider.GetRabbitMqCredentialsAsync();
+            configuration["DeviceAuthentication:SigningKey"] =
+                await secretProvider.GetDeviceSigningKeyAsync();
+
+
 
             return services.AddInfrastructure(
                 configuration,
