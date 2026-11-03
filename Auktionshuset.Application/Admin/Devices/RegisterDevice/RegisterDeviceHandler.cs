@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Auktionshuset.Application.Abstraction.Auth;
+using Auktionshuset.Domain;
 using Auktionshuset.Domain.Entities;
 
 namespace Auktionshuset.Application.Admin.Devices.RegisterDevice
@@ -20,10 +21,6 @@ namespace Auktionshuset.Application.Admin.Devices.RegisterDevice
 
             var errors = new List<string>();
 
-            if (command.AuctionHouseId == Guid.Empty)
-            {
-                errors.Add("Auktionshus skal angives");
-            }
 
             if (command.DeviceNumber <= 0)
             {
@@ -44,7 +41,7 @@ namespace Auktionshuset.Application.Admin.Devices.RegisterDevice
             var device = new Device
             {
                 DeviceId = deviceId,
-                AuctionHouseId = command.AuctionHouseId,
+                AuctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId,
                 DeviceNumber = command.DeviceNumber,
                 Status = "Available"
 

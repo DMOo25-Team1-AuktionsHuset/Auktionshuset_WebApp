@@ -33,7 +33,9 @@ public class DeviceAdminPageTests
         Assert.Contains("Device 13", html);
         Assert.Contains(factory.SessionId.ToString(), html);
         Assert.Contains("Frigiv device", html);
-        Assert.Contains("Auktionshus-id", html);
+        Assert.Contains("Devicenummer", html);
+        Assert.DoesNotContain("Auktionshus-id", html);
+        Assert.DoesNotContain("house-id", html);
         Assert.Contains("/api/staff/devices/customers", factory.Paths);
         Assert.Contains("/api/staff/devices/auctions", factory.Paths);
         Assert.Contains("/api/staff/devices/available", factory.Paths);

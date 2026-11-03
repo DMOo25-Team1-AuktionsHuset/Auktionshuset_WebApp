@@ -42,10 +42,8 @@ public static class DeviceAdministrationEndpoints
                 .Select(s => new { SessionId = s.DeviceSessionId, s.DeviceId, s.Device.DeviceNumber, s.AuctionId, s.CustomerId, s.StartedAt, s.EndedAt }).ToListAsync(ct));
         });
 
-        group.MapPost("/", async (RegisterDeviceCommand request, RegisterDeviceHandler handler, AHDBContext db, HttpContext context, CancellationToken ct) =>
+        group.MapPost("/", async (RegisterDeviceCommand request, RegisterDeviceHandler handler, HttpContext context, CancellationToken ct) =>
         {
-            if (request.AuctionHouseId != Guid.Empty && !await db.AuctionHouse.AnyAsync(a => a.AuctionHouseId == request.AuctionHouseId, ct))
-                return Results.NotFound(new { detail = "Auktionshuset findes ikke." });
             var result = await handler.HandleAsync(request, ct);
             if (!result.Succeeded) return Results.BadRequest(new { errors = result.Errors });
             context.Response.Headers.CacheControl = "no-store";
