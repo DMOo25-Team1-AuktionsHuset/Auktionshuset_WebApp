@@ -1,3 +1,5 @@
+using Auktionshuset.Application.Admin.Employees;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 using Auktionshuset.Api.Endpoints.Customer;
 using Auktionshuset.Api.Services;
@@ -31,12 +33,15 @@ public sealed partial class AuctionStockPostgresTests
             }
             await db.SaveChangesAsync();
         }
-        var hasher = new PasswordHasher<AuthUser>();
-        var configured = new ConfiguredAuthUserStore(new ConfigurationBuilder().Build(), hasher);
         async Task<IResult> Demote(Guid id)
         {
             await using var db = Db();
-            return await EmployeeLoginEndpoints.SaveAsync(id, new SaveEmployeeLoginRequest($"{id}@example.test", null, "Employee", true), db, configured, hasher, default);
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton(db);
+            services.AddSecurityServices(new ConfigurationBuilder().Build());
+            await using var provider = services.BuildServiceProvider();
+            return await EmployeeLoginEndpoints.SaveAsync(id, new SaveEmployeeLoginRequest($"{id}@example.test", null, "Employee", true), provider.GetRequiredService<EmployeeLoginHandler>(), default);
         }
         var results = await Task.WhenAll(Demote(first), Demote(second));
         Assert.Equal(new int?[] { 200, 409 }, results.Select(r => ((IStatusCodeHttpResult)r).StatusCode).Order().ToArray());

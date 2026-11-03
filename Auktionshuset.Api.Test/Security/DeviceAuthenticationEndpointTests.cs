@@ -194,6 +194,9 @@ public sealed class DeviceAuthenticationEndpointTests
     private sealed class TestDeviceRepository(
         DeviceCredential credential) : IDeviceRepository
     {
+        public Task<ActiveDeviceSession?> GetActiveSessionAsync(Guid deviceId, Guid? sessionId, CancellationToken cancellationToken) =>
+            Task.FromResult<ActiveDeviceSession?>(null);
+
         public Task AddAsync(
             Device device,
             DeviceCredential newCredential,

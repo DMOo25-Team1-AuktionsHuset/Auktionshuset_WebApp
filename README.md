@@ -129,7 +129,7 @@ Udvalgte klasser er testet på baggrund af, hvor meget funktionalitet, der minde
 
 ---
 ## Login og administratorroller
-API'et udsteder JWT'er med roller og permissions afledt af den betroede rolle i `Authentication:Users`. Frontend-login bruger fortsat en HttpOnly-cookie og en serveropbevaret backend-token.
+API'et bruger ASP.NET Core Identity med EF Core og `AspNetUsers` til både kunde- og medarbejderkonti. JWT-roller og permissions afledes af kontoens gemte rolle. Medarbejderlogin administreres gennem `EmployeeLoginHandler`; frontend-login bruger en HttpOnly-cookie og en serveropbevaret backend-token.
 
 Administratorrollerne er:
 
@@ -153,11 +153,13 @@ dotnet user-secrets set "Authentication:Users:1:Role" "AuctionAdmin" --project .
 dotnet user-secrets set "Authentication:SigningKey" "<tilfældig-hemmelig-nøgle-på-mindst-32-bytes>" --project .\Auktionshuset.Api
 ```
 
-`Authentication:Users` er en liste med `Email`, `Password` og `Role`. Passwords hashes med ASP.NET Core's eksisterende `IPasswordHasher<AuthUser>`. Ukendte roller, ufuldstændige brugere og emailadresser med dubletter (uanset store/små bogstaver, også på tværs af bootstrap-admin) afvises ved opstart. Rollen og permissions kan ikke vælges eller overskrives i loginanmodningen. Brug user-secrets lokalt eller secret store/miljøvariabler i deployment; læg aldrig credentials eller signing keys i versionsstyrede filer.
+`Authentication:Users` er en liste med `Email`, `Password` og `Role`. Konfigurationskonti, inklusive bootstrap-admin, oprettes én gang i `AspNetUsers` ved første opslag. Derefter bruges den gemte konto; genstart overskriver ikke rolle, adgangskode eller deaktivering. Ukendte roller, ufuldstændige konfigurationsbrugere og emailadresser med dubletter (uanset store/små bogstaver, også på tværs af bootstrap-admin) afvises ved opstart. Kontooprettelse og adgangskodekontrol bruger Identity `UserManager<LoginUser>`. Rollen og permissions kan ikke vælges eller overskrives i loginanmodningen. Brug user-secrets lokalt eller secret store/miljøvariabler i deployment; læg aldrig credentials eller signing keys i versionsstyrede filer.
+
+Migrationen `UnifyIdentityUsers` flytter eksisterende `LoginUsers` til `AspNetUsers` med samme offentlige bruger-id, adgangskodehash, kunde-/medarbejdertilknytning, rolle og sessionsversion. Dublerede e-mails mellem tabellerne og eksisterende Identity-konti uden e-mail/adgangskode skal afklares før migrationen. Tag backup før opgradering; downgrade kræver gendannelse fra backup. Opgraderingstesten kræver isoleret PostgreSQL via `AUCTION_STOCK_TEST_CONNECTION` og er endnu ikke kørt lokalt.
 
 ---
 ## Kundeoprettelse og kundelogin
-Kunder opretter selv en konto via "Opret ny bruger" på `/login`. Registreringssiden `/registrer` sender en valideret anmodning til API'ets `POST /api/auth/register`, som altid tildeler rollen `Customer` på serveren - kontrakten indeholder hverken roller, permissions eller CustomerId. Loginbrugeren og `Customer`-posten gemmes i samme transaktion med unik, normaliseret email (databaseconstraint i `LoginUsers`).
+Kunder opretter selv en konto via "Opret ny bruger" på `/login`. Registreringssiden `/registrer` sender en valideret anmodning til API'ets `POST /api/auth/register`, som altid tildeler rollen `Customer` på serveren - kontrakten indeholder hverken roller, permissions eller CustomerId. Identity-kontoen i `AspNetUsers` og `Customer`-posten gemmes i samme EF Core-transaktion med unik, normaliseret email, fælles for kunder og medarbejdere.
 
 Efter login vælges destinationen ud fra servervaliderede roller: `Customer` sendes til `/kunde`, administrative roller til det eksisterende administrationsområde, og brugere uden gyldig rolle nægtes adgang. Kunder afvises fra administrationssider og administrative API-endpoints af de eksisterende policies. Både login- og registreringsflowet er rate limited pr. klient-IP.
 

@@ -1,29 +1,41 @@
 # State
 
 ## Goal
-- Perform isolated acceptance of backend and firmware device-auction flow.
+- Consolidate customer/employee logins in ASP.NET Core Identity and EF Core AspNetUsers, with employee login operations delegated to an application handler.
 
 ## Done (verified)
-- Backend regression suite and firmware host checks passed; firmware compiled for ESP32-S3 using example configuration.
-- Existing tests cover portions of authorization, SignalR, WebSocket, bidding and billing separately; no complete two-device/web journey was established.
+- EmployeeLoginEndpoints delegates reads/writes to EmployeeLoginHandler; IdentityEmployeeLoginStore preserves validation, last-admin protection, refresh/session revocation and connection disconnection.
+- Customer and employee account creation use UserManager<LoginUser>; tests verify a shared AspNetUsers table/email namespace, password changes, session invalidation and configured-account persistence across restart/deactivation.
+- Added UnifyIdentityUsers migration, upgrade coverage, and documentation; generated SQL and EF model consistency checks succeed. Updated two outdated device test doubles to match the existing repository contract.
 
 ## Active
-- Full two-device and web journey through real SignalR, WebSocket, PostgreSQL, RabbitMQ, closure and invoicing remains unverified.
+- Implementation and available regression checks are complete; PostgreSQL migration execution/deployment is pending.
 
 ## Blockers
-- Docker engine was unreachable; isolated PostgreSQL and RabbitMQ were unavailable. PostgreSQL and external WebSocket tests were skipped.
-- No ESP32 was identified; physical hardware and firmware-to-backend integration were not tested.
+- Docker engine is unavailable. The PostgreSQL upgrade test and other PostgreSQL/external WebSocket integration tests were skipped.
 
 ## Next
-- Start isolated PostgreSQL and RabbitMQ and run the complete acceptance journey, including failures, restart and billing; run physical ESP32 acceptance when available.
+- Run IdentityMigrationPreservesCustomerAndEmployeePasswordsIdsAndStatus against isolated PostgreSQL before applying UnifyIdentityUsers to the intended database.
+- Migration requires reconciliation of duplicate/incomplete existing Identity accounts, and a backup for downgrade; no database migration or commit was performed here.
 
 ## Verification
-- Backend `dotnet test`: 492 passed, 47 skipped, 0 failed (42 PostgreSQL and 5 external WebSocket tests skipped).
-- Firmware: 37 host checks passed with mocked hardware/network; ESP32-S3 Arduino build succeeded with core 3.3.11. No hardware test.
+- API: 218 passed, 48 skipped, 0 failed; Infrastructure: 45 passed, 0 failed; Frontend: 243 passed, 0 failed (rerun with access to its local Data Protection key store).
+- Focused customer/employee account tests: 55 passed. EF reports no pending model changes; upgrade SQL generation succeeded. PostgreSQL upgrade execution: not run.
 
 <!-- AUTO-SNAPSHOT:BEGIN -->
 ## Repository signal (automatic; NOT proof of completion)
-- Branch / HEAD: `Feature/Embedded-Device2.0` / `4ffbeaa`
-- Working tree: 0 changed path(s) outside agent configuration.
-- No application-file changes detected by Git.
+- Branch / HEAD: `Feature/Embedded-Device2.0` / `cf29778`
+- Working tree: 23 changed path(s) outside agent configuration.
+- Paths (max 10; status + path):
+  - ` M Auktionshuset.Api.Test/Admins/Auctions/CustomerConcurrencyPostgresTests.cs`
+  - ` M Auktionshuset.Api.Test/Security/CustomerRegistrationTests.cs`
+  - ` M Auktionshuset.Api.Test/Security/DeviceAuthenticationEndpointTests.cs`
+  - ` M Auktionshuset.Api.Test/Security/EmployeeLoginTests.cs`
+  - ` M Auktionshuset.Api/Endpoints/Admin/Employee/EmployeeLoginEndpoints.cs`
+  - ` M Auktionshuset.Api/Endpoints/Auth/AuthEndpoints.cs`
+  - ` M Auktionshuset.Api/Security/IAuthUserStore.cs`
+  - ` M Auktionshuset.Api/Security/PersistentAuthUserStore.cs`
+  - ` M Auktionshuset.Api/Security/SecurityServiceExtensions.cs`
+  - ` M Auktionshuset.Api/Services/CustomerRegistrationService.cs`
+  - … and 13 more.
 <!-- AUTO-SNAPSHOT:END -->

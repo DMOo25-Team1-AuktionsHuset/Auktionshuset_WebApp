@@ -20,7 +20,7 @@ public sealed record RegistrationOutcome(RegisterCustomerResponse? Account, Regi
 /// </summary>
 public sealed class CustomerRegistrationService(
     AHDBContext db,
-    IPasswordHasher<AuthUser> passwordHasher, ConfiguredAuthUserStore? configured = null)
+    UserManager<LoginUser> users, ConfiguredAuthUserStore? configured = null)
 {
     public async Task<RegistrationOutcome> RegisterAsync(
         RegisterCustomerRequest request,
@@ -48,22 +48,29 @@ public sealed class CustomerRegistrationService(
         {
             UserId = Guid.NewGuid(),
             Email = email,
-            PasswordHash = PersistentAuthUserStore.HashPassword(passwordHasher, request.Password),
+            UserName = email,
             // Public registration always receives the Customer role; callers cannot choose it.
             Role = SecurityRoles.Customer,
             CustomerId = customer.CustomerId
         };
 
         db.Customers.Add(customer);
-        db.LoginUsers.Add(loginUser);
         try
         {
             // One SaveChanges persists both rows in a single transaction, so a failure
             // never leaves a partially created account behind.
-            await db.SaveChangesAsync(cancellationToken);
+            var result = await users.CreateAsync(loginUser, request.Password);
+            if (!result.Succeeded)
+            {
+                db.ChangeTracker.Clear();
+                if (result.Errors.Any(error => error.Code is "DuplicateEmail" or "DuplicateUserName"))
+                    return new RegistrationOutcome(null, RegistrationFailure.DuplicateEmail);
+                throw new InvalidOperationException("Identity rejected the validated customer account.");
+            }
         }
         catch (DbUpdateException)
         {
+            db.ChangeTracker.Clear();
             // The unique indexes on login email and customer id reject concurrent duplicates.
             if (await db.LoginUsers.AsNoTracking().AnyAsync(user => user.Email == email, cancellationToken))
             {
