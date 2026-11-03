@@ -11,15 +11,10 @@
     <button type="button" class="btn btn-secondary" disabled="@busy" @onclick="LoadAsync">Opdatér</button>
     @if (message is not null) { <p role="@(failed ? "alert" : "status")">@message</p> }
     <h2>Registrér device</h2>
-    <label for="house-id">Auktionshus-id</label>
-    <input id="house-id" list="auction-houses" @bind="houseIdText" disabled="@busy" />
-    <datalist id="auction-houses">
-        @foreach (var house in overview?.Auctions.Select(a => a.AuctionHouseId).Distinct() ?? [])
-        { <option value="@house"></option> }
-    </datalist>
+
     <label for="device-number">Devicenummer</label>
     <input id="device-number" type="number" min="1" @bind="deviceNumber" disabled="@busy" />
-    <button type="button" class="btn btn-primary" disabled="@(busy || registration is not null || deviceNumber < 1 || !ValidHouseId)" @onclick="RegisterAsync">Registrér</button>
+    <button type="button" class="btn btn-primary" disabled="@(busy || registration is not null || deviceNumber < 1)" @onclick="RegisterAsync">Registrér</button>
     @if (registration is not null)
     {
         <div role="status">
@@ -72,11 +67,11 @@
     private DeviceOverview? overview;
     private DeviceRegistration? registration;
     private Guid? deviceId, auctionId, customerId;
-    private string houseIdText = "";
+
     private int deviceNumber = 1;
     private bool busy, failed;
     private string? message;
-    private bool ValidHouseId => Guid.TryParse(houseIdText, out var id) && id != Guid.Empty;
+
     private DeviceAuction? SelectedAuction => overview?.Auctions.FirstOrDefault(a => a.AuctionId == auctionId);
     private bool CanIssue => !busy && customerId is Guid c && c != Guid.Empty && SelectedAuction is { } auction
         && overview!.Available.Any(d => d.DeviceId == deviceId && d.AuctionHouseId == auction.AuctionHouseId);
@@ -85,8 +80,8 @@
 
     protected override Task OnInitializedAsync() => LoadAsync();
     private Task LoadAsync() => RunAsync(null, null);
-    private Task RegisterAsync() => !ValidHouseId || deviceNumber < 1 || registration is not null ? Task.CompletedTask
-        : RunAsync(async () => registration = await Devices.RegisterAsync(Guid.Parse(houseIdText), deviceNumber), "Devicet er registreret.");
+    private Task RegisterAsync() => deviceNumber < 1 || registration is not null ? Task.CompletedTask
+        : RunAsync(async () => registration = await Devices.RegisterAsync(deviceNumber), "Devicet er registreret.");
     private Task IssueAsync() => !CanIssue || deviceId is not Guid d || auctionId is not Guid a || customerId is not Guid c
         ? Task.CompletedTask : RunAsync(() => Devices.IssueAsync(d, a, c), "Devicet er udleveret.");
     private Task ReleaseAsync(DeviceSessionItem session) =>

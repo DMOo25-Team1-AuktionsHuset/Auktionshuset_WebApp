@@ -1,13 +1,14 @@
 # State
 
 ## Goal
-- Perform isolated acceptance of backend and firmware device-auction flow.
+- Register devices using the backend's default auction house and only a device number.
 
 ## Done (verified)
-- Backend regression suite and firmware host checks passed; firmware compiled for ESP32-S3 using example configuration.
-- Existing tests cover portions of authorization, SignalR, WebSocket, bidding and billing separately; no complete two-device/web journey was established.
+- Device registration uses AuctionHouseDefaults.DefaultAuctionHouseId; the request and administration form require only a device number.
+- Registration still returns the device ID and long secret; API tests confirm an extra auction-house ID cannot change the stored house.
 
 ## Active
+- Automatic USB transfer of device credentials is not implemented in this milestone.
 - Full two-device and web journey through real SignalR, WebSocket, PostgreSQL, RabbitMQ, closure and invoicing remains unverified.
 
 ## Blockers
@@ -15,15 +16,16 @@
 - No ESP32 was identified; physical hardware and firmware-to-backend integration were not tested.
 
 ## Next
-- Start isolated PostgreSQL and RabbitMQ and run the complete acceptance journey, including failures, restart and billing; run physical ESP32 acceptance when available.
+- Implement automatic USB credential transfer in a later milestone.
+- Run the isolated end-to-end device acceptance and physical ESP32 acceptance when dependencies and hardware are available.
 
 ## Verification
-- Backend `dotnet test`: 492 passed, 47 skipped, 0 failed (42 PostgreSQL and 5 external WebSocket tests skipped).
-- Firmware: 37 host checks passed with mocked hardware/network; ESP32-S3 Arduino build succeeded with core 3.3.11. No hardware test.
+- Focused registration handler, device administration authorization, registration API and device admin page tests passed sequentially.
+- Full suite and hardware tests for this change: not run.
 
 <!-- AUTO-SNAPSHOT:BEGIN -->
 ## Repository signal (automatic; NOT proof of completion)
-- Branch / HEAD: `Feature/Embedded-Device2.0` / `4ffbeaa`
+- Branch / HEAD: `Feature/Embedded-Device2.0` / `274a1c9`
 - Working tree: 0 changed path(s) outside agent configuration.
 - No application-file changes detected by Git.
 <!-- AUTO-SNAPSHOT:END -->

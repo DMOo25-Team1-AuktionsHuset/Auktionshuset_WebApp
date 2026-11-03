@@ -14,9 +14,9 @@ public sealed class DeviceAdministrationService(BackendApiClient client)
         return new DeviceOverview(await customers, await auctions, await available, await sessions);
     }
 
-    public async Task<DeviceRegistration> RegisterAsync(Guid auctionHouseId, int number)
+    public async Task<DeviceRegistration> RegisterAsync(int number)
     {
-        using var response = await client.PostAsJsonAsync("api/staff/devices/", new { auctionHouseId, deviceNumber = number });
+        using var response = await client.PostAsJsonAsync("api/staff/devices/", new { deviceNumber = number });
         await CheckAsync(response);
         var result = await response.Content.ReadFromJsonAsync<DeviceRegistration>();
         if (result is null || result.DeviceId == Guid.Empty || string.IsNullOrWhiteSpace(result.Secret))
