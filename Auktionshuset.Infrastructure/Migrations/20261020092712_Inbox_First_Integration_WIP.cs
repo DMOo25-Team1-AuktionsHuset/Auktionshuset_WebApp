@@ -8,6 +8,9 @@ namespace Auktionshuset.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class Inbox_First_Integration_WIP : Migration
     {
+        private static readonly string[] ConsumerNameMessageKeyColumns = { "ConsumerName", "MessageKey" };
+        private static readonly string[] RecievedAtTimeInboxIdColumns = { "RecievedAtTime", "InboxId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -35,13 +38,13 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "InboxMessages_Identity",
                 table: "InboxMessages",
-                columns: new[] { "ConsumerName", "MessageKey" },
+                columns: ConsumerNameMessageKeyColumns,
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "InboxMessages_Ready",
                 table: "InboxMessages",
-                columns: new[] { "RecievedAtTime", "InboxId" },
+                columns: RecievedAtTimeInboxIdColumns,
                 filter: "\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
         }
 

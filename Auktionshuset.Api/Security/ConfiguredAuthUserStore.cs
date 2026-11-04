@@ -70,7 +70,7 @@ public sealed class ConfiguredAuthUserStore : IAuthUserStore
     }
 
     private static void AddUser(
-        IDictionary<string, AuthUser> configuredUsers,
+        Dictionary<string, AuthUser> configuredUsers,
         IPasswordHasher<AuthUser> passwordHasher,
         string email,
         string password,

@@ -133,7 +133,7 @@ public class CreateAuctionRequestTests
     /// <summary>
     /// Runs annotation and <see cref="IValidatableObject"/> validation on the request.
     /// </summary>
-    private static IReadOnlyList<ValidationResult> Validate(CreateAuctionRequest request)
+    private static List<ValidationResult> Validate(CreateAuctionRequest request)
     {
         List<ValidationResult> results = new List<ValidationResult>();
         Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);

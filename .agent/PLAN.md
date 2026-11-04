@@ -26,3 +26,14 @@
 - [x] Reproduce upcoming-auction update failure with the real EF repositories and a temporary SQLite database.
 - [x] Reuse tracked Employee instances in single-employee lookups; verify keeping, replacing, removing and assigning an auctionarius (55 focused tests passed).
 - [ ] Manual browser acceptance after restarting the API with the fix.
+
+## ECMA-334 assessment milestone (2026-11-04)
+- [x] Confirm branch `Fixes/iso-ecma`, all own C# including tests, and ECMA-only scope; clarify that newer C# must be preserved.
+- [x] Read the attached seventh edition, inventory source, inspect relevant normative clauses and code, run normal build/tests and supplementary syntax/NFC/version checks without source changes.
+- [x] Deliver the evidence-based analysis and instructions for another AI in `docs/ecma334-analyse.md` and `docs/ecma334-ai-instruktioner.md`; no documented normative repair task identified within scope.
+- [x] ECMA follow-up found no additional normative repair; source remained unchanged in that milestone.
+
+## SonarQube screenshot repair milestone (2026-11-04)
+- [x] Verify and fix the screenshot findings: cancellation/disposal, startup/authorization, logging, collection types, regexes and test data; generated Up/Down SQL is byte-identical for all seven edited migrations.
+- [x] Add eight response-cancellation regression cases; focused tests (26 API, 104 frontend/domain), solution rebuild (0 warnings/errors), selected analyzer verification and full tests (389 passed, 23 skipped) passed. Live SonarQube rescan and opt-in acceptance remain unverified.
+- [x] Deliver consolidated Danish change report in `docs/sonarqube-aendringsrapport.md`, checked against the current diff and complete 50-file source inventory; report retains test/scan limitations.

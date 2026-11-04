@@ -21,7 +21,7 @@ public sealed class AuctionService(BackendApiClient httpClient)
         if (response.IsSuccessStatusCode) return;
         string message = response.StatusCode == HttpStatusCode.NotFound
             ? "Auktionen eller genstanden findes ikke længere. Opdatér visningen."
-            : await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Handlingen", action);
+            : await ApiProblemReader.ReadMessageAsync(response, "Handlingen", action, cancellationToken);
         throw new AuctionApiException(message, response.StatusCode);
     }
 
@@ -40,11 +40,7 @@ public sealed class AuctionService(BackendApiClient httpClient)
 
         if (!response.IsSuccessStatusCode)
         {
-            string message = await ApiProblemReader.ReadMessageAsync(
-                response,
-                cancellationToken,
-                "Auktionerne",
-                "hentes");
+            string message = await ApiProblemReader.ReadMessageAsync(response, "Auktionerne", "hentes", cancellationToken);
 
             throw new AuctionApiException(message, response.StatusCode);
         }
@@ -83,11 +79,7 @@ public sealed class AuctionService(BackendApiClient httpClient)
 
         if (!response.IsSuccessStatusCode)
         {
-            string message = await ApiProblemReader.ReadMessageAsync(
-                response,
-                cancellationToken,
-                "Auktionen",
-                "hentes");
+            string message = await ApiProblemReader.ReadMessageAsync(response, "Auktionen", "hentes", cancellationToken);
 
             throw new AuctionApiException(message, response.StatusCode);
         }
@@ -126,7 +118,7 @@ public sealed class AuctionService(BackendApiClient httpClient)
                 cancellationToken);
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "oprettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Auktionen", "oprettes", cancellationToken);
         throw new AuctionApiException(message, response.StatusCode);
     }
 
@@ -160,7 +152,7 @@ public sealed class AuctionService(BackendApiClient httpClient)
                 cancellationToken);
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "gemmes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Auktionen", "gemmes", cancellationToken);
         throw new AuctionApiException(message, response.StatusCode);
     }
 
@@ -185,7 +177,7 @@ public sealed class AuctionService(BackendApiClient httpClient)
             throw new AuctionApiException("Auktionen blev ikke fundet.", response.StatusCode);
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Auktionen", "slettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Auktionen", "slettes", cancellationToken);
         throw new AuctionApiException(message, response.StatusCode);
     }
 

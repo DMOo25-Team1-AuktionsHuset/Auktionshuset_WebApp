@@ -7,6 +7,11 @@ namespace Auktionshuset.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class Updated_Entities_For_Bid : Migration
     {
+        private static readonly string[] AuctionLotIdAmountSequenceNumberColumns = { "AuctionLotId", "Amount", "SequenceNumber" };
+        private static readonly bool[] BidIndexDescending = { false, true, false };
+        private static readonly string[] AuctionLotIdSequenceNumberColumns = { "AuctionLotId", "SequenceNumber" };
+        private static readonly string[] CustomerIdRequestIdColumns = { "CustomerId", "RequestId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -177,13 +182,13 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Bids_AuctionLotId_Amount_SequenceNumber",
                 table: "Bids",
-                columns: new[] { "AuctionLotId", "Amount", "SequenceNumber" },
-                descending: new[] { false, true, false });
+                columns: AuctionLotIdAmountSequenceNumberColumns,
+                descending: BidIndexDescending);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bids_AuctionLotId_SequenceNumber",
                 table: "Bids",
-                columns: new[] { "AuctionLotId", "SequenceNumber" },
+                columns: AuctionLotIdSequenceNumberColumns,
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -194,7 +199,7 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_BidCommandKeys_CustomerId_RequestId",
                 table: "BidCommandKeys",
-                columns: new[] { "CustomerId", "RequestId" },
+                columns: CustomerIdRequestIdColumns,
                 unique: true);
 
             migrationBuilder.AddForeignKey(

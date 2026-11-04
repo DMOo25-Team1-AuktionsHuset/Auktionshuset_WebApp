@@ -426,28 +426,28 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
             throw new ArgumentException("Ugyldig pipeline.", nameof(pipeline));
         }
     }
-}
 
-internal sealed class ReplayRow
-{
-    public Guid MessageId { get; init; }
-    public Guid? EventId { get; init; }
+    internal sealed class ReplayRow
+    {
+        public Guid MessageId { get; init; }
+        public Guid? EventId { get; init; }
 
-    public string EventType { get; init; } = "";
+        public string EventType { get; init; } = "";
 
-    public string? JsonPayload { get; init; }
-    public byte[]? RawPayload { get; init; }
+        public string? JsonPayload { get; init; }
+        public byte[]? RawPayload { get; init; }
 
-    public string? ConsumerName { get; init; }
-    public string? MessageKey { get; init; }
-    public string? TransportMessageId { get; init; }
+        public string? ConsumerName { get; init; }
+        public string? MessageKey { get; init; }
+        public string? TransportMessageId { get; init; }
 
-    public int Attempts { get; init; }
-    public string? Error { get; init; }
+        public int Attempts { get; init; }
+        public string? Error { get; init; }
 
-    public DateTime? ProcessedAtTime { get; init; }
-    public DateTime? QuarantinedAtTime { get; init; }
-    public DateTime? LeaseExpiresAtTime { get; init; }
+        public DateTime? ProcessedAtTime { get; init; }
+        public DateTime? QuarantinedAtTime { get; init; }
+        public DateTime? LeaseExpiresAtTime { get; init; }
 
-    public DateTime DatabaseNow { get; init; }
+        public DateTime DatabaseNow { get; init; }
+    }
 }

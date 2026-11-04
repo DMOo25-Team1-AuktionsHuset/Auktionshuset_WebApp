@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Auktionshuset.Tests.Auctions;
 
-public class ManualAuctionPageTests
+public partial class ManualAuctionPageTests
 {
     [Theory]
     [InlineData("Kommende", -1, null, true, true)]
@@ -27,13 +27,13 @@ public class ManualAuctionPageTests
         using var factory = new Factory(status, startHours, endHours, update);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         string loginPage = await client.GetStringAsync("/login");
-        string csrf = WebUtility.HtmlDecode(Regex.Match(loginPage, "name=\"__RequestVerificationToken\" value=\"([^\"]+)\"").Groups[1].Value);
+        string csrf = WebUtility.HtmlDecode(AntiforgeryTokenRegex().Match(loginPage).Groups[1].Value);
         using var login = await client.PostAsync("/auth/login", new FormUrlEncodedContent(new Dictionary<string, string>
         { ["__RequestVerificationToken"] = csrf, ["email"] = "admin@example.test", ["password"] = "correct" }));
         Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
         using var response = await client.GetAsync($"/admin/auctions/{factory.Id}/run");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        string html = Regex.Replace(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "<!--[\\s\\S]*?-->", "");
+        string html = HtmlCommentRegex().Replace(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "");
         Assert.Contains("Testgenstand", html);
         Assert.Contains("Startpris for hele linjen", html);
         Assert.Contains("35,50", html);
@@ -43,7 +43,7 @@ public class ManualAuctionPageTests
         Assert.Equal(update && status == "Kommende", html.Contains(">Start auktion</button>"));
         if (update && status == "Kommende")
         {
-            var button = Regex.Match(html, "<button[^>]*>Start auktion</button>").Value;
+            var button = StartAuctionButtonRegex().Match(html).Value;
             Assert.Equal(!canStart, button.Contains("disabled"));
         }
         Assert.Equal(update && status == "Live", html.Contains(">Afslut auktion</button>"));
@@ -79,4 +79,11 @@ public class ManualAuctionPageTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body(request)) });
     }
+
+    [GeneratedRegex("name=\"__RequestVerificationToken\" value=\"([^\"]+)\"")]
+    private static partial Regex AntiforgeryTokenRegex();
+    [GeneratedRegex("<!--[\\s\\S]*?-->")]
+    private static partial Regex HtmlCommentRegex();
+    [GeneratedRegex("<button[^>]*>Start auktion</button>")]
+    private static partial Regex StartAuctionButtonRegex();
 }

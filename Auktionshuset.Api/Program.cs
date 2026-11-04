@@ -111,4 +111,4 @@ app.MapHub<EmployeeHub>("/hubs/employee", options => options.CloseOnAuthenticati
 app.MapHub<LotHub>("/hubs/lot", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.CanViewLots);
 
-app.Run();
+await app.RunAsync();

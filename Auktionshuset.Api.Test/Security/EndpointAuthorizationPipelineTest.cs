@@ -92,6 +92,8 @@ public class EndpointAuthorizationPipelineTest
         Assert.Equal(HttpStatusCode.Unauthorized, hub.StatusCode);
     }
 
+    private static readonly string[] LotTags = new[] { "test" };
+
     [Fact]
     public async Task RoleMatrixProtectsAuctionEmployeeOptionAndHubEndpoints()
     {
@@ -109,7 +111,7 @@ public class EndpointAuthorizationPipelineTest
             quantity = 1,
             estimatedValue = 10m,
             description = "Created by the authorization integration test",
-            tags = new[] { "test" },
+            tags = LotTags,
             auctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
         });
         Assert.Equal(HttpStatusCode.Created, lotCreatedResponse.StatusCode);
@@ -122,7 +124,7 @@ public class EndpointAuthorizationPipelineTest
             quantity = 2,
             estimatedValue = 11m,
             description = "Updated by the authorization integration test",
-            tags = new[] { "test" },
+            tags = LotTags,
             auctionHouseId = AuctionHouseDefaults.DefaultAuctionHouseId
         }))
         {

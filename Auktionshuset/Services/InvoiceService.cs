@@ -7,8 +7,8 @@ public sealed class InvoiceService(BackendApiClient client)
     public async Task<List<InvoiceResponse>> GetAsync(bool staff = false, CancellationToken cancellationToken = default)
     {
         using var response = await client.GetAsync(staff ? "api/staff/invoices/" : "api/customer/invoices", cancellationToken);
-        await CheckAsync(response);
-        return await response.Content.ReadFromJsonAsync<List<InvoiceResponse>>() ?? [];
+        await CheckAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<List<InvoiceResponse>>(cancellationToken) ?? [];
     }
 
     public async Task<InvoiceResponse> GetOwnAsync(Guid id, Guid? receiptLine = null)
@@ -32,9 +32,9 @@ public sealed class InvoiceService(BackendApiClient client)
         await CheckAsync(response);
     }
 
-    private static async Task CheckAsync(HttpResponseMessage response)
+    private static async Task CheckAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
     {
         if (!response.IsSuccessStatusCode)
-            throw new CustomerApiException(await ApiProblemReader.ReadMessageAsync(response, default, "Fakturaen", "hentes eller opdateres"), response.StatusCode);
+            throw new CustomerApiException(await ApiProblemReader.ReadMessageAsync(response, "Fakturaen", "hentes eller opdateres", cancellationToken), response.StatusCode);
     }
 }

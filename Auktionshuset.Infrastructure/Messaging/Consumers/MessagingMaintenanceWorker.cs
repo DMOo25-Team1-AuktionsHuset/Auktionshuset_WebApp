@@ -59,7 +59,7 @@ namespace Auktionshuset.Infrastructure.Messaging.Consumers
                     runtime.Touch("maintenance");
                     runtime.Cleaned(deleted);
 
-                    if (deleted > 0)
+                    if (deleted > 0 && logger.IsEnabled(LogLevel.Information))
                     {
                         logger.LogInformation(
                             "Slettede {Count} færdigbehandlede Outbox-beskeder.",
