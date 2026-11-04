@@ -1,5 +1,11 @@
 # Plan
 
+## Identity consolidation milestone (2026-11-03)
+- [x] Route employee login reads/writes through an application handler and Identity-backed store; keep SignalR handlers unchanged.
+- [x] Use ASP.NET Identity with EF Core/AspNetUsers for customers, employees and provisioned configuration accounts; preserve existing public IDs and session invalidation.
+- [x] Add a data-preserving migration and focused account/password/ownership/restart regression coverage.
+- [ ] Execute the upgrade test against isolated PostgreSQL before deploying the migration; Docker is unavailable locally.
+
 ## Device contract milestone
 - [x] Record the agreed assignment, shared lot, SignalR gateway, versioned message, ordering and exact-money contracts in ARCHITECTURE.md; they are target requirements, not deployed features.
 - [x] Implement and test isolated device encoder calculations without changing web bidding rules.

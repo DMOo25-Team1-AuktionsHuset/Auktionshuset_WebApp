@@ -1,19 +1,21 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace Auktionshuset.Domain.Entities
 {
     /// <summary>
-    /// A stored login belongs to exactly one customer or employee. Bootstrap users remain configured.
+    /// Identity account linked to a customer or employee, or a provisioned system account.
     /// </summary>
-    public class LoginUser
+    public class LoginUser : IdentityUser
     {
+        // Preserve the public Guid used by JWTs, refresh tokens and historical billing audits.
         public required Guid UserId { get; set; }
-        public required string Email { get; set; }
-        public required string PasswordHash { get; set; }
         public required string Role { get; set; }
         public required Guid? CustomerId { get; set; }
         public Guid? EmployeeId { get; set; }
         public Employee? Employee { get; set; }
         public bool IsActive { get; set; } = true;
         public int SessionVersion { get; set; }
+        public bool IsSystemAccount { get; set; }
 
         public Customer? Customer { get; set; }
     }

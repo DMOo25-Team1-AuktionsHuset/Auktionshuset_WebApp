@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Auktionshuset.Infrastructure.Database
 {
-    public class AHDBContext : IdentityDbContext
+    public class AHDBContext : IdentityDbContext<LoginUser>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="AHDBContext"/> with the supplied options.
