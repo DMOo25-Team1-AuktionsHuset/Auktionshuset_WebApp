@@ -458,3 +458,4 @@ FodyWeavers.xsd
 /postman/.postman/
 /postman/*.environment.yaml
 /postman/*.postman_environment.json
+/NUL
