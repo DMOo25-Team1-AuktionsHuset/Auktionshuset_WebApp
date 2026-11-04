@@ -82,7 +82,7 @@
         <div class="card-heading list-heading">
             <div>
                 <h2 id="employee-list-heading">Medarbejderoversigt</h2>
-                <p>@(isLoadingEmployees ? "Henter medarbejdere..." : $"{FilteredEmployees.Count} medarbejder{(FilteredEmployees.Count == 1 ? "" : "e")} fundet")</p>
+                <p>@(isLoadingEmployees ? "Henter medarbejdere..." : $"{FilteredEmployees.Length} medarbejder{(FilteredEmployees.Length == 1 ? "" : "e")} fundet")</p>
             </div>
         </div>
         <div class="list-tools">
@@ -117,7 +117,7 @@
         {
             <p class="list-state">Der er endnu ingen medarbejdere. Opret den første med formularen ovenfor.</p>
         }
-        else if (FilteredEmployees.Count == 0)
+        else if (FilteredEmployees.Length == 0)
         {
             <p class="list-state">Ingen medarbejdere matcher søgningen.</p>
         }

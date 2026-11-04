@@ -8,6 +8,8 @@ namespace Auktionshuset.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class InitialCreate : Migration
     {
+        private static readonly string[] AuctionIdLotIdColumns = { "AuctionId", "LotId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -460,7 +462,7 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_AuctionLot_AuctionId_LotId",
                 table: "AuctionLot",
-                columns: new[] { "AuctionId", "LotId" },
+                columns: AuctionIdLotIdColumns,
                 unique: true);
 
             migrationBuilder.CreateIndex(

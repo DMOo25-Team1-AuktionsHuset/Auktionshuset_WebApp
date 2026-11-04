@@ -4,7 +4,6 @@ using System.Text;
 using Auktionshuset.Application.Abstraction.Auction;
 using System.Data;
 using Auktionshuset.Application.Abstraction;
-using Auktionshuset.Application.Abstraction.Auction;
 using Auktionshuset.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;

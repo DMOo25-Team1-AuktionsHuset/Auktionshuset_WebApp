@@ -8,6 +8,8 @@ namespace Auktionshuset.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class AddAuctionInvoices : Migration
     {
+        private static readonly string[] AuctionIdCustomerIdColumns = { "AuctionId", "CustomerId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -149,7 +151,7 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_AuctionInvoices_AuctionId_CustomerId",
                 table: "AuctionInvoices",
-                columns: new[] { "AuctionId", "CustomerId" },
+                columns: AuctionIdCustomerIdColumns,
                 unique: true);
 
             migrationBuilder.CreateIndex(

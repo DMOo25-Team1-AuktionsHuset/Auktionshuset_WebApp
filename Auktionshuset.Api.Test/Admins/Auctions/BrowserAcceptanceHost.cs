@@ -107,6 +107,10 @@ public sealed partial class AuctionStockPostgresTests
         string? stopFile = Environment.GetEnvironmentVariable("AH_BROWSER_STOP_FILE");
         try
         {
+            using var probe = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:55133") };
+            using var response = await probe.GetAsync("/api/customer/my-auctions");
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+
             using var limit = new CancellationTokenSource(TimeSpan.FromMinutes(30));
             while (!limit.IsCancellationRequested && (stopFile is null || !File.Exists(stopFile)))
             {

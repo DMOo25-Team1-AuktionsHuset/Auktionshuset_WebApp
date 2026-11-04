@@ -111,7 +111,7 @@ public static class GetAuctionsEndpoint
         return TypedResults.Ok(response);
     }
 
-    private static IReadOnlyList<string> ToImageUrls(IReadOnlyList<string> fileNames) =>
+    private static string[] ToImageUrls(IReadOnlyList<string> fileNames) =>
         fileNames
             .Select(LotImagePaths.ToUrl)
             .OfType<string>()

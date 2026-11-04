@@ -12,20 +12,20 @@ public sealed class CustomerAuctionService(BackendApiClient client)
     public async Task<List<CustomerAuctionResponse>> GetMyAuctionsAsync(CancellationToken cancellationToken = default)
     {
         using var response = await client.GetAsync("api/customer/my-auctions", cancellationToken);
-        await EnsureSuccessAsync(response);
-        return await response.Content.ReadFromJsonAsync<List<CustomerAuctionResponse>>() ?? [];
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<List<CustomerAuctionResponse>>(cancellationToken) ?? [];
     }
     public async Task<List<CustomerPurchaseResponse>> GetPurchasesAsync(CancellationToken cancellationToken = default)
     {
         using var response = await client.GetAsync("api/customer/purchases", cancellationToken);
-        await EnsureSuccessAsync(response);
-        return await response.Content.ReadFromJsonAsync<List<CustomerPurchaseResponse>>() ?? [];
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<List<CustomerPurchaseResponse>>(cancellationToken) ?? [];
     }
     public async Task<List<CustomerAuctionResponse>> GetAuctionsAsync(CancellationToken cancellationToken = default)
     {
         using var response = await client.GetAsync("api/customer/auctions", cancellationToken);
-        await EnsureSuccessAsync(response);
-        return await response.Content.ReadFromJsonAsync<List<CustomerAuctionResponse>>() ?? [];
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<List<CustomerAuctionResponse>>(cancellationToken) ?? [];
     }
     public async Task RegisterAsync(Guid id)
     {
@@ -55,10 +55,10 @@ public sealed class CustomerAuctionService(BackendApiClient client)
         }
         await EnsureSuccessAsync(response);
     }
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response)
+    private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
     {
         if (response.IsSuccessStatusCode) return;
-        string message = await ApiProblemReader.ReadMessageAsync(response, default, "Auktionen", "hentes eller opdateres");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Auktionen", "hentes eller opdateres", cancellationToken);
         throw new CustomerApiException(message, response.StatusCode);
     }
     private sealed record BidError(string? ErrorCode, decimal CurrentPrice);

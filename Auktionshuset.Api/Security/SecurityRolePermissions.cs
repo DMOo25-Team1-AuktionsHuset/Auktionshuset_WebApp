@@ -2,7 +2,7 @@ namespace Auktionshuset.Api.Security;
 
 public static class SecurityRolePermissions
 {
-    private static readonly IReadOnlyDictionary<string, IReadOnlyCollection<string>> PermissionsByRole =
+    private static readonly Dictionary<string, IReadOnlyCollection<string>> PermissionsByRole =
         new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)
         {
             [SecurityRoles.LotAdmin] =

@@ -125,7 +125,7 @@ namespace Auktionshuset.Services
                         {
                             _logger.LogWarning(
                                 ex,
-                                $"SignalR could not connect to {_hubUrl}");
+                                "SignalR could not connect to {HubUrl}", _hubUrl);
 
                             await NotifyAsync(ConnectionChanged);
                         }
@@ -144,7 +144,7 @@ namespace Auktionshuset.Services
 
         private async Task<string?> GetAccessTokenAsync()
         {
-            string? accessToken = await _tokenAccessor.GetAccessTokenAsync();
+            string? accessToken = await _tokenAccessor.GetAccessTokenAsync(_lifetime.Token);
 
             _isSessionValid = !string.IsNullOrWhiteSpace(accessToken);
 
@@ -180,7 +180,7 @@ namespace Auktionshuset.Services
 
         public async ValueTask DisposeAsync()
         {
-            await _startGate.WaitAsync();
+            await _startGate.WaitAsync(CancellationToken.None);
 
             try
             {
@@ -207,6 +207,7 @@ namespace Auktionshuset.Services
             finally
             {
                 _startGate.Release();
+                GC.SuppressFinalize(this);
             }
         }
     }

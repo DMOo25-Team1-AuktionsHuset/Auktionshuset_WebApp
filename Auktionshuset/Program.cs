@@ -70,33 +70,31 @@ builder.Services
 builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
     .Configure<ITicketStore>((options, ticketStore) => options.SessionStore = ticketStore)
     .Configure<TimeProvider>((options, clock) => options.TimeProvider = clock);
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(FrontendPolicies.BillingStaff, policy => policy.RequireAuthenticatedUser()
-        .RequireRole(RoleNames.Employee, RoleNames.LotAdmin, RoleNames.AuctionAdmin, RoleNames.Admin));
-    options.AddPolicy(FrontendPolicies.Customer, policy =>
-        policy.RequireAuthenticatedUser().RequireRole(RoleNames.Customer));
-    options.AddPolicy(FrontendPolicies.Admin, policy =>
-        policy.RequireAuthenticatedUser().RequireRole(RoleNames.Admin));
-    options.AddPolicy(FrontendPolicies.CanViewLots, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission));
-    options.AddPolicy(FrontendPolicies.CanCreateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission));
-    options.AddPolicy(FrontendPolicies.CanUpdateLot, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission));
-    options.AddPolicy(FrontendPolicies.CanDeleteLot, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission));
-    options.AddPolicy(FrontendPolicies.CanViewAuctions, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewAuctionsPermission));
-    options.AddPolicy(FrontendPolicies.CanCreateAuction, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateAuctionPermission));
-    options.AddPolicy(FrontendPolicies.CanUpdateAuction, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateAuctionPermission));
-    options.AddPolicy(FrontendPolicies.CanDeleteAuction, policy =>
-        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteAuctionPermission));
-    options.AddPolicy(FrontendPolicies.CanViewEmployees, policy =>
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(FrontendPolicies.BillingStaff, policy => policy.RequireAuthenticatedUser()
+        .RequireRole(RoleNames.Employee, RoleNames.LotAdmin, RoleNames.AuctionAdmin, RoleNames.Admin))
+    .AddPolicy(FrontendPolicies.Customer, policy =>
+        policy.RequireAuthenticatedUser().RequireRole(RoleNames.Customer))
+    .AddPolicy(FrontendPolicies.Admin, policy =>
+        policy.RequireAuthenticatedUser().RequireRole(RoleNames.Admin))
+    .AddPolicy(FrontendPolicies.CanViewLots, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewLotsPermission))
+    .AddPolicy(FrontendPolicies.CanCreateLot, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateLotPermission))
+    .AddPolicy(FrontendPolicies.CanUpdateLot, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateLotPermission))
+    .AddPolicy(FrontendPolicies.CanDeleteLot, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteLotPermission))
+    .AddPolicy(FrontendPolicies.CanViewAuctions, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewAuctionsPermission))
+    .AddPolicy(FrontendPolicies.CanCreateAuction, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.CreateAuctionPermission))
+    .AddPolicy(FrontendPolicies.CanUpdateAuction, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.UpdateAuctionPermission))
+    .AddPolicy(FrontendPolicies.CanDeleteAuction, policy =>
+        policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.DeleteAuctionPermission))
+    .AddPolicy(FrontendPolicies.CanViewEmployees, policy =>
         policy.RequireAuthenticatedUser().RequireClaim(FrontendPolicies.PermissionClaimType, FrontendPolicies.ViewEmployeesPermission));
-});
 
 string apiBaseUrl = builder.Configuration["Api:BaseUrl"]
     ?? throw new InvalidOperationException("Configuration value 'Api:BaseUrl' is required.");
@@ -161,6 +159,4 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.Run();
-
-public partial class Program { }
+await app.RunAsync();

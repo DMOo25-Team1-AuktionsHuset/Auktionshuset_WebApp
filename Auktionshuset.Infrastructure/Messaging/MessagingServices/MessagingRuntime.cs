@@ -183,7 +183,7 @@ namespace Auktionshuset.Infrastructure.Messaging.MessagingServices
         public IDisposable Measure(string pipeline)
             => new DurationMeasurement(_duration, pipeline);
 
-        private IEnumerable<Measurement<long>> Observe(
+        private Measurement<long>[] Observe(
             Func<QueueStatus, long> selector)
         {
             MessagingStatus? status = Read().Status;
