@@ -1,0 +1,32 @@
+services:
+  frontend:
+    image: auktionshuset-frontend:local
+
+    build: 
+        context: .
+        dockerfile: Auktionshuset/Dockerfile
+    
+    network_mode: host
+
+    environment:
+        ASPNETCORE_ENVIRONMENT: Development
+        ASPNETCORE_URLS: "http://127.0.0.1:8080"
+        ASPNETCORE_HTTP_PORTS: ""
+
+        Api__BaseUrl: "http://localhost:5133"
+
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - "http://127.0.0.1:8080/login"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+    restart: unless-stopped
+    stop_grace_period: 45s
