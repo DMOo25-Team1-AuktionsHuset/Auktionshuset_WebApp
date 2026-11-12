@@ -50,6 +50,10 @@ public sealed class AuthenticateDeviceHandlerTests
             .Setup(s => s.VerifySecret(Secret, StoredHash))
             .Returns(true);
 
+        _repository
+            .Setup(r => r.GetActiveSessionAsync(_deviceId, null, CancellationToken.None))
+            .ReturnsAsync((ActiveDeviceSession?)null);
+
         var command = new AuthenticateDeviceCommand
         {
             DeviceId = _deviceId,

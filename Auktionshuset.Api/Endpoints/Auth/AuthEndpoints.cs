@@ -63,7 +63,6 @@ namespace Auktionshuset.Api.Endpoints.Auth
             UnauthorizedHttpResult>> HandleLoginAsync(
             LoginRequest request, 
             IAuthUserStore userStore,
-            IPasswordHasher<AuthUser> passwordHasher,
             RefreshTokenService refreshTokens,
             HttpContext context,
             CancellationToken cancellationToken)
@@ -77,18 +76,9 @@ namespace Auktionshuset.Api.Endpoints.Auth
                 return TypedResults.Unauthorized();
             }
 
-            PasswordVerificationResult verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
-
-            if (verificationResult == PasswordVerificationResult.Failed)
+            if (!await userStore.CheckPasswordAsync(user, request.Password, cancellationToken))
             {
                 return TypedResults.Unauthorized();
-            }
-
-            if (verificationResult == PasswordVerificationResult.SuccessRehashNeeded)
-            {
-                user.PasswordHash = passwordHasher.HashPassword(
-                    user, 
-                    request.Password);
             }
 
             LoginResponse response = await refreshTokens.CreateSessionAsync(user, cancellationToken);

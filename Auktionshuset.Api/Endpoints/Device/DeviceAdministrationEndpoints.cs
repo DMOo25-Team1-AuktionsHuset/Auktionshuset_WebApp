@@ -109,7 +109,7 @@ public static class DeviceAdministrationEndpoints
             return Results.Ok(new { deviceId, requestId, state = "rejected" });
         });
 
-        group.MapPost("/", async (RegisterDeviceCommand request, RegisterDeviceHandler handler, AHDBContext db, HttpContext context, CancellationToken ct) =>
+        group.MapPost("/", async (RegisterDeviceCommand request, RegisterDeviceHandler handler, HttpContext context, CancellationToken ct) =>
         {
             if (!await db.AuctionHouse.AnyAsync(a => a.AuctionHouseId == AuctionHouseDefaults.DefaultAuctionHouseId, ct))
                 return Results.NotFound(new { detail = "Auktionshuset findes ikke." });

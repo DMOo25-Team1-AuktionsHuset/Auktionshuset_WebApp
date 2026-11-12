@@ -100,82 +100,11 @@
     private string StationUrl => Configuration["UsbStation:LocalUrl"] ?? "http://127.0.0.1:8765";
     private string step = "none";
     private Guid? deviceId, auctionId, customerId;
+    private string houseIdText = "";
     private int deviceNumber = 1;
     private bool busy, failed;
     private string? message;
-    private string recoveryDeviceText = "", recoveryRequestText = "";
-    private DeviceBidRecovery? recovery;
-    private string RecoveryText => recovery?.State switch
-    {
-        "accepted" => $"Bud {recovery.RequestId} er registreret som accepteret. Beløb: {recovery.RequestedAmount:0} kr. Bud-id: {recovery.BidId}.",
-        "rejected" when recovery.ErrorCode == "StaffReconciledNoBid" =>
-            $"Request {recovery.RequestId} er afsluttet uden registreret bud efter medarbejderafklaring.",
-        "rejected" => $"Bud {recovery.RequestId} blev afvist. Årsag: {recovery.ErrorCode}.",
-        _ => $"Intet endeligt svar findes for {recovery?.RequestId}. Session: {recovery?.DeviceSessionId}, lot: {recovery?.AuctionLotId}, beløb: {recovery?.RequestedAmount:0} kr. Devicet må ikke sende et nyt bud før afklaring."
-    };
-
-    private async Task InspectBidAsync()
-    {
-        recovery = null;
-        if (!Guid.TryParse(recoveryDeviceText, out var selectedDevice) ||
-            !Guid.TryParse(recoveryRequestText, out var selectedRequest))
-        { failed = true; message = "Indtast gyldige device- og request-id'er."; return; }
-        busy = true;
-        try { recovery = await Devices.GetBidRecoveryAsync(selectedDevice, selectedRequest); failed = false; message = null; }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
-        { failed = true; message = "Buddet kunne ikke undersøges. Prøv igen senere."; }
-        finally { busy = false; }
-    }
-
-    private async Task ClearBidAsync()
-    {
-        if (busy || recovery is not { State: "unresolved", CanClear: true }) return;
-        busy = true;
-        try
-        {
-            await Devices.ClearBidWithoutResultAsync(recovery.DeviceId, recovery.RequestId);
-            recovery = await Devices.GetBidRecoveryAsync(recovery.DeviceId, recovery.RequestId);
-            failed = false; message = "Buddet er afsluttet uden registrering. Devicet henter kvitteringen ved næste forbindelse.";
-        }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
-        { failed = true; message = "Buddet kunne ikke afsluttes. Opdatér opslaget og kontrollér resultatet."; }
-        finally { busy = false; }
-    }
-    private bool CanRegister => !busy && pending is null && !transferUnknown && step != "klar" &&
-        station is { State: "unconfigured", StationId: not null, ConnectionId: not null, HardwareId: not null } &&
-        deviceNumber > 0 && (operationConnection is null || operationConnection == station.ConnectionId) &&
-        (operationConnection is null || operationNumber == deviceNumber);
-    private bool CanRotate => !busy && station is { State: "configured", DeviceId: not null, DeviceNumber: not null } &&
-        (pending is null || pending.Stage == "registration" && pending.DeviceId == station.DeviceId &&
-            pending.DeviceNumber == station.DeviceNumber);
-    private string StationText => station?.State switch
-    {
-        "unavailable" => "Opsætningsprogrammet er ikke tilgængeligt.",
-        "disconnected" => "Intet device tilsluttet.",
-        "connecting" => "Kontrollerer tilsluttet device.",
-        "unconfigured" => "Device tilsluttet og klar til registrering.",
-        "configured" => "Et allerede registreret device er tilsluttet.",
-        _ => "Kontrollerer opsætningsprogrammet."
-    };
-    private static string VerificationText(string? result) => result switch
-    {
-        "ready" => "Wi-Fi, certifikat, backend og credential er verificeret.",
-        "wifi" => "Wi-Fi-forbindelsen kunne ikke oprettes.",
-        "clock" => "Devicets ur kunne ikke synkroniseres til TLS-kontrol.",
-        "tls" => "TLS er ikke aktiveret, eller certifikatet eller værtsnavnet blev afvist.",
-        "backend" => "Backend kunne ikke kontaktes eller svarede ugyldigt.",
-        "credential" => "Device-id eller credential blev afvist, eller devicet er deaktiveret.",
-        "rate_limit" => "For mange kontrolforsøg. Prøv igen senere.",
-        _ => "Afventer netværkskontrol."
-    };
-    private string StepText => step switch
-    {
-        "overfører" => "Overfører konfiguration via USB.",
-        "kontrollerer" => "Kontrollerer devicets kvittering.",
-        "klar" => $"Klar. Device-id: {completedId}",
-        "fejl" => "Fejl. Kontrollér beskeden og devicets status.",
-        _ => station?.State == "unconfigured" ? "Klar til registrering." : "Afventer device."
-    };
+    private bool ValidHouseId => Guid.TryParse(houseIdText, out var id) && id != Guid.Empty;
     private DeviceAuction? SelectedAuction => overview?.Auctions.FirstOrDefault(a => a.AuctionId == auctionId);
     private bool CanIssue => !busy && customerId is Guid c && c != Guid.Empty && SelectedAuction is { } auction
         && overview!.Available.Any(d => d.DeviceId == deviceId && d.AuctionHouseId == auction.AuctionHouseId);
@@ -260,102 +189,8 @@
         StateHasChanged();
     }
     private Task LoadAsync() => RunAsync(null, null);
-    private async Task RegisterAsync()
-    {
-        if (!CanRegister || stationModule is null) return;
-        busy = true; failed = false; message = null;
-        try
-        {
-            var current = await stationModule.InvokeAsync<StationSnapshot>("status", StationUrl);
-            if (current.State != "unconfigured" || current.ConnectionId != station!.ConnectionId ||
-                current.StationId != station.StationId)
-                throw new InvalidOperationException("USB-forbindelsen er ændret. Kontrollér devicet igen.");
-            operationConnection ??= current.ConnectionId;
-            operationNumber = deviceNumber;
-            step = "overfører"; StateHasChanged();
-            var registration = await Devices.RegisterForStationAsync(
-                current.StationId!.Value, current.ConnectionId!.Value, deviceNumber, current.HardwareId!, current.PresenceGrant!);
-            expectedId = registration.DeviceId;
-            try
-            {
-                await stationModule.InvokeAsync<StationProvisionResult>("provision", StationUrl, registration, current.ConnectionId);
-            }
-            catch (JSException)
-            {
-                transferUnknown = true;
-                throw new InvalidOperationException("USB-overførslen har ukendt resultat. Kontrollér det tilsluttede device; registrér ikke et andet device endnu.");
-            }
-            step = "kontrollerer";
-        }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or JSException or InvalidOperationException or System.Text.Json.JsonException)
-        {
-            step = "fejl"; failed = true;
-            message = ex is InvalidOperationException or ApiException ? ex.Message
-                : "Registreringen kunne ikke bekræftes. Behold samme device tilsluttet, og prøv igen med samme devicenummer.";
-        }
-        finally { busy = false; pendingHardware = null; }
-    }
-
-    private async Task ResumeAsync()
-    {
-        if (busy || pending is null || stationModule is null || station is not { StationId: not null, ConnectionId: not null, HardwareId: not null }) return;
-        var current = await stationModule.InvokeAsync<StationSnapshot>("status", StationUrl);
-        if (current.HardwareId != station.HardwareId || current.ConnectionId != station.ConnectionId) return;
-        busy = true; failed = false; message = null;
-        try
-        {
-            if (pending.Stage == "registration" && current.State == "configured" && current.DeviceId == pending.DeviceId)
-            { expectedId = pending.DeviceId; operationConnection = current.ConnectionId; operationNumber = pending.DeviceNumber; transferUnknown = false; step = "kontrollerer"; }
-            else
-            {
-                var repair = pending.Stage == "repair";
-                if (repair && (current.State != "configured" || current.DeviceId != pending.DeviceId) ||
-                    !repair && current.State != "unconfigured") throw new InvalidOperationException("Tilsluttet device stemmer ikke med den afventende handling.");
-                var registration = await Devices.ResumeStationAsync(current.StationId!.Value,
-                    current.ConnectionId!.Value, pending.DeviceNumber, current.HardwareId!, current.PresenceGrant!);
-                expectedId = registration.DeviceId; operationConnection = current.ConnectionId; operationNumber = pending.DeviceNumber;
-                step = "overfører"; StateHasChanged();
-                await stationModule.InvokeAsync<StationProvisionResult>(repair ? "repair" : "provision", StationUrl, registration, current.ConnectionId);
-                transferUnknown = false; step = "kontrollerer";
-            }
-        }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or JSException or InvalidOperationException)
-        { step = "fejl"; failed = true; transferUnknown = true; message = ex is ApiException or InvalidOperationException ? ex.Message : "Resultatet af reparationen er ukendt. Kontrollér samme device før genoptagelse."; }
-        finally { busy = false; pendingHardware = null; }
-    }
-
-    private async Task RotateAsync()
-    {
-        if (!CanRotate || stationModule is null || station is not
-            { State: "configured", StationId: not null, ConnectionId: not null, HardwareId: not null, DeviceId: not null, DeviceNumber: not null }) return;
-        var current = await stationModule.InvokeAsync<StationSnapshot>("status", StationUrl);
-        if (current.ConnectionId != station.ConnectionId || current.DeviceId != station.DeviceId || current.HardwareId != station.HardwareId) return;
-        busy = true; failed = false; message = null;
-        try
-        {
-            var registration = await Devices.RotateStationCredentialAsync(current.DeviceId!.Value,
-                current.StationId!.Value, current.ConnectionId!.Value, current.DeviceNumber!.Value, current.HardwareId!, current.PresenceGrant!);
-            pending = new PendingStationDevice(registration.DeviceId, registration.DeviceNumber, "repair");
-            expectedId = registration.DeviceId; operationConnection = current.ConnectionId; operationNumber = registration.DeviceNumber;
-            step = "overfører"; StateHasChanged();
-            await stationModule.InvokeAsync<StationProvisionResult>("repair", StationUrl, registration, current.ConnectionId);
-            transferUnknown = false; step = "kontrollerer";
-        }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or JSException or InvalidOperationException)
-        { step = "fejl"; failed = true; transferUnknown = true; message = ex is ApiException or InvalidOperationException ? ex.Message : "Rotationens resultat er ukendt. Genoptag reparationen på samme device."; }
-        finally { busy = false; pendingHardware = null; }
-    }
-
-    private sealed record StationSnapshot(string State, Guid? StationId, Guid? ConnectionId, Guid? DeviceId, int? DeviceNumber, string? Verification, string? VerificationGrant, string? HardwareId, int? CredentialVersion, string? PresenceGrant = null);
-    private sealed record StationProvisionResult(Guid DeviceId, int DeviceNumber);
-
-    public async ValueTask DisposeAsync()
-    {
-        stationStop.Cancel();
-        if (stationLoop is not null) try { await stationLoop; } catch (JSDisconnectedException) { }
-        if (stationModule is not null) try { await stationModule.DisposeAsync(); } catch (JSDisconnectedException) { }
-        stationStop.Dispose();
-    }
+    private Task RegisterAsync() => !ValidHouseId || deviceNumber < 1 || registration is not null ? Task.CompletedTask
+        : RunAsync(async () => registration = await Devices.RegisterAsync(Guid.Parse(houseIdText), deviceNumber), "Devicet er registreret.");
     private Task IssueAsync() => !CanIssue || deviceId is not Guid d || auctionId is not Guid a || customerId is not Guid c
         ? Task.CompletedTask : RunAsync(() => Devices.IssueAsync(d, a, c), "Devicet er udleveret.");
     private Task ReleaseAsync(DeviceSessionItem session) =>
