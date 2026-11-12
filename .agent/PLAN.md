@@ -37,3 +37,8 @@
 - [x] Verify and fix the screenshot findings: cancellation/disposal, startup/authorization, logging, collection types, regexes and test data; generated Up/Down SQL is byte-identical for all seven edited migrations.
 - [x] Add eight response-cancellation regression cases; focused tests (26 API, 104 frontend/domain), solution rebuild (0 warnings/errors), selected analyzer verification and full tests (389 passed, 23 skipped) passed. Live SonarQube rescan and opt-in acceptance remain unverified.
 - [x] Deliver consolidated Danish change report in `docs/sonarqube-aendringsrapport.md`, checked against the current diff and complete 50-file source inventory; report retains test/scan limitations.
+
+## Complete ER documentation milestone (2026-11-09)
+- [x] Inspect all domain/infrastructure entities and Fluent API; export the current Npgsql design model without opening a database connection and confirm it matches the migration snapshot.
+- [x] Document all 28 mapped tables, 224 columns and 33 foreign keys, including Identity, legacy Invoice, and the separately marked unmapped Outbox class; include physical cardinalities, indexes, nullability, precision and constraints.
+- [x] Generate complete Mermaid plus readable sectional Mermaid, SVG and PNG graphics; validate model-to-Mermaid coverage and visually inspect the rendered diagrams. Focused model tests were attempted but aborted on testhost connection timeout; do not count them as passing.
