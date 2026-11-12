@@ -44,6 +44,10 @@ namespace Auktionshuset.Infrastructure.Repositories
                 throw new InvalidOperationException("Device issuance requires a DbContext without pending changes.");
 
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            if (db.Database.IsNpgsql())
+                await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(704291031)", cancellationToken);
+            else if (db.Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+                await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"DeviceCredentials\" SET \"IsEnabled\" = \"IsEnabled\" WHERE \"DeviceId\" = {deviceId}", cancellationToken);
             await SqlAuctionWriteLock.AcquireAsync(db, auctionId, cancellationToken);
 
             var auction = await db.Auction.AsNoTracking().SingleOrDefaultAsync(a => a.AuctionId == auctionId, cancellationToken);

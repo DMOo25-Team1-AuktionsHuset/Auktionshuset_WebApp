@@ -25,6 +25,7 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
         public DbSet<Bid> Bids => Set<Bid>();
         public DbSet<BidCommandKey> BidCommandKeys => Set<BidCommandKey>();
+        public DbSet<DeviceBidRecovery> DeviceBidRecoveries => Set<DeviceBidRecovery>();
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<AuctionRegistration> AuctionRegistrations => Set<AuctionRegistration>();
         public DbSet<LoginUser> LoginUsers => Set<LoginUser>();

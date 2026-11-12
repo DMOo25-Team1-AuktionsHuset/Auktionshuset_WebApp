@@ -39,6 +39,13 @@ public sealed class AuthenticateDeviceHandlerTests
                 CancellationToken.None))
             .ReturnsAsync(CreateCredential());
 
+        _repository
+            .Setup(r => r.GetActiveSessionAsync(
+                _deviceId,
+                null,
+                CancellationToken.None))
+            .ReturnsAsync((ActiveDeviceSession?)null);
+
         _secrets
             .Setup(s => s.VerifySecret(Secret, StoredHash))
             .Returns(true);
@@ -58,6 +65,7 @@ public sealed class AuthenticateDeviceHandlerTests
         Assert.Equal(_deviceId, result.DeviceId);
         Assert.Equal(42, result.DeviceNumber);
         Assert.Equal(3, result.CredentialVersion);
+        Assert.Null(result.Session);
     }
 
     [Fact]

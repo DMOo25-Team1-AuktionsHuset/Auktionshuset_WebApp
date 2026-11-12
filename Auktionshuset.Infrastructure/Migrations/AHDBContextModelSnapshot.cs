@@ -793,6 +793,53 @@ namespace Auktionshuset.Infrastructure.Migrations
                     b.ToTable("BidCommandKeys");
                 });
 
+            modelBuilder.Entity("Auktionshuset.Infrastructure.Data.DeviceBidRecovery", b =>
+                {
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("AuctionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuctionLotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("AuctionRevision")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ClearedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ClearedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ReportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("SessionRevision")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("DeviceId", "RequestId");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("DeviceBidRecoveries");
+                });
+
             modelBuilder.Entity("Auktionshuset.Infrastructure.Data.InboxMessage", b =>
                 {
                     b.Property<Guid>("InboxId")

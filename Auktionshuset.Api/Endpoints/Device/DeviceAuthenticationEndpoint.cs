@@ -21,7 +21,28 @@ public static class DeviceAuthenticationEndpoint
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
 
+        endpoints.MapPost("/api/device/verify-setup", VerifySetupAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(AuthRateLimitingExtensions.DeviceSetup)
+            .WithTags("Device")
+            .WithName("VerifyDeviceSetup")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status429TooManyRequests);
+
         return endpoints;
+    }
+
+    private static async Task<IResult> VerifySetupAsync(
+        AuthenticateDeviceCommand command, AuthenticateDeviceHandler handler,
+        HttpContext context, CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.Headers.Pragma = "no-cache";
+        if (!context.Request.IsHttps) return Results.BadRequest(new { error = "HTTPS is required." });
+        var device = await handler.VerifySetupAsync(command, cancellationToken);
+        return device is null ? Results.Unauthorized()
+            : Results.Ok(new { verified = true, device.DeviceId, device.DeviceNumber });
     }
 
     private static async Task<IResult> HandleAsync(

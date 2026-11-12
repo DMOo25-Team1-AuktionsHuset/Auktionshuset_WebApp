@@ -43,6 +43,7 @@ namespace Auktionshuset.Api.Services
             services.AddScoped<IIntegrationEventHandler<DeviceIssuedIntegrationEvent>, DeviceEventAuditHandler>();
             services.AddScoped<IIntegrationEventHandler<DeviceReleasedIntegrationEvent>, DeviceEventAuditHandler>();
             services.AddScoped<RegisterDeviceHandler>();
+            services.AddScoped<UsbStationRegistration>();
             services.AddScoped<AuthenticateDeviceHandler>();
             services.AddSingleton<DeviceJwtTokenService>();
             services.AddScoped<IssueDeviceHandler>();

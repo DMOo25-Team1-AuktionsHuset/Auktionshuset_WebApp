@@ -2,18 +2,27 @@ using System.Globalization;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading.Channels;
+using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services.DeviceGateway;
 using Auktionshuset.Application.Admin.Devices;
 using Auktionshuset.Application.Admin.Devices.AuthenticateDevice;
 using Auktionshuset.Application.Devices.AuthenticateDevice;
+using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Auktionshuset.Api.Endpoints.Device;
 
 public static class DeviceWebSocketEndpoint
 {
-    public static IEndpointRouteBuilder MapDeviceWebSocket(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapDeviceWebSocket(
+    this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/ws/device", HandleAsync).AllowAnonymous();
+        endpoints.MapGet("/ws/device", HandleAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(AuthRateLimitingExtensions.DeviceConnect);
+
         return endpoints;
     }
 
@@ -74,6 +83,63 @@ public static class DeviceWebSocketEndpoint
                         ValidateEnvelope(root, type, "protocolVersion", "type", "deviceId", "sessionId");
                         if (Id(root, "deviceId") != deviceId || Id(root, "sessionId") != session.SessionId) throw new ProtocolException();
                         if (type == "ping") connection.Enqueue(new { protocolVersion = 1, type = "pong", deviceId, sessionId = session.SessionId });
+                        continue;
+                    }
+                    if (type == "resolveBid")
+                    {
+                        var db = context.RequestServices.GetRequiredService<AHDBContext>();
+                        ValidateEnvelope(root, type, "protocolVersion", "type", "requestId", "deviceId",
+                            "sessionId", "sessionRevision", "auctionId", "auctionLotId", "auctionRevision", "amountOre");
+                        var oldRequest = Id(root, "requestId");
+                        var oldSession = Id(root, "sessionId");
+                        var oldAuction = Id(root, "auctionId");
+                        var oldLot = Id(root, "auctionLotId");
+                        var oldRevision = Digits(root, "auctionRevision", long.MaxValue);
+                        var oldSessionRevision = Digits(root, "sessionRevision", long.MaxValue);
+                        var oldAmount = Digits(root, "amountOre", long.MaxValue);
+                        if (Id(root, "deviceId") != deviceId) throw new ProtocolException();
+                        var oldSessionRecord = await db.DeviceSessions.AsNoTracking().SingleOrDefaultAsync(
+                            s => s.DeviceSessionId == oldSession && s.DeviceId == deviceId &&
+                                s.AuctionId == oldAuction, lifetime.Token);
+                        if (oldSessionRecord is null) throw new ProtocolException();
+                        var reported = await db.DeviceBidRecoveries.SingleOrDefaultAsync(r =>
+                            r.DeviceId == deviceId && r.RequestId == oldRequest, lifetime.Token);
+                        if (reported is null)
+                        {
+                            db.DeviceBidRecoveries.Add(new DeviceBidRecovery
+                            {
+                                DeviceId = deviceId, RequestId = oldRequest, SessionId = oldSession,
+                                CustomerId = oldSessionRecord.CustomerId, AuctionId = oldAuction,
+                                AuctionLotId = oldLot, SessionRevision = (long)oldSessionRevision,
+                                AuctionRevision = (long)oldRevision, Amount = oldAmount / 100m,
+                                ReportedAt = DateTime.UtcNow
+                            });
+                            try { await db.SaveChangesAsync(lifetime.Token); }
+                            catch (DbUpdateException)
+                            {
+                                db.ChangeTracker.Clear();
+                                reported = await db.DeviceBidRecoveries.AsNoTracking().SingleOrDefaultAsync(r =>
+                                    r.DeviceId == deviceId && r.RequestId == oldRequest, lifetime.Token);
+                                if (reported is null) throw;
+                            }
+                        }
+                        if (reported is not null && (reported.SessionId != oldSession || reported.CustomerId != oldSessionRecord.CustomerId ||
+                            reported.AuctionId != oldAuction || reported.AuctionLotId != oldLot ||
+                            reported.SessionRevision != (long)oldSessionRevision || reported.AuctionRevision != (long)oldRevision ||
+                            reported.Amount != oldAmount / 100m)) throw new ProtocolException();
+                        var previous = await (from key in db.BidCommandKeys.AsNoTracking()
+                            join deviceSession in db.DeviceSessions.AsNoTracking()
+                                on key.DeviceSessionId equals deviceSession.DeviceSessionId
+                            where key.RequestId == oldRequest && key.CustomerId == oldSessionRecord.CustomerId &&
+                                key.DeviceSessionId == oldSession &&
+                                key.AuctionLotId == oldLot && key.AuctionRevision == (long)oldRevision &&
+                                key.RequestedAmount == oldAmount / 100m && deviceSession.DeviceId == deviceId &&
+                                deviceSession.AuctionId == oldAuction
+                            select new { key.Accepted, key.BidId, key.ErrorCode }).SingleOrDefaultAsync(lifetime.Token);
+                        connection.Enqueue(new { protocolVersion = 1, type = "bidResolution", requestId = oldRequest,
+                            deviceId, sessionId = oldSession, auctionId = oldAuction, auctionLotId = oldLot,
+                            found = previous is not null, accepted = previous?.Accepted ?? false,
+                            bidId = previous?.BidId, errorCode = previous?.ErrorCode });
                         continue;
                     }
                     ValidateEnvelope(root, "placeBid", "protocolVersion", "type", "requestId", "deviceId", "sessionId",
@@ -194,7 +260,6 @@ public static class DeviceWebSocketEndpoint
         private bool hasSnapshot;
         private bool released;
         private bool announced;
-
         public void Initialize(Guid device, Guid session, long revision) { deviceId = device; sessionId = session; sessionRevision = revision; }
         public void Bind(DeviceSnapshotConnection connection) => snapshots = connection;
         private bool SnapshotIsCurrent => hasSnapshot && (snapshotStamp & 1) != 0 && snapshotStamp == gateway.ConnectionStamp;

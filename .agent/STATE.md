@@ -1,25 +1,29 @@
 # State
 
 ## Goal
-- Perform isolated acceptance of backend and firmware device-auction flow.
+- Gennemfør en afgrænset STRIDE-sikkerhedsanalyse af device 9001 fra registrering til bud, afklaring og genudlevering på grundlag af den aktuelle kode og fysiske accept.
 
 ## Done (verified)
-- Backend regression suite and firmware host checks passed; firmware compiled for ESP32-S3 using example configuration.
-- Existing tests cover portions of authorization, SignalR, WebSocket, bidding and billing separately; no complete two-device/web journey was established.
+- Device 9001 beholdt ID/NVS, én backendpost og credentialversion 2; credentialkontrol og genplugning bestod. Firmwarestack-crash blev rettet, upload hashverificeret, og et 110 kr.-bud bevarede kvittering efter fuld strømcyklus uden dublet.
+- Første lot blev lukket, andet testlot/200 kr. valgt og ny kunde udleveret uden arvet bud. Tabt svar efter accepteret 220 kr.-bud og fuld strømcyklus blev afklaret som samme request uden dublet. På separat USB-strøm uden stationskabel viste skærmen fortsat `Synchronized`/lot 2/220 kr.
+- Første kodebaserede STRIDE-model med fem prioriterede scenarier, kontroller, negative testforslag og rest-risici er dokumenteret i `docs/security-stride-device-2026-11-12.md`.
 
 ## Active
-- Full two-device and web journey through real SignalR, WebSocket, PostgreSQL, RabbitMQ, closure and invoicing remains unverified.
+- Sikkerhedsanalysens første dokumentmilepæl er færdig; ingen angrebstests eller accepttjenester er startet i denne session.
 
 ## Blockers
-- Docker engine was unreachable; isolated PostgreSQL and RabbitMQ were unavailable. PostgreSQL and external WebSocket tests were skipped.
-- No ESP32 was identified; physical hardware and firmware-to-backend integration were not tested.
+- Forkert Wi-Fi er ikke fysisk prøvet; testens SSID er ikke et dedikeret isoleret access point. En løs GPIO7-ledning gav et uplanlagt 200 kr.-testbud, så fast montage kræver kontrol.
+- Normal API-migration og produktionens TLS/backend er ikke prøvet på en kørende applikationsdatabase.
+- Stations- og firmwarekilden findes ikke i denne checkout; lokal Origin/Host/DPAPI-adfærd og flash-/NVS-beskyttelse er derfor ikke kodeverificeret her.
 
 ## Next
-- Start isolated PostgreSQL and RabbitMQ and run the complete acceptance journey, including failures, restart and billing; run physical ESP32 acceptance when available.
+- Kør isolerede negative budtests for ændret request-payload, gammel session og samtidighed samt direkte rolletests for registrering, rotation og manuel afklaring.
+- Gennemgå stations-/firmwarekilden og prøv USB-udskiftning, TLS-afvisning, fysisk secretudlæsning og forkert Wi-Fi på dedikeret testudstyr efter fastmontage af GPIO7.
+- Verificér EF-migration og TLS mod det planlagte backendmiljø før produktion.
 
 ## Verification
-- Backend `dotnet test`: 492 passed, 47 skipped, 0 failed (42 PostgreSQL and 5 external WebSocket tests skipped).
-- Firmware: 37 host checks passed with mocked hardware/network; ESP32-S3 Arduino build succeeded with core 3.3.11. No hardware test.
+- Tidligere fysisk accept: 110 kr.-bud, lot-/kundeskift og `Unknown`→`Accepted` efter tabt 220 kr.-kvittering/strømbrud uden dublet; separat strøm viste fortsat synkronisering. Tidligere firmwarehosttests og 16 fokuserede WebSocket/gatewaytests bestod.
+- Denne session: relevante endpoint-, grant-, policy- og testkilder gennemgået; `git diff --check` bestod. Nye sikkerhedstests: ikke kørt.
 
 <!-- AUTO-SNAPSHOT:BEGIN -->
 ## Repository signal (automatic; NOT proof of completion)

@@ -11,6 +11,8 @@ public static class AuthRateLimitingExtensions
     public const string Register = "auth-register-ip";
     public const string Refresh = "auth-refresh-ip";
     public const string Logout = "auth-logout-ip";
+    public const string DeviceConnect = "auth-device-connect-ip";
+    public const string DeviceSetup = "auth-device-setup-ip";
 
     public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
@@ -40,7 +42,7 @@ public static class AuthRateLimitingExtensions
                     error = "Too many authentication requests. Try again later."
                 }, cancellationToken);
             };
-            foreach ((string name, int limit) in new[] { (Login, 5), (Register, 5), (Refresh, 30), (Logout, 30) })
+            foreach ((string name, int limit) in new[] { (Login, 5), (Register, 5), (Refresh, 30), (Logout, 30), (DeviceConnect, 10), (DeviceSetup, 30) })
                 options.AddPolicy(name, context => RateLimitPartition.GetSlidingWindowLimiter(
                     GetClientIp(context), _ => new SlidingWindowRateLimiterOptions
                     {

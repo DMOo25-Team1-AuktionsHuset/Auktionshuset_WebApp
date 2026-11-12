@@ -33,7 +33,11 @@ public class DeviceAdminPageTests
         Assert.Contains("Device 13", html);
         Assert.Contains(factory.SessionId.ToString(), html);
         Assert.Contains("Frigiv device", html);
-        Assert.Contains("Auktionshus-id", html);
+        Assert.Contains("id=\"device-number\"", html);
+        Assert.Contains("USB-station", html);
+        Assert.Contains("Opsætning", html);
+        Assert.DoesNotContain("Hemmelighed:", html);
+        Assert.DoesNotContain("Auktionshus-id", html);
         Assert.Contains("/api/staff/devices/customers", factory.Paths);
         Assert.Contains("/api/staff/devices/auctions", factory.Paths);
         Assert.Contains("/api/staff/devices/available", factory.Paths);
@@ -83,7 +87,7 @@ public class DeviceAdminPageTests
                     return path switch
                     {
                         "/api/staff/devices/customers" => new[] { new { customerId = customer, firstName = "Anna", lastName = "Kunde", email = "anna@example.test" } },
-                        "/api/staff/devices/auctions" => new[] { new { auctionId = auction, auctionHouseId = house, auctionNumber = 1, name = "Testauktion", startsAt = DateTime.UtcNow, auctionStatus = "Live" } },
+                        "/api/staff/devices/auctions" => new[] { new { auctionId = auction, auctionHouseId = house, auctionNumber = (long?)null, name = "Testauktion", startsAt = DateTime.UtcNow, auctionStatus = "Live" } },
                         "/api/staff/devices/available" => new[] { new { deviceId = Guid.NewGuid(), auctionHouseId = house, deviceNumber = 12 } },
                         "/api/staff/devices/sessions" => new[] { new { sessionId = SessionId, deviceId = Guid.NewGuid(), deviceNumber = 13, auctionId = auction, customerId = customer, startedAt = DateTime.UtcNow, endedAt = (DateTime?)null } },
                         _ => Array.Empty<object>()

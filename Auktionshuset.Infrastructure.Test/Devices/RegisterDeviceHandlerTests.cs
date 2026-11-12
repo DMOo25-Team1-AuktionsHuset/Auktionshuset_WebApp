@@ -1,5 +1,6 @@
 ﻿using Auktionshuset.Application.Abstraction.Auth;
 using Auktionshuset.Application.Admin.Devices.RegisterDevice;
+using Auktionshuset.Domain;
 using Auktionshuset.Domain.Entities;
 using Moq;
 using Xunit;
@@ -13,11 +14,9 @@ public sealed class RegisterDeviceHandlerTests
     private const string TestHash = "test-device-hash";
 
     [Theory]
-    [InlineData(false, 1)]
-    [InlineData(true, 0)]
-    [InlineData(true, -1)]
+    [InlineData(0)]
+    [InlineData(-1)]
     public async Task InvalidInput_DoesNotGenerateOrSaveCredentials(
-        bool hasAuctionHouse,
         int deviceNumber)
     {
         var repository =
@@ -31,7 +30,6 @@ public sealed class RegisterDeviceHandlerTests
             secrets.Object);
 
         var command = new RegisterDeviceCommand(
-            hasAuctionHouse ? Guid.NewGuid() : Guid.Empty,
             deviceNumber);
 
         RegisterDeviceResult result = await handler.HandleAsync(
@@ -74,10 +72,7 @@ public sealed class RegisterDeviceHandlerTests
             repository.Object,
             secrets.Object);
 
-        Guid auctionHouseId = Guid.NewGuid();
-
         var command = new RegisterDeviceCommand(
-            auctionHouseId,
             42);
 
         RegisterDeviceResult result = await handler.HandleAsync(
@@ -93,7 +88,8 @@ public sealed class RegisterDeviceHandlerTests
 
         Assert.NotEqual(Guid.Empty, savedDevice.DeviceId);
         Assert.Equal(result.DeviceId, savedDevice.DeviceId);
-        Assert.Equal(auctionHouseId, savedDevice.AuctionHouseId);
+        Assert.Equal(AuctionHouseDefaults.DefaultAuctionHouseId, savedDevice.AuctionHouseId);
+        Assert.Equal(AuctionHouseDefaults.DefaultAuctionHouseId, result.AuctionHouseId);
         Assert.Equal(42, savedDevice.DeviceNumber);
 
         Assert.Equal(savedDevice.DeviceId, savedCredential.DeviceId);
@@ -135,7 +131,6 @@ public sealed class RegisterDeviceHandlerTests
             secrets.Object);
 
         var command = new RegisterDeviceCommand(
-            Guid.NewGuid(),
             42);
 
         Task<RegisterDeviceResult> registration =

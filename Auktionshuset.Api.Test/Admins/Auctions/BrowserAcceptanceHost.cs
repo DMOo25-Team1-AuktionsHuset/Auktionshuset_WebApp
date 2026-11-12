@@ -1,25 +1,32 @@
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
+using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Auction.CloseAuction;
+using Auktionshuset.Api.Endpoints.Admin.Messaging;
 using Auktionshuset.Api.Endpoints.Auth;
 using Auktionshuset.Api.Endpoints.Customer;
 using Auktionshuset.Api.Endpoints.Billing;
+using Auktionshuset.Api.Endpoints.Device;
 using Auktionshuset.Api.Hubs;
 using Auktionshuset.Api.Security;
 using Auktionshuset.Api.Services;
 using Auktionshuset.Contracts.Dto.Auth;
 using Auktionshuset.Domain.Entities;
+using Auktionshuset.Domain;
 using Auktionshuset.Infrastructure.Database;
 using Auktionshuset.Infrastructure.Service;
 using Auktionshuset.Infrastructure.Service.Vault;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using VaultSharp;
+using System.Net;
 
 namespace Auktionshuset.Api.Test.Admins.Auctions;
 
@@ -41,8 +48,20 @@ public sealed partial class AuctionStockPostgresTests
     {
         var source = new NpgsqlConnectionStringBuilder(connectionString);
         var builder = WebApplication.CreateBuilder();
+        string? usbBindIp = Environment.GetEnvironmentVariable("AH_USB_ACCEPTANCE_BIND_IP");
+        bool usbAcceptance = !string.IsNullOrWhiteSpace(usbBindIp);
+        if (usbAcceptance)
+        {
+            string certificate = Environment.GetEnvironmentVariable("AH_USB_ACCEPTANCE_CERT_PFX")
+                ?? throw new InvalidOperationException("USB acceptance TLS certificate is missing.");
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.Listen(IPAddress.Loopback, 55133);
+                options.Listen(IPAddress.Parse(usbBindIp!), 55134, listen => listen.UseHttps(certificate));
+            });
+        }
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
-        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        var acceptanceConfiguration = new Dictionary<string, string?>
         {
             ["Logging:LogLevel:Default"] = "Warning",
             ["Database:Host"] = source.Host, ["Database:Port"] = source.Port.ToString(), ["Database:Name"] = source.Database,
@@ -51,10 +70,24 @@ public sealed partial class AuctionStockPostgresTests
             ["Authentication:BootstrapAdmin:Password"] = "test-password-123",
             ["Authentication:SigningKey"] = "isolated-browser-acceptance-key-at-least-32-bytes",
             ["Authentication:Issuer"] = "acceptance", ["Authentication:Audience"] = "acceptance"
-        });
+        };
+        if (usbAcceptance)
+        {
+            acceptanceConfiguration["DeviceAuthentication:SigningKey"] = "isolated-usb-acceptance-device-signing-key-at-least-32-bytes";
+            acceptanceConfiguration["DeviceGateway:Authentication:SigningKey"] = "isolated-usb-acceptance-gateway-signing-key-at-least-32-bytes";
+            acceptanceConfiguration["DeviceGateway:Authentication:Issuer"] = "acceptance-device-gateway";
+            acceptanceConfiguration["DeviceGateway:Authentication:Audience"] = "acceptance-device-gateway";
+            acceptanceConfiguration["DeviceGateway:HubUrl"] = "http://127.0.0.1:55133/hubs/device-gateway";
+            acceptanceConfiguration["DeviceGateway:AllowInsecureLoopback"] = "true";
+            acceptanceConfiguration["UsbStation:StationId"] = Environment.GetEnvironmentVariable("AH_USB_ACCEPTANCE_STATION_ID");
+            acceptanceConfiguration["UsbStation:ApprovedOrigin"] = Environment.GetEnvironmentVariable("AH_USB_ACCEPTANCE_ORIGIN");
+            acceptanceConfiguration["UsbStation:GrantKeyHex"] = Environment.GetEnvironmentVariable("AH_USB_ACCEPTANCE_GRANT_KEY_HEX");
+        }
+        builder.Configuration.AddInMemoryCollection(acceptanceConfiguration);
         builder.Services.AddProblemDetails();
         builder.Services.AddSignalR();
         builder.Services.AddSecurityServices(builder.Configuration);
+        if (usbAcceptance) builder.Services.AddDeviceSecurity(builder.Configuration);
         builder.Services.AddApiServices();
         builder.Services.AddInfrastructure(builder.Configuration, new DatabaseCredentials(source.Username!, source.Password!),
             new RabbitMqCredentials("codex", "codex-isolated-test"), new VaultClient(new VaultClientSettings("http://127.0.0.1:1", new VaultSharp.V1.AuthMethods.Token.TokenAuthMethodInfo("unused-acceptance-only"))));
@@ -67,6 +100,7 @@ public sealed partial class AuctionStockPostgresTests
             { context.Response.StatusCode = 503; return; }
             await next(context);
         });
+        if (usbAcceptance) app.UseWebSockets();
         app.UseRouting(); app.UseRateLimiter(); app.UseAuthentication(); app.UseAuthorization();
         app.MapAuthEndpoints(); app.MapCustomerEndpoints(); app.MapInvoiceEndpoints();
         app.MapAuctionEndpoints(); app.MapEmployeeEndpoints(); app.MapLotEndpoints(); app.MapCloseAuctionLotEndpoint();
@@ -74,18 +108,38 @@ public sealed partial class AuctionStockPostgresTests
         app.MapHub<AuctionHub>("/hubs/auction", o => o.CloseOnAuthenticationExpiration = true).RequireAuthorization(SecurityPolicies.CanViewAuctions);
         app.MapHub<EmployeeHub>("/hubs/employee", o => o.CloseOnAuthenticationExpiration = true).RequireAuthorization(SecurityPolicies.CanViewEmployees);
         app.MapHub<LotHub>("/hubs/lot", o => o.CloseOnAuthenticationExpiration = true).RequireAuthorization(SecurityPolicies.CanViewLots);
+        if (usbAcceptance)
+        {
+            app.MapGet("/health/live", () => Results.Ok(new { status = "ready" })).AllowAnonymous();
+            app.MapBidEndpoints();
+            app.MapMessagingEndpoints();
+            app.MapDeviceAdministrationEndpoints();
+            app.MapDeviceEndpoints();
+            app.MapDeviceWebSocket();
+            app.MapHub<DeviceGatewayHub>(DeviceGatewayAuthentication.HubPath, o => o.CloseOnAuthenticationExpiration = true)
+                .RequireAuthorization(SecurityPolicies.DeviceGateway);
+        }
         Guid[] customerLogins;
         await using (var scope = app.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AHDBContext>();
+            bool resumed = Environment.GetEnvironmentVariable("AH_USB_ACCEPTANCE_RESUME_DB") is not null;
+            if (usbAcceptance && !resumed) await DBSeeder.SeedAsync(db);
+            if (resumed)
+            {
+                customerLogins = await db.LoginUsers.Where(u => u.Role == "Customer").Select(u => u.UserId).ToArrayAsync();
+            }
+            else
+            {
             var registration = scope.ServiceProvider.GetRequiredService<CustomerRegistrationService>();
+            var acceptanceHouseId = usbAcceptance ? AuctionHouseDefaults.DefaultAuctionHouseId : houseId;
             foreach (var name in new[] { "first", "second" })
                 await registration.RegisterAsync(new RegisterCustomerRequest { FirstName = name, LastName = "Accepttest",
                     Email = name + "@example.test", PhoneNumber = "12345678", BirthDate = new(1990, 1, 1), Address = "Testvej 1",
                     Password = "test-password-123", ConfirmPassword = "test-password-123" }, default);
             foreach (var role in new[] { "Admin", "AuctionAdmin", "LotAdmin", "Employee" })
             {
-                var employee = new Employee { EmployeeId = Guid.NewGuid(), AuctionHouseId = houseId, FirstName = role, LastName = "Accepttest", Address = "Testvej", BirthDate = new(1990, 1, 1) };
+                var employee = new Employee { EmployeeId = Guid.NewGuid(), AuctionHouseId = acceptanceHouseId, FirstName = role, LastName = "Accepttest", Address = "Testvej", BirthDate = new(1990, 1, 1) };
                 db.Employee.Add(employee);
                 db.LoginUsers.Add(new LoginUser { UserId = Guid.NewGuid(), CustomerId = null, EmployeeId = employee.EmployeeId,
                     Email = role.ToLowerInvariant() + "-staff@example.test", PasswordHash = PersistentAuthUserStore.HashPassword(
@@ -93,21 +147,22 @@ public sealed partial class AuctionStockPostgresTests
             }
             foreach (bool live in new[] { true, false })
             {
-                var auction = new Auction { AuctionId = Guid.NewGuid(), AuctionHouseId = houseId, Name = live ? "Live accepttest" : "Kommende accepttest",
+                var auction = new Auction { AuctionId = Guid.NewGuid(), AuctionHouseId = acceptanceHouseId, Name = live ? "Live accepttest" : "Kommende accepttest",
                     AuctionStatus = live ? "Live" : "Kommende", StartsAt = DateTime.UtcNow.AddMinutes(live ? -60 : -1), StartedAtTime = live ? DateTime.UtcNow.AddHours(-1) : null };
                 db.AuctionLot.Add(new AuctionLot { AuctionLotId = Guid.NewGuid(), Auction = auction, AuctionId = auction.AuctionId,
                     LotId = lotId, Quantity = 1, StartingPrice = 100, OpenForBids = live });
             }
-            db.Employee.Add(new Employee { EmployeeId = Guid.NewGuid(), AuctionHouseId = houseId, FirstName = "Ny", LastName = "Medarbejder", Address = "Testvej", BirthDate = new(1990, 1, 1) });
+            db.Employee.Add(new Employee { EmployeeId = Guid.NewGuid(), AuctionHouseId = acceptanceHouseId, FirstName = "Ny", LastName = "Medarbejder", Address = "Testvej", BirthDate = new(1990, 1, 1) });
             await db.SaveChangesAsync();
             customerLogins = await db.LoginUsers.Where(u => u.Role == "Customer").Select(u => u.UserId).ToArrayAsync();
+            }
         }
-        app.Urls.Add("http://127.0.0.1:55133");
+        if (!usbAcceptance) app.Urls.Add("http://127.0.0.1:55133");
         await app.StartAsync();
         string? stopFile = Environment.GetEnvironmentVariable("AH_BROWSER_STOP_FILE");
         try
         {
-            using var limit = new CancellationTokenSource(TimeSpan.FromMinutes(30));
+            using var limit = new CancellationTokenSource(TimeSpan.FromMinutes(usbAcceptance ? 480 : 30));
             while (!limit.IsCancellationRequested && (stopFile is null || !File.Exists(stopFile)))
             {
                 if (disconnectFile is not null && File.Exists(disconnectFile))

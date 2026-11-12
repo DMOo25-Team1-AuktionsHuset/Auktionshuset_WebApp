@@ -23,6 +23,51 @@ public sealed class DeviceAuthenticationEndpointTests
     private static readonly string Secret = new string('A', 64);
 
     [Fact]
+    public async Task SetupVerification_WorksWithoutCustomerSession_AndReturnsNoTokenOrCustomerData()
+    {
+        using IHost host = await StartServerAsync();
+        using HttpClient client = CreateClient(host);
+        using var response = await client.PostAsJsonAsync("/api/device/verify-setup",
+            new { deviceId = DeviceId, secret = Secret });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(json.RootElement.GetProperty("verified").GetBoolean());
+        Assert.Equal(DeviceId, json.RootElement.GetProperty("deviceId").GetGuid());
+        Assert.Equal(1, json.RootElement.GetProperty("deviceNumber").GetInt32());
+        Assert.False(json.RootElement.TryGetProperty("accessToken", out _));
+        Assert.False(json.RootElement.TryGetProperty("customerId", out _));
+        Assert.False(json.RootElement.TryGetProperty("secret", out _));
+    }
+
+    [Fact]
+    public async Task PendingDevice_CanVerifySetupButCannotObtainNormalAccessToken()
+    {
+        using IHost host = await StartServerAsync(false, "Provisioning");
+        using HttpClient client = CreateClient(host);
+        using var verified = await client.PostAsJsonAsync("/api/device/verify-setup",
+            new { deviceId = DeviceId, secret = Secret });
+        Assert.Equal(HttpStatusCode.OK, verified.StatusCode);
+        using var normal = await client.PostAsJsonAsync("/api/device/authenticate",
+            new { deviceId = DeviceId, secret = Secret });
+        Assert.Equal(HttpStatusCode.Unauthorized, normal.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task SetupVerification_RejectsWrongOrDisabledCredential(bool enabled, bool correctSecret)
+    {
+        using IHost host = await StartServerAsync(enabled);
+        using HttpClient client = CreateClient(host);
+        using var response = await client.PostAsJsonAsync("/api/device/verify-setup",
+            new { deviceId = DeviceId, secret = correctSecret ? Secret : new string('B', 64) });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        Assert.DoesNotContain(Secret, await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task CorrectCredentials_ReturnToken()
     {
         using IHost host = await StartServerAsync();
@@ -113,7 +158,7 @@ public sealed class DeviceAuthenticationEndpointTests
         return client;
     }
 
-    private static async Task<IHost> StartServerAsync()
+    private static async Task<IHost> StartServerAsync(bool enabled = true, string status = "Available")
     {
         IConfiguration configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(
@@ -140,7 +185,7 @@ public sealed class DeviceAuthenticationEndpointTests
             DeviceId = DeviceId,
             AuctionHouseId = Guid.NewGuid(),
             DeviceNumber = 1,
-            Status = "Available"
+            Status = status
         };
 
         var credential = new DeviceCredential
@@ -148,7 +193,7 @@ public sealed class DeviceAuthenticationEndpointTests
             DeviceId = DeviceId,
             Device = device,
             SecretHash = secretService.HashSecret(Secret),
-            IsEnabled = true,
+            IsEnabled = enabled,
             CredentialVersion = 1
         };
 
@@ -192,7 +237,7 @@ public sealed class DeviceAuthenticationEndpointTests
     }
 
     private sealed class TestDeviceRepository(
-        DeviceCredential credential) : IDeviceRepository
+    DeviceCredential credential) : IDeviceRepository
     {
         public Task AddAsync(
             Device device,
@@ -212,6 +257,14 @@ public sealed class DeviceAuthenticationEndpointTests
                     : null;
 
             return Task.FromResult(result);
+        }
+
+        public Task<ActiveDeviceSession?> GetActiveSessionAsync(
+            Guid deviceId,
+            Guid? sessionId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult<ActiveDeviceSession?>(null);
         }
     }
 }

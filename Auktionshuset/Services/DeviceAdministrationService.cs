@@ -14,9 +14,9 @@ public sealed class DeviceAdministrationService(BackendApiClient client)
         return new DeviceOverview(await customers, await auctions, await available, await sessions);
     }
 
-    public async Task<DeviceRegistration> RegisterAsync(Guid auctionHouseId, int number)
+    public async Task<DeviceRegistration> RegisterAsync(int number)
     {
-        using var response = await client.PostAsJsonAsync("api/staff/devices/", new { auctionHouseId, deviceNumber = number });
+        using var response = await client.PostAsJsonAsync("api/staff/devices/", new { deviceNumber = number });
         await CheckAsync(response);
         var result = await response.Content.ReadFromJsonAsync<DeviceRegistration>();
         if (result is null || result.DeviceId == Guid.Empty || string.IsNullOrWhiteSpace(result.Secret))
@@ -24,10 +24,58 @@ public sealed class DeviceAdministrationService(BackendApiClient client)
         return result;
     }
 
+    public async Task<StationRegistration> RegisterForStationAsync(Guid stationId, Guid connectionId, int number, string hardwareId, string presenceGrant)
+    {
+        using var response = await client.PostAsJsonAsync("api/staff/devices/station-registration",
+            new { stationId, connectionId, deviceNumber = number, hardwareId, presenceGrant });
+        return await ReadStationRegistrationAsync(response, number);
+    }
+
+    public async Task<PendingStationDevice?> GetPendingStationDeviceAsync(string hardwareId)
+    {
+        using var response = await client.GetAsync($"api/staff/devices/station-pending/{hardwareId}");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        await CheckAsync(response);
+        return await response.Content.ReadFromJsonAsync<PendingStationDevice>();
+    }
+
+    public async Task<StationRegistration> ResumeStationAsync(Guid stationId, Guid connectionId, int number, string hardwareId, string presenceGrant)
+    {
+        using var response = await client.PostAsJsonAsync("api/staff/devices/station-resume",
+            new { stationId, connectionId, deviceNumber = number, hardwareId, presenceGrant });
+        return await ReadStationRegistrationAsync(response, number);
+    }
+
+    public async Task<StationRegistration> RotateStationCredentialAsync(Guid deviceId, Guid stationId, Guid connectionId, int number, string hardwareId, string presenceGrant)
+    {
+        using var response = await client.PostAsJsonAsync($"api/staff/devices/{deviceId}/rotate-station-credential",
+            new { stationId, connectionId, deviceNumber = number, hardwareId, presenceGrant });
+        return await ReadStationRegistrationAsync(response, number);
+    }
+
+    private static async Task<StationRegistration> ReadStationRegistrationAsync(HttpResponseMessage response, int number)
+    {
+        await CheckAsync(response);
+        var result = await response.Content.ReadFromJsonAsync<StationRegistration>();
+        if (result is null || result.DeviceId == Guid.Empty || result.DeviceNumber != number ||
+            string.IsNullOrWhiteSpace(result.Secret) || string.IsNullOrWhiteSpace(result.Grant))
+            throw new HttpRequestException("Registreringssvaret kunne ikke læses. Prøv igen med samme tilsluttede device.");
+        return result;
+    }
+
+    public Task CompleteStationRegistrationAsync(Guid deviceId, Guid stationId, Guid connectionId, int number, string hardwareId, int credentialVersion, string verificationGrant) =>
+        PostAsync($"api/staff/devices/{deviceId}/complete-station-registration",
+            new { stationId, connectionId, deviceNumber = number, hardwareId, credentialVersion, verificationGrant });
+
     public Task IssueAsync(Guid deviceId, Guid auctionId, Guid customerId) =>
         PostAsync($"api/staff/devices/{deviceId}/issue", new { auctionId, customerId });
     public Task ReleaseAsync(Guid deviceId, Guid auctionId, Guid sessionId) =>
         PostAsync($"api/staff/devices/{deviceId}/release", new { auctionId, sessionId });
+
+    public async Task<DeviceBidRecovery> GetBidRecoveryAsync(Guid deviceId, Guid requestId) =>
+        await GetAsync<DeviceBidRecovery>($"api/staff/devices/{deviceId}/bid-requests/{requestId}");
+    public Task ClearBidWithoutResultAsync(Guid deviceId, Guid requestId) =>
+        PostAsync($"api/staff/devices/{deviceId}/bid-requests/{requestId}/clear-no-bid", new { });
 
     private async Task<T> GetAsync<T>(string path)
     {
@@ -62,6 +110,9 @@ public sealed class DeviceAdministrationService(BackendApiClient client)
                     "AuctionNotFound" => "Auktionen findes ikke længere.",
                     "CustomerNotFound" => "Kunden findes ikke længere.",
                     "InvalidRequest" => "Oplysningerne blev afvist.",
+                    "DeviceNumberAlreadyRegistered" => "Devicenummeret er allerede registreret. Kontrollér det eksisterende device før et nyt forsøg.",
+                    "PendingRegistrationNotFound" => "Ingen afbrudt registrering findes for dette device.",
+                    "RepairNotAllowed" => "Reparation er ikke tilladt for dette device.",
                     _ => null
                 };
             if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array)
@@ -76,7 +127,12 @@ public sealed class DeviceAdministrationService(BackendApiClient client)
 
 public sealed record DeviceOverview(List<DeviceCustomer> Customers, List<DeviceAuction> Auctions, List<AvailableDevice> Available, List<DeviceSessionItem> Sessions);
 public sealed record DeviceCustomer(Guid CustomerId, string FirstName, string LastName, string Email);
-public sealed record DeviceAuction(Guid AuctionId, Guid AuctionHouseId, int AuctionNumber, string Name, DateTime StartsAt, string AuctionStatus);
+public sealed record DeviceAuction(Guid AuctionId, Guid AuctionHouseId, long? AuctionNumber, string Name, DateTime StartsAt, string AuctionStatus);
 public sealed record AvailableDevice(Guid DeviceId, Guid AuctionHouseId, int DeviceNumber);
 public sealed record DeviceSessionItem(Guid SessionId, Guid DeviceId, int DeviceNumber, Guid AuctionId, Guid CustomerId, DateTime StartedAt, DateTime? EndedAt);
 public sealed record DeviceRegistration(Guid DeviceId, Guid AuctionHouseId, int DeviceNumber, string Secret);
+public sealed record StationRegistration(Guid DeviceId, int DeviceNumber, string Secret, string Grant);
+public sealed record PendingStationDevice(Guid DeviceId, int DeviceNumber, string Stage);
+public sealed record DeviceBidRecovery(string State, Guid RequestId, Guid DeviceId, Guid? DeviceSessionId,
+    Guid? AuctionLotId, decimal? RequestedAmount, Guid? BidId, string? ErrorCode, DateTime? ProcessedAt,
+    DateTime? ReportedAt, bool CanClear);

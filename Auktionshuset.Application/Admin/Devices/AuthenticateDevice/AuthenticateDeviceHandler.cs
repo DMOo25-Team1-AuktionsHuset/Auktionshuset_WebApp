@@ -12,6 +12,15 @@ public sealed class AuthenticateDeviceHandler(
 
     public async Task<AuthenticateDeviceResult?> HandleAsync(
         AuthenticateDeviceCommand command,
+        CancellationToken cancellationToken) =>
+        await VerifyAsync(command, false, cancellationToken);
+
+    public Task<AuthenticateDeviceResult?> VerifySetupAsync(
+        AuthenticateDeviceCommand command, CancellationToken cancellationToken) =>
+        VerifyAsync(command, true, cancellationToken);
+
+    private async Task<AuthenticateDeviceResult?> VerifyAsync(
+        AuthenticateDeviceCommand command, bool allowPendingSetup,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -31,7 +40,7 @@ public sealed class AuthenticateDeviceHandler(
                 command.DeviceId,
                 cancellationToken);
 
-        if (credential is null || !credential.IsEnabled)
+        if (credential is null || !Eligible(credential, allowPendingSetup))
         {
             return null;
         }
@@ -45,12 +54,12 @@ public sealed class AuthenticateDeviceHandler(
             return null;
         }
 
-        ActiveDeviceSession? session = await deviceRepository.GetActiveSessionAsync(
+        ActiveDeviceSession? session = allowPendingSetup ? null : await deviceRepository.GetActiveSessionAsync(
             credential.DeviceId, null, cancellationToken);
 
         // The credential can be disabled or replaced while the secret is being verified.
         DeviceCredential? currentCredential = await deviceRepository.GetCredentialAsync(command.DeviceId, cancellationToken);
-        if (currentCredential is null || !currentCredential.IsEnabled ||
+        if (currentCredential is null || !Eligible(currentCredential, allowPendingSetup) ||
             currentCredential.CredentialVersion != credential.CredentialVersion ||
             currentCredential.SecretHash != credential.SecretHash ||
             currentCredential.SessionRevision != credential.SessionRevision ||
@@ -67,4 +76,10 @@ public sealed class AuthenticateDeviceHandler(
             Session = session
         };
     }
+
+    private static bool Eligible(DeviceCredential credential, bool allowPendingSetup) =>
+        credential.IsEnabled || (allowPendingSetup &&
+            (credential.Device.Status.StartsWith("Provisioning:") ||
+             credential.Device.Status.StartsWith("RepairPending:") ||
+             credential.Device.Status == "Provisioning"));
 }

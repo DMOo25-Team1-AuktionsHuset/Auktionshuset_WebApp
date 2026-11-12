@@ -11,6 +11,10 @@ using Auktionshuset.Application.Admin.Devices;
 using Auktionshuset.Application.Auction;
 using Auktionshuset.Application.Devices.AuthenticateDevice;
 using Auktionshuset.Domain.Entities;
+using Auktionshuset.Infrastructure.Database;
+using Auktionshuset.Infrastructure.Data;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -148,6 +152,62 @@ public sealed class DeviceWebSocketInProcessTests
     }
 
     [Fact]
+    public async Task OldSessionRecoveryLookupCannotBecomeNewCustomerBid()
+    {
+        using var server = await Fixture.StartAsync(connected: true);
+        var oldSession = Guid.NewGuid();
+        using (var scope = server.Host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AHDBContext>();
+            await db.Database.EnsureCreatedAsync();
+            var house = Guid.NewGuid();
+            db.AuctionHouse.Add(new AuctionHouse { AuctionHouseId = house, AuctionHouseName = "Test",
+                Address = "Testvej 1", CVRNumber = 12345678, PhoneNumber = "12345678", Email = "test@example.test" });
+            db.Set<Device>().Add(new Device { DeviceId = server.Device, DeviceNumber = 1,
+                AuctionHouseId = house, Status = "Available" });
+            db.Customers.Add(new Customer { CustomerId = server.Customer, FirstName = "Test", LastName = "Kunde",
+                Email = "kunde@example.test", PhoneNumber = "12345678", BirthDate = new DateOnly(1990, 1, 1),
+                Address = "Testvej 1" });
+            db.Auction.Add(new Auction { AuctionId = server.Auction, AuctionHouseId = house,
+                Name = "Testauktion", StartsAt = DateTime.UtcNow, AuctionStatus = "Live" });
+            db.DeviceSessions.Add(new DeviceSession { DeviceSessionId = oldSession, DeviceId = server.Device,
+                CustomerId = server.Customer, AuctionId = server.Auction,
+                StartedAt = DateTime.UtcNow.AddHours(-2), EndedAt = DateTime.UtcNow.AddHours(-1) });
+            await db.SaveChangesAsync();
+        }
+        using var socket = await server.ConnectAsync();
+        await AuthenticateAsync(server, socket);
+        var lookup = server.Bid();
+        lookup["type"] = "resolveBid";
+        lookup["sessionId"] = oldSession.ToString();
+        await SendAsync(socket, lookup);
+        var result = await ReceiveTypeAsync(socket, "bidResolution");
+        Assert.False(result["found"]!.GetValue<bool>());
+        Assert.Equal(lookup["requestId"]!.ToString(), result["requestId"]!.ToString());
+        Assert.Empty(server.Bids.Commands);
+        using (var scope = server.Host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AHDBContext>();
+            db.BidCommandKeys.Add(new BidCommandKey
+            {
+                BidCommandKeyId = Guid.NewGuid(), CustomerId = server.Customer,
+                DeviceSessionId = oldSession, RequestId = Guid.Parse(lookup["requestId"]!.ToString()),
+                AuctionLotId = server.Lot, RequestedAmount = 3.45m, AuctionRevision = 12,
+                Accepted = false, BidId = null, SequenceNumber = null, CurrentPrice = 0,
+                ErrorCode = "StaffReconciledNoBid", ResultAuctionRevision = null,
+                ProcessedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        await SendAsync(socket, lookup);
+        var cleared = await ReceiveTypeAsync(socket, "bidResolution");
+        Assert.True(cleared["found"]!.GetValue<bool>());
+        Assert.False(cleared["accepted"]!.GetValue<bool>());
+        Assert.Equal("StaffReconciledNoBid", cleared["errorCode"]!.ToString());
+        Assert.Empty(server.Bids.Commands);
+    }
+
+    [Fact]
     public async Task GatewayLossBlocksBidsAndResynchronizationRestoresThem()
     {
         using var server = await Fixture.StartAsync(connected: true);
@@ -252,15 +312,18 @@ public sealed class DeviceWebSocketInProcessTests
         public DeviceGatewayProcessor Gateway { get; } = new();
         public BidStore Bids { get; } = new();
         public IHost Host { get; private set; } = null!;
+        private readonly SqliteConnection recoveryDatabase = new("DataSource=:memory:");
 
         public static async Task<Fixture> StartAsync(bool connected = false)
         {
             var f = new Fixture();
+            await f.recoveryDatabase.OpenAsync();
             f.SetConnected(connected);
             f.Host = await new HostBuilder().ConfigureWebHost(web => web.UseTestServer()
                 .ConfigureServices(services =>
                 {
                     services.AddRouting();
+                    services.AddDbContext<AHDBContext>(options => options.UseSqlite(f.recoveryDatabase));
                     services.AddSingleton(f.Gateway);
                     services.AddSingleton<IDeviceRepository>(f);
                     services.AddSingleton<IDeviceSecretService>(f);
@@ -301,7 +364,7 @@ public sealed class DeviceWebSocketInProcessTests
         public string HashSecret(string secret) => secret;
         public bool VerifySecret(string? secret, string? storedHash) => secret == storedHash;
         public Task<DeviceCurrentState?> ReadAsync(Guid deviceId, Guid sessionId, CancellationToken cancellationToken) => Task.FromResult(HasSession && deviceId == Device && sessionId == Session ? new DeviceCurrentState(Device, Session, Customer, Auction, 12, Lot, true, 1.23m, 2.50m, 2.01m, 2, 7) : null);
-        public void Dispose() => Host.Dispose();
+        public void Dispose() { Host.Dispose(); recoveryDatabase.Dispose(); }
     }
 
     private sealed class BidStore : IPlaceBidStore

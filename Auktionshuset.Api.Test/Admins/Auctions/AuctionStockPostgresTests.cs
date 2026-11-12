@@ -31,7 +31,8 @@ public sealed class PostgresStockFactAttribute : FactAttribute
 
 public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
 {
-    private readonly string databaseName = "codex_stock_" + Guid.NewGuid().ToString("N");
+    private string databaseName = "codex_stock_" + Guid.NewGuid().ToString("N");
+    private bool resumedAcceptanceDatabase;
     private string connectionString = "";
     private Guid houseId, lotId;
     private static readonly DateTime Now = new(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc);
@@ -41,13 +42,31 @@ public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
     {
         var source = Environment.GetEnvironmentVariable("AUCTION_STOCK_TEST_CONNECTION");
         if (string.IsNullOrWhiteSpace(source)) return;
+        var resumeDatabase = Environment.GetEnvironmentVariable("AH_USB_ACCEPTANCE_RESUME_DB");
+        if (resumeDatabase is not null)
+        {
+            if (Environment.GetEnvironmentVariable("AH_BROWSER_ACCEPTANCE") != "1" ||
+                !System.Text.RegularExpressions.Regex.IsMatch(resumeDatabase, @"\Acodex_stock_[0-9a-f]{32}\z"))
+                throw new InvalidOperationException("Invalid isolated USB acceptance database name.");
+            databaseName = resumeDatabase;
+            resumedAcceptanceDatabase = true;
+        }
         await using var admin = new NpgsqlConnection(source);
         await admin.OpenAsync();
-        // The identifier is generated internally, never supplied by configuration.
-        await using var command = new NpgsqlCommand($"CREATE DATABASE \"{databaseName}\"", admin);
-        await command.ExecuteNonQueryAsync();
+        if (!resumedAcceptanceDatabase)
+        {
+            // The identifier is generated internally, never supplied by configuration.
+            await using var command = new NpgsqlCommand($"CREATE DATABASE \"{databaseName}\"", admin);
+            await command.ExecuteNonQueryAsync();
+        }
         connectionString = new NpgsqlConnectionStringBuilder(source) { Database = databaseName, Pooling = false }.ConnectionString;
         await using var db = Db();
+        if (resumedAcceptanceDatabase)
+        {
+            if (!await db.Set<Device>().AnyAsync(d => d.DeviceNumber == 9001))
+                throw new InvalidOperationException("The isolated acceptance database has no device 9001.");
+            return;
+        }
         await db.Database.EnsureCreatedAsync();
         var house = new AuctionHouse { AuctionHouseId = Guid.NewGuid(), AuctionHouseName = "Stock tests",
             Address = "Test", CVRNumber = 12345678, PhoneNumber = "12345678", Email = "stock@example.test" };
@@ -61,7 +80,7 @@ public sealed partial class AuctionStockPostgresTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (connectionString.Length == 0) return;
+        if (connectionString.Length == 0 || resumedAcceptanceDatabase) return;
         await using var admin = new NpgsqlConnection(Environment.GetEnvironmentVariable("AUCTION_STOCK_TEST_CONNECTION"));
         await admin.OpenAsync();
         await using var command = new NpgsqlCommand($"DROP DATABASE \"{databaseName}\" WITH (FORCE)", admin);
