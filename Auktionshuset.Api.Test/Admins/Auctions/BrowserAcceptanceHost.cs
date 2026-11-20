@@ -166,7 +166,6 @@ public sealed partial class AuctionStockPostgresTests
             using var response = await probe.GetAsync("/api/customer/my-auctions");
             Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
 
-            using var limit = new CancellationTokenSource(TimeSpan.FromMinutes(30));
             using var limit = new CancellationTokenSource(TimeSpan.FromMinutes(usbAcceptance ? 480 : 30));
             while (!limit.IsCancellationRequested && (stopFile is null || !File.Exists(stopFile)))
             {
