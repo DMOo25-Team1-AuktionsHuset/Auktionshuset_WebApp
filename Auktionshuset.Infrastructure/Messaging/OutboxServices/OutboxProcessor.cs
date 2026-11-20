@@ -143,7 +143,7 @@ namespace Auktionshuset.Infrastructure.Messaging.OutboxServices
                 if (!updated)
                 {
                     logger.LogWarning(
-                        $"Outbox {message.OutboxId}: lease lost: error status not changed");
+                        "Outbox {OutboxId}: lease lost: error status not changed", message.OutboxId);
 
                     return;
                 }

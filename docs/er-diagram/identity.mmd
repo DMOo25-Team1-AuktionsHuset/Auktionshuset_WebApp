@@ -1,0 +1,73 @@
+erDiagram
+    direction TB
+    %% PK=primary key; FK=foreign key; UK=single-column unique index.
+    %% NULL/NOT NULL reflect the EF model; C# required is not SQL NOT NULL.
+    %% U1-del etc. identify parts of a composite unique index within a table.
+    %% Solid=identifying; dashed=non-identifying. All edges are real database FKs.
+    %% Invoice is legacy; Outbox_ikke_EF_mappet is a C# class, not a database table.
+    %% Physical cardinality includes unique FK indexes even when EF uses WithMany.
+
+    AspNetRoleClaims {
+        int Id PK "NOT NULL; EF:OnAdd"
+        string ClaimType "NULL"
+        string ClaimValue "NULL"
+        string RoleId FK "NOT NULL"
+    }
+
+    AspNetRoles {
+        string Id PK "NOT NULL"
+        string ConcurrencyStamp "NULL; concurrency"
+        string Name "NULL; max=256"
+        string NormalizedName UK "NULL; max=256"
+    }
+
+    AspNetUserClaims {
+        int Id PK "NOT NULL; EF:OnAdd"
+        string ClaimType "NULL"
+        string ClaimValue "NULL"
+        string UserId FK "NOT NULL"
+    }
+
+    AspNetUserLogins {
+        string LoginProvider PK "NOT NULL; sammensat PK"
+        string ProviderKey PK "NOT NULL; sammensat PK"
+        string ProviderDisplayName "NULL"
+        string UserId FK "NOT NULL"
+    }
+
+    AspNetUserRoles {
+        string UserId PK, FK "NOT NULL; sammensat PK"
+        string RoleId PK, FK "NOT NULL; sammensat PK"
+    }
+
+    AspNetUsers {
+        string Id PK "NOT NULL"
+        int AccessFailedCount "NOT NULL"
+        string ConcurrencyStamp "NULL; concurrency"
+        string Email "NULL; max=256"
+        bool EmailConfirmed "NOT NULL"
+        bool LockoutEnabled "NOT NULL"
+        DateTimeOffset LockoutEnd "NULL"
+        string NormalizedEmail "NULL; max=256"
+        string NormalizedUserName UK "NULL; max=256"
+        string PasswordHash "NULL"
+        string PhoneNumber "NULL"
+        bool PhoneNumberConfirmed "NOT NULL"
+        string SecurityStamp "NULL"
+        bool TwoFactorEnabled "NOT NULL"
+        string UserName "NULL; max=256"
+    }
+
+    AspNetUserTokens {
+        string UserId PK, FK "NOT NULL; sammensat PK"
+        string LoginProvider PK "NOT NULL; sammensat PK"
+        string Name PK "NOT NULL; sammensat PK"
+        string Value "NULL"
+    }
+
+    AspNetRoles ||..o{ AspNetRoleClaims : "RoleId; Cascade"
+    AspNetUsers ||..o{ AspNetUserClaims : "UserId; Cascade"
+    AspNetUsers ||..o{ AspNetUserLogins : "UserId; Cascade"
+    AspNetRoles ||--o{ AspNetUserRoles : "RoleId; Cascade"
+    AspNetUsers ||--o{ AspNetUserRoles : "UserId; Cascade"
+    AspNetUsers ||--o{ AspNetUserTokens : "UserId; Cascade"

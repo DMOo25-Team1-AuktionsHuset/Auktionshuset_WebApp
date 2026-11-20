@@ -18,7 +18,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Auktionshuset.Tests.Auth;
 
-public sealed class CustomerAreaFlowTests
+public sealed partial class CustomerAreaFlowTests
 {
     [Fact]
     public async Task CustomerAreaShowsOverviewNavigationAndProfile()
@@ -236,7 +236,7 @@ public sealed class CustomerAreaFlowTests
         await LoginAsync(client, "kunde-ny@example.test", "correct");
         string path = $"/kunde/auktioner/{factory.AuctionId}";
         string html = await client.GetStringAsync(path);
-        string[] forms = Regex.Matches(html, "<form\\b[^>]*>.*?</form>", RegexOptions.Singleline)
+        string[] forms = FormRegex().Matches(html)
             .Select(match => match.Value).Where(form => form.Contains("Afgiv bud", StringComparison.Ordinal)).ToArray();
         Assert.Equal(2, forms.Length);
         var firstForm = ReadFormFields(forms[0]);
@@ -435,16 +435,16 @@ public sealed class CustomerAreaFlowTests
 
     private static string ReadAntiforgeryToken(string html)
     {
-        Match match = Regex.Match(html, "name=\"__RequestVerificationToken\" value=\"([^\"]+)\"");
+        Match match = AntiforgeryTokenRegex().Match(html);
         Assert.True(match.Success, "The page should render an antiforgery token.");
         return WebUtility.HtmlDecode(match.Groups[1].Value);
     }
 
     private static (string Token, string Handler) ReadFormFields(string html)
     {
-        Match token = Regex.Match(html, "name=\"__RequestVerificationToken\" value=\"([^\"]+)\"");
+        Match token = AntiforgeryTokenRegex().Match(html);
         Assert.True(token.Success, "The form should render an antiforgery token.");
-        Match handler = Regex.Match(html, "name=\"_handler\" value=\"([^\"]+)\"");
+        Match handler = FormHandlerRegex().Match(html);
         Assert.True(handler.Success, "The form should render a handler field.");
         return (WebUtility.HtmlDecode(token.Groups[1].Value), WebUtility.HtmlDecode(handler.Groups[1].Value));
     }
@@ -598,6 +598,13 @@ public sealed class CustomerAreaFlowTests
             };
         }
     }
+
+    [GeneratedRegex("<form\\b[^>]*>.*?</form>", RegexOptions.Singleline)]
+    private static partial Regex FormRegex();
+    [GeneratedRegex("name=\"__RequestVerificationToken\" value=\"([^\"]+)\"")]
+    private static partial Regex AntiforgeryTokenRegex();
+    [GeneratedRegex("name=\"_handler\" value=\"([^\"]+)\"")]
+    private static partial Regex FormHandlerRegex();
 }
 
 

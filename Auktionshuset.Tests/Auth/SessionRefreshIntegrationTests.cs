@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Auktionshuset.Tests.Auth;
 
-public sealed class SessionRefreshIntegrationTests
+public sealed partial class SessionRefreshIntegrationTests
 {
     [Theory]
     [InlineData(RoleNames.Admin)]
@@ -146,7 +146,7 @@ public sealed class SessionRefreshIntegrationTests
 
     private static string ReadAntiforgeryToken(string html)
     {
-        var match = Regex.Match(html, "name=\"__RequestVerificationToken\" value=\"([^\"]+)\"");
+        var match = AntiforgeryTokenRegex().Match(html);
         Assert.True(match.Success);
         return WebUtility.HtmlDecode(match.Groups[1].Value);
     }
@@ -250,4 +250,7 @@ public sealed class SessionRefreshIntegrationTests
             _ => []
         };
     }
+
+    [GeneratedRegex("name=\"__RequestVerificationToken\" value=\"([^\"]+)\"")]
+    private static partial Regex AntiforgeryTokenRegex();
 }

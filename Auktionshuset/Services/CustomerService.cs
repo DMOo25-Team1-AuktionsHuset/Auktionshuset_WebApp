@@ -11,7 +11,7 @@ public sealed class CustomerService(BackendApiClient httpClient)
         CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.GetAsync("api/customer/me", cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Dine oplysninger", "hentes");
+        await EnsureSuccessAsync(response, "Dine oplysninger", "hentes", cancellationToken);
 
         try
         {
@@ -29,7 +29,7 @@ public sealed class CustomerService(BackendApiClient httpClient)
         CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.PutAsJsonAsync("api/customer/me", request, cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Dine oplysninger", "gemmes");
+        await EnsureSuccessAsync(response, "Dine oplysninger", "gemmes", cancellationToken);
 
         try
         {
@@ -44,9 +44,9 @@ public sealed class CustomerService(BackendApiClient httpClient)
 
     private static async Task EnsureSuccessAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken,
         string subject,
-        string verb)
+        string verb,
+        CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -55,7 +55,7 @@ public sealed class CustomerService(BackendApiClient httpClient)
 
         string message = response.StatusCode == HttpStatusCode.Forbidden
             ? "Du har ikke adgang til denne side. Kontakt auktionshuset, hvis problemet fortsætter."
-            : await ApiProblemReader.ReadMessageAsync(response, cancellationToken, subject, verb);
+            : await ApiProblemReader.ReadMessageAsync(response, subject, verb, cancellationToken);
 
         throw new CustomerApiException(message, response.StatusCode);
     }

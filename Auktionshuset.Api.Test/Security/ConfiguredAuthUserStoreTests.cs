@@ -19,7 +19,9 @@ namespace Auktionshuset.Api.Test.Security;
 
 public sealed class ConfiguredAuthUserStoreTests
 {
-   [Theory]
+    private static readonly string[] InjectedPermissions = new[] { "employees.read" };
+
+    [Theory]
    [InlineData("LotAdmin", SecurityRoles.LotAdmin)]
    [InlineData("AuctionAdmin", SecurityRoles.AuctionAdmin)]
    [InlineData("Admin", SecurityRoles.Admin)]
@@ -42,7 +44,7 @@ public sealed class ConfiguredAuthUserStoreTests
            email = "configured@example.test",
            password = "test-password",
            role = "Admin",
-           permissions = new[] { "employees.read" }
+           permissions = InjectedPermissions
        });
 
        Assert.Equal(HttpStatusCode.OK, response.StatusCode);

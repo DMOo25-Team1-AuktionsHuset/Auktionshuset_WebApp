@@ -40,10 +40,10 @@ public sealed class BackendSessionService(
             try
             {
                 using HttpClient client = CreateClient(ticket);
-                using HttpResponseMessage response = await client.PostAsJsonAsync("api/auth/refresh", new RefreshTokenRequest(refreshToken));
+                using HttpResponseMessage response = await client.PostAsJsonAsync("api/auth/refresh", new RefreshTokenRequest(refreshToken), cancellationToken: CancellationToken.None);
                 if (response.IsSuccessStatusCode)
                 {
-                    LoginResponse? login = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                    LoginResponse? login = await response.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: CancellationToken.None);
                     if (login is not null && !string.IsNullOrWhiteSpace(login.AccessToken)
                         && !string.IsNullOrWhiteSpace(login.RefreshToken) && login.ExpiresAtUtc > clock.GetUtcNow()
                         && login.RefreshTokenExpiresAtUtc is not null

@@ -97,7 +97,7 @@ public sealed class GetAuctionsHandler(
     /// <returns>The employee's full name, or a Danish fallback when none is assigned.</returns>
     private static string ResolveEmployeeName(
         AuctionEntity auction,
-        IReadOnlyDictionary<Guid, Domain.Entities.Employee> employeesById)
+        Dictionary<Guid, Domain.Entities.Employee> employeesById)
     {
         if (auction.Employee?.FirstName is { Length: > 0 } firstName)
         {

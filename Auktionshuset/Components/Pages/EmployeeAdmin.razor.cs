@@ -47,7 +47,7 @@ public partial class EmployeeAdmin : IAsyncDisposable
         .ThenBy(employee => employee.LastName, StringComparer.Create(DanishCulture, true))
         .ToArray();
 
-    private IReadOnlyList<EmployeeListItemResponse> FilteredEmployees
+    private EmployeeListItemResponse[] FilteredEmployees
     {
         get
         {
@@ -69,7 +69,7 @@ public partial class EmployeeAdmin : IAsyncDisposable
     private IReadOnlyList<EmployeeListItemResponse> PagedEmployees =>
         FilteredEmployees.Skip((page - 1) * pageSize).Take(pageSize).ToArray();
 
-    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredEmployees.Count / (double)pageSize));
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredEmployees.Length / (double)pageSize));
 
     protected override async Task OnInitializedAsync()
     {
@@ -322,6 +322,7 @@ public partial class EmployeeAdmin : IAsyncDisposable
         isDisposed = true;
         EmployeeRealtimeService.Invalidated -= RefreshEmployeesAsync;
         EmployeeRealtimeService.ConnectionChanged -= OnEmployeeConnectionChangedAsync;
+        GC.SuppressFinalize(this);
 
         return ValueTask.CompletedTask;
     }

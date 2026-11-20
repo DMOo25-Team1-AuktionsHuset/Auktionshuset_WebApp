@@ -8,6 +8,11 @@ namespace Auktionshuset.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class MondayMorning : Migration
     {
+        private static readonly string[] QuarantinedAtTimeOutboxIdColumns = { "QuarantinedAtTime", "OutboxId" };
+        private static readonly string[] ProcessedAtTimeOutboxIdColumns = { "ProcessedAtTime", "OutboxId" };
+        private static readonly string[] InboxQuarantinedAtTimeInboxIdColumns = { "InboxQuarantinedAtTime", "InboxId" };
+        private static readonly string[] PipelineMessageIdRequestedAtTimeColumns = { "Pipeline", "MessageId", "RequestedAtTime" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -33,25 +38,25 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "OutboxMessages_Quarantine",
                 table: "OutboxMessages",
-                columns: new[] { "QuarantinedAtTime", "OutboxId" },
+                columns: QuarantinedAtTimeOutboxIdColumns,
                 filter: "\"ProcessedAtTime\" IS NULL AND \"QuarantinedAtTime\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "OutboxMessages_Retention",
                 table: "OutboxMessages",
-                columns: new[] { "ProcessedAtTime", "OutboxId" },
+                columns: ProcessedAtTimeOutboxIdColumns,
                 filter: "\"ProcessedAtTime\" IS NOT NULL AND \"QuarantinedAtTime\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "InboxMessages_Quarantine",
                 table: "InboxMessages",
-                columns: new[] { "InboxQuarantinedAtTime", "InboxId" },
+                columns: InboxQuarantinedAtTimeInboxIdColumns,
                 filter: "\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MessageReplayAudits_Pipeline_MessageId_RequestedAtTime",
                 table: "MessageReplayAudits",
-                columns: new[] { "Pipeline", "MessageId", "RequestedAtTime" });
+                columns: PipelineMessageIdRequestedAtTimeColumns);
         }
 
         /// <inheritdoc />

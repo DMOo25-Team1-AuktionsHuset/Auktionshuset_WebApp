@@ -145,8 +145,11 @@ internal sealed class AdminEventsConsumer(
 
             runtime.SetConsumerActive(false);
 
-            logger.LogInformation(
-                "RabbitMq consumer listening to {QueueName}", RabbitMqTopology.Queues.Admin);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "RabbitMq consumer listening to {QueueName}", RabbitMqTopology.Queues.Admin);
+            }
 
             Exception failure = await ended.Task.WaitAsync(stoppingToken);
 

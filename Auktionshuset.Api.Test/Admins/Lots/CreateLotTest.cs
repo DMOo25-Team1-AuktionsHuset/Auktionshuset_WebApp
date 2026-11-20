@@ -163,28 +163,32 @@ public class CreateLotTest
     /// Verifies that each invalid input produces a validation error for the expected member.
     /// </summary>
     [Theory]
-    [MemberData(nameof(InvalidRequests))]
-    public void CreateLotRequest_WithInvalidInput_FailsValidation(
-        CreateLotRequest request,
-        string invalidMember)
+    [InlineData("name", nameof(CreateLotRequest.Name))]
+    [InlineData("category", nameof(CreateLotRequest.Category))]
+    [InlineData("quantity", nameof(CreateLotRequest.Quantity))]
+    [InlineData("estimatedValue", nameof(CreateLotRequest.EstimatedValue))]
+    [InlineData("description", nameof(CreateLotRequest.Description))]
+    [InlineData("tooManyTags", nameof(CreateLotRequest.Tags))]
+    [InlineData("blankTag", nameof(CreateLotRequest.Tags))]
+    [InlineData("auctionHouseId", nameof(CreateLotRequest.AuctionHouseId))]
+    public void CreateLotRequest_WithInvalidInput_FailsValidation(string invalidCase, string invalidMember)
     {
-        // Act
-        IReadOnlyList<ValidationResult> validationResults = Validate(request);
+        CreateLotRequest request = invalidCase switch
+        {
+            "name" => CreateValidRequest(name: "x"),
+            "category" => CreateValidRequest(category: ""),
+            "quantity" => CreateValidRequest(quantity: 0),
+            "estimatedValue" => CreateValidRequest(estimatedValue: 0),
+            "description" => CreateValidRequest(description: ""),
+            "tooManyTags" => CreateValidRequest(tags: Enumerable.Repeat("tag", 21).ToArray()),
+            "blankTag" => CreateValidRequest(tags: ["valid", " "]),
+            "auctionHouseId" => CreateValidRequest(auctionHouseId: "00000000-0000-0000-0000-000000000000"),
+            _ => throw new ArgumentOutOfRangeException(nameof(invalidCase))
+        };
 
-        // Assert
+        List<ValidationResult> validationResults = Validate(request);
         Assert.Contains(validationResults, result => result.MemberNames.Contains(invalidMember));
     }
-
-    public static TheoryData<CreateLotRequest, string> InvalidRequests => new() {
-        { CreateValidRequest(name: "x"), nameof(CreateLotRequest.Name) },
-        { CreateValidRequest(category: ""), nameof(CreateLotRequest.Category) },
-        { CreateValidRequest(quantity: 0), nameof(CreateLotRequest.Quantity) },
-        { CreateValidRequest(estimatedValue: 0), nameof(CreateLotRequest.EstimatedValue) },
-        { CreateValidRequest(description: ""), nameof(CreateLotRequest.Description) },
-        { CreateValidRequest(tags: Enumerable.Repeat("tag", 21).ToArray()), nameof(CreateLotRequest.Tags) },
-        { CreateValidRequest(tags: ["valid", " "]), nameof(CreateLotRequest.Tags) },
-        { CreateValidRequest(auctionHouseId: "00000000-0000-0000-0000-000000000000"), nameof(CreateLotRequest.AuctionHouseId) }
-    };
 
     /// <summary>
     /// Builds a valid create-lot request, allowing individual fields to be overridden per test.
@@ -235,7 +239,7 @@ public class CreateLotTest
     /// Runs annotation and <see cref="IValidatableObject"/> validation on the request.
     /// </summary>
     /// <returns>Every validation result produced for the request.</returns>
-    private static IReadOnlyList<ValidationResult> Validate(CreateLotRequest request)
+    private static List<ValidationResult> Validate(CreateLotRequest request)
     {
         var results = new List<ValidationResult>();
         Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);

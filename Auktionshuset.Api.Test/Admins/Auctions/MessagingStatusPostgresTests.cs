@@ -62,7 +62,7 @@ public sealed partial class AuctionStockPostgresTests
         var status = await operations.ReadStatusAsync(default);
         Assert.Equal(2, parameters.StatusReads);
         Assert.Equal(Now, status.SampledAtTime);
-        Assert.Equal(new[] { "outbox", "inbox" }, status.Queues.Select(q => q.Pipeline));
+        Assert.Equal(ExpectedPipelines, status.Queues.Select(q => q.Pipeline));
         Assert.All(status.Queues, q =>
         {
             Assert.Equal(4, q.Pending);
@@ -73,6 +73,8 @@ public sealed partial class AuctionStockPostgresTests
             Assert.Equal(past.Ticks / 10, q.OldestReadyAtTime!.Value.Ticks / 10);
         });
     }
+
+    private static readonly string[] ExpectedPipelines = new[] { "outbox", "inbox" };
 
     private sealed class StatusParameterObserver : DbCommandInterceptor
     {

@@ -15,7 +15,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Auktionshuset.Tests.Auth;
 
-public sealed class CustomerRegistrationFlowTests
+public sealed partial class CustomerRegistrationFlowTests
 {
     [Fact]
     public async Task RegistrationPageIsPublicAndLinkedFromLogin()
@@ -262,7 +262,7 @@ public sealed class CustomerRegistrationFlowTests
 
     private static string ReadAntiforgeryToken(string html)
     {
-        Match match = Regex.Match(html, "name=\"__RequestVerificationToken\" value=\"([^\"]+)\"");
+        Match match = AntiforgeryTokenRegex().Match(html);
         Assert.True(match.Success, "The page should render an antiforgery token.");
         return WebUtility.HtmlDecode(match.Groups[1].Value);
     }
@@ -410,5 +410,8 @@ public sealed class CustomerRegistrationFlowTests
             });
         }
     }
+
+    [GeneratedRegex("name=\"__RequestVerificationToken\" value=\"([^\"]+)\"")]
+    private static partial Regex AntiforgeryTokenRegex();
 }
 

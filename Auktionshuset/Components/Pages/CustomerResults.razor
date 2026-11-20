@@ -92,7 +92,7 @@
     private async Task RefreshAsync()
     {
         int request = ++version;
-        loading?.Cancel();
+        if (loading is not null) await loading.CancelAsync();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         loading = timeout;
         busy = true;
@@ -132,12 +132,12 @@
             await RefreshAsync();
         }
     }
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         disposed = true;
         version++;
-        loading?.Cancel();
+        if (loading is not null) await loading.CancelAsync();
         Realtime.Invalidated -= OnChangedAsync;
-        return ValueTask.CompletedTask;
+        GC.SuppressFinalize(this);
     }
 }

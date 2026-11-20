@@ -42,7 +42,7 @@
         try
         {
             using var response = await Client.GetAsync($"api/employee/{EmployeeId}/login");
-            if (!response.IsSuccessStatusCode) throw new HttpRequestException(await ApiProblemReader.ReadMessageAsync(response, default, "Login", "hentes"));
+            if (!response.IsSuccessStatusCode) throw new HttpRequestException(await ApiProblemReader.ReadMessageAsync(response, "Login", "hentes", default));
             existing = await response.Content.ReadFromJsonAsync<EmployeeLoginResponse>();
             email = existing?.Email ?? ""; role = existing?.Role ?? "Employee"; active = existing?.IsActive ?? true;
             loaded = true;
@@ -59,7 +59,7 @@
         {
             using var response = await Client.PutAsJsonAsync($"api/employee/{EmployeeId}/login",
                 new SaveEmployeeLoginRequest(email, password.Length == 0 ? null : password, role, active));
-            if (!response.IsSuccessStatusCode) { error = await ApiProblemReader.ReadMessageAsync(response, default, "Login", "gemmes"); return; }
+            if (!response.IsSuccessStatusCode) { error = await ApiProblemReader.ReadMessageAsync(response, "Login", "gemmes", default); return; }
             existing = await response.Content.ReadFromJsonAsync<EmployeeLoginResponse>();
             password = "";
             feedback = "Login og rolle er gemt.";

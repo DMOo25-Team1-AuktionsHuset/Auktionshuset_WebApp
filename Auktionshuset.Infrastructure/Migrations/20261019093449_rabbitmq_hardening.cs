@@ -8,6 +8,8 @@ namespace Auktionshuset.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class rabbitmq_hardening : Migration
     {
+        private static readonly string[] NextAttemptAtTimeOccuredAtTimeOutboxIdColumns = { "NextAttemptAtTime", "OccuredAtTime", "OutboxId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -39,7 +41,7 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "OutboxMessages_Ready",
                 table: "OutboxMessages",
-                columns: new[] { "NextAttemptAtTime", "OccuredAtTime", "OutboxId" },
+                columns: NextAttemptAtTimeOccuredAtTimeOutboxIdColumns,
                 filter: "\"ProcessedAtTime\" IS NULL AND \"QuarantinedAtTime\" IS NULL");
         }
 

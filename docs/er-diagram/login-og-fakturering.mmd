@@ -1,0 +1,109 @@
+erDiagram
+    direction TB
+    %% PK=primary key; FK=foreign key; UK=single-column unique index.
+    %% NULL/NOT NULL reflect the EF model; C# required is not SQL NOT NULL.
+    %% U1-del etc. identify parts of a composite unique index within a table.
+    %% Solid=identifying; dashed=non-identifying. All edges are real database FKs.
+    %% Invoice is legacy; Outbox_ikke_EF_mappet is a C# class, not a database table.
+    %% Physical cardinality includes unique FK indexes even when EF uses WithMany.
+
+    Auction {
+        Guid AuctionId PK "NOT NULL; EF:OnAdd"
+    }
+
+    Customers {
+        Guid CustomerId PK "NOT NULL; EF:OnAdd"
+    }
+
+    Employee {
+        Guid EmployeeId PK "NOT NULL; EF:OnAdd"
+    }
+
+    AuctionLot {
+        Guid AuctionLotId PK "NOT NULL; EF:OnAdd"
+    }
+
+    Bids {
+        Guid BidId PK "NOT NULL; EF:OnAdd"
+    }
+
+    LoginUsers {
+        Guid UserId PK "NOT NULL; EF:OnAdd"
+        Guid CustomerId FK, UK "NULL"
+        string Email UK "NOT NULL"
+        Guid EmployeeId FK, UK "NULL"
+        bool IsActive "NOT NULL; default=true; EF:OnAdd"
+        string PasswordHash "NOT NULL"
+        string Role "NOT NULL"
+        int SessionVersion "NOT NULL"
+    }
+
+    AuctionInvoices {
+        Guid Id PK "NOT NULL; EF:OnAdd"
+        Guid AuctionId FK "NOT NULL; U1-del"
+        string AuctionName "NOT NULL"
+        string Currency "NOT NULL"
+        string CustomerAddress "NOT NULL"
+        string CustomerEmail "NOT NULL"
+        Guid CustomerId FK "NOT NULL; U1-del"
+        string CustomerName "NOT NULL"
+        decimal HammerTotal "NOT NULL; numeric(20,2)"
+        DateTime IssuedAt "NOT NULL"
+        string Number UK "NOT NULL"
+        decimal PaidAmount "NULL; numeric(20,2)"
+        DateTime PaidAt "NULL"
+        string PaidByName "NULL"
+        Guid PaidByUserId "NULL"
+        string PaymentMethod "NULL"
+        string PaymentTerms "NOT NULL"
+        decimal PremiumPercent "NOT NULL; numeric(7,4)"
+        decimal PremiumTotal "NOT NULL; numeric(20,2)"
+        string SellerAddress "NOT NULL"
+        int SellerCvr "NOT NULL"
+        string SellerEmail "NOT NULL"
+        string SellerName "NOT NULL"
+        long Sequence UK "NOT NULL"
+        decimal Total "NOT NULL; numeric(20,2)"
+        decimal VatPercent "NOT NULL; numeric(7,4)"
+        decimal VatTotal "NOT NULL; numeric(20,2)"
+    }
+
+    AuctionInvoiceLines {
+        Guid Id PK "NOT NULL; EF:OnAdd"
+        Guid AuctionLotId FK, UK "NOT NULL"
+        DateTime CollectedAt "NULL"
+        string CollectedByName "NULL"
+        Guid CollectedByUserId "NULL"
+        string Description "NOT NULL"
+        decimal HammerPrice "NOT NULL; numeric(20,2)"
+        decimal HammerVat "NOT NULL; numeric(20,2)"
+        Guid InvoiceId FK "NOT NULL"
+        string Name "NOT NULL"
+        decimal Premium "NOT NULL; numeric(20,2)"
+        decimal PremiumVat "NOT NULL; numeric(20,2)"
+        int Quantity "NOT NULL"
+        decimal Total "NOT NULL; numeric(20,2)"
+        Guid WinningBidId FK, UK "NOT NULL"
+        DateTime WonAt "NOT NULL"
+    }
+
+    Invoice {
+        Guid InvoiceId PK "NOT NULL; EF:OnAdd; legacy"
+        Guid AuctionLotId FK "NOT NULL"
+        Guid CustomerId FK "NOT NULL"
+        DateTime InvoiceDateTime "NOT NULL"
+        int InvoiceNumber "NOT NULL"
+        string Status "NOT NULL"
+        Guid WinningBidId FK "NOT NULL"
+    }
+
+    Customers o|..o| LoginUsers : "CustomerId; Cascade"
+    Employee o|..o| LoginUsers : "EmployeeId; Restrict"
+    Auction ||..o{ AuctionInvoices : "AuctionId; Restrict"
+    Customers ||..o{ AuctionInvoices : "CustomerId; Restrict"
+    AuctionLot ||..o| AuctionInvoiceLines : "AuctionLotId; Restrict"
+    AuctionInvoices ||..o{ AuctionInvoiceLines : "InvoiceId; Restrict"
+    Bids ||..o| AuctionInvoiceLines : "WinningBidId; Restrict"
+    AuctionLot ||..o{ Invoice : "AuctionLotId; Restrict"
+    Customers ||..o{ Invoice : "CustomerId; Restrict"
+    Bids ||..o{ Invoice : "WinningBidId; Restrict"

@@ -36,7 +36,7 @@ public partial class Warehouse : IAsyncDisposable
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
 
     [Inject] private LotService LotService { get; set; } = default!;
-    [Inject] private LotRealtimeService LotRealtimeService { get; set; } = default;
+    [Inject] private LotRealtimeService LotRealtimeService { get; set; } = default!;
 
     private bool isDisposed;
 
@@ -603,6 +603,7 @@ public partial class Warehouse : IAsyncDisposable
 
         LotRealtimeService.Invalidated -= RefreshLotsAsync;
         LotRealtimeService.ConnectionChanged -= OnLotConnectionChangedAsync;
+        GC.SuppressFinalize(this);
 
         return ValueTask.CompletedTask;
     }

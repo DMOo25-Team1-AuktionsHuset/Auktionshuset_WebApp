@@ -1,0 +1,137 @@
+erDiagram
+    direction TB
+    %% PK=primary key; FK=foreign key; UK=single-column unique index.
+    %% NULL/NOT NULL reflect the EF model; C# required is not SQL NOT NULL.
+    %% U1-del etc. identify parts of a composite unique index within a table.
+    %% Solid=identifying; dashed=non-identifying. All edges are real database FKs.
+    %% Invoice is legacy; Outbox_ikke_EF_mappet is a C# class, not a database table.
+    %% Physical cardinality includes unique FK indexes even when EF uses WithMany.
+
+    AuctionHouse {
+        Guid AuctionHouseId PK "NOT NULL; EF:OnAdd"
+        string Address "NOT NULL"
+        string AuctionHouseName "NOT NULL"
+        int CVRNumber "NOT NULL"
+        string Email "NOT NULL"
+        string PhoneNumber "NOT NULL"
+    }
+
+    Employee {
+        Guid EmployeeId PK "NOT NULL; EF:OnAdd"
+        string Address "NOT NULL; max=200"
+        Guid AuctionHouseId FK "NOT NULL"
+        DateOnly BirthDate "NOT NULL"
+        string FirstName "NOT NULL; max=80"
+        string LastName "NOT NULL; max=80"
+    }
+
+    Auction {
+        Guid AuctionId PK "NOT NULL; EF:OnAdd"
+        Guid AuctionHouseId FK "NOT NULL"
+        long AuctionNumber UK "NULL"
+        string AuctionStatus "NOT NULL; max=32"
+        DateTime ClosedAtTime "NULL"
+        Guid EmployeeId FK "NULL"
+        DateTime EndedAt "NULL"
+        string Name "NOT NULL; max=120"
+        DateTime StartedAtTime "NULL"
+        DateTime StartsAt "NOT NULL"
+    }
+
+    Lot {
+        Guid LotId PK "NOT NULL; EF:OnAdd"
+        Guid AuctionHouseId FK "NOT NULL"
+        string Category "NOT NULL"
+        string Description "NOT NULL"
+        decimal EstimatedValue "NOT NULL"
+        string ImageFileName "NULL; max=128"
+        string Name "NOT NULL"
+        int Quantity "NOT NULL"
+        List_string Tags "NOT NULL; jsonb"
+    }
+
+    AuctionLot {
+        Guid AuctionLotId PK "NOT NULL; EF:OnAdd"
+        Guid AuctionId FK "NOT NULL; U1-del"
+        DateTime ClosedAtTime "NULL"
+        Guid CurrentHighestBidId FK "NULL"
+        Guid LotId FK "NOT NULL; U1-del"
+        bool OpenForBids "NOT NULL"
+        int Quantity "NOT NULL"
+        decimal StartingPrice "NOT NULL; numeric(18,2)"
+    }
+
+    Customers {
+        Guid CustomerId PK "NOT NULL; EF:OnAdd"
+        string Address "NOT NULL"
+        DateOnly BirthDate "NOT NULL"
+        string Email "NOT NULL"
+        string FirstName "NOT NULL"
+        string LastName "NOT NULL"
+        string PhoneNumber "NOT NULL"
+    }
+
+    AuctionRegistrations {
+        Guid AuctionId PK, FK "NOT NULL; sammensat PK"
+        Guid CustomerId PK, FK "NOT NULL; sammensat PK"
+        DateTime RegisteredAt "NOT NULL"
+    }
+
+    Device {
+        Guid DeviceId PK "NOT NULL; EF:OnAdd"
+        Guid AuctionHouseId FK "NOT NULL"
+        int DeviceNumber "NOT NULL"
+        string Status "NOT NULL"
+    }
+
+    DeviceSessions {
+        Guid DeviceSessionId PK "NOT NULL; EF:OnAdd"
+        Guid AuctionId FK "NOT NULL"
+        Guid CustomerId FK "NOT NULL"
+        Guid DeviceId FK "NOT NULL"
+        DateTime EndedAt "NULL"
+        DateTime StartedAt "NOT NULL"
+    }
+
+    Bids {
+        Guid BidId PK "NOT NULL; EF:OnAdd"
+        decimal Amount "NOT NULL"
+        Guid AuctionLotId FK "NOT NULL; U1-del"
+        Guid CustomerId FK "NOT NULL"
+        Guid DeviceSessionId FK "NULL"
+        DateTime PlacedAt "NOT NULL"
+        int SequenceNumber "NOT NULL; U1-del"
+    }
+
+    BidCommandKeys {
+        Guid BidCommandKeyId PK "NOT NULL; EF:OnAdd"
+        bool Accepted "NOT NULL"
+        Guid AuctionLotId "NOT NULL"
+        Guid BidId "NULL"
+        decimal CurrentPrice "NOT NULL; numeric(18,2)"
+        Guid CustomerId FK "NOT NULL; U1-del"
+        Guid DeviceSessionId "NULL"
+        string ErrorCode "NULL; max=64"
+        DateTime ProcessedAt "NOT NULL"
+        Guid RequestId "NOT NULL; U1-del"
+        decimal RequestedAmount "NOT NULL; numeric(18,2)"
+        int SequenceNumber "NULL"
+    }
+
+    AuctionHouse ||..o{ Employee : "AuctionHouseId; Restrict"
+    AuctionHouse ||..o{ Auction : "AuctionHouseId; Restrict"
+    Employee o|..o{ Auction : "EmployeeId; Restrict"
+    AuctionHouse ||..o{ Lot : "AuctionHouseId; Restrict"
+    Auction ||..o{ AuctionLot : "AuctionId; Cascade"
+    Bids o|..o{ AuctionLot : "CurrentHighestBidId; SetNull"
+    Lot ||..o{ AuctionLot : "LotId; Restrict"
+    Auction ||--o{ AuctionRegistrations : "AuctionId; Cascade"
+    Customers ||--o{ AuctionRegistrations : "CustomerId; Cascade"
+    AuctionHouse ||..o{ Device : "AuctionHouseId; Restrict"
+    Auction ||..o{ DeviceSessions : "AuctionId; Restrict"
+    Customers ||..o{ DeviceSessions : "CustomerId; Restrict"
+    Device ||..o{ DeviceSessions : "DeviceId; Restrict"
+    AuctionLot ||..o{ Bids : "AuctionLotId; Restrict"
+    Customers ||..o{ Bids : "CustomerId; Restrict"
+    DeviceSessions o|..o{ Bids : "DeviceSessionId; Restrict"
+    Customers ||..o{ BidCommandKeys : "CustomerId; Restrict"

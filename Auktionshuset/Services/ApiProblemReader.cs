@@ -20,9 +20,9 @@ internal static class ApiProblemReader
     /// <returns>The message to display to the user.</returns>
     public static async Task<string> ReadMessageAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken,
         string subject,
-        string verb)
+        string verb,
+        CancellationToken cancellationToken)
     {
         try
         {

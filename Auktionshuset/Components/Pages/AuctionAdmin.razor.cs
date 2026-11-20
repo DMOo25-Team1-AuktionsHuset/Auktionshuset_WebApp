@@ -144,7 +144,7 @@ public partial class AuctionAdmin : IDisposable
             : StatusUpcoming;
     
     
-    private IReadOnlyList<AuctionListItemResponse> FilteredAuctions
+    private AuctionListItemResponse[] FilteredAuctions
     {
         get
         {
@@ -172,7 +172,7 @@ public partial class AuctionAdmin : IDisposable
         FilteredAuctions.Skip((auctionPage - 1) * auctionPageSize).Take(auctionPageSize).ToArray();
 
     private int TotalAuctionPages =>
-        Math.Max(1, (int)Math.Ceiling(FilteredAuctions.Count / (double)auctionPageSize));
+        Math.Max(1, (int)Math.Ceiling(FilteredAuctions.Length / (double)auctionPageSize));
 
     protected override async Task OnInitializedAsync()
     {
@@ -220,6 +220,7 @@ public partial class AuctionAdmin : IDisposable
 
         AuctionRealtimeService.Invalidated -= RefreshAuctionsAsync;
         AuctionRealtimeService.ConnectionChanged -= OnAuctionConnectionChangedAsync;
+        GC.SuppressFinalize(this);
     }
 
     private Task RefreshAuctionsAsync()

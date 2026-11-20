@@ -24,7 +24,7 @@ public sealed class LotService(BackendApiClient httpClient)
 
         if (!response.IsSuccessStatusCode)
         {
-            string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstandene", "hentes");
+            string message = await ApiProblemReader.ReadMessageAsync(response, "Genstandene", "hentes", cancellationToken);
             throw new LotApiException(message, response.StatusCode);
         }
 
@@ -63,7 +63,7 @@ public sealed class LotService(BackendApiClient httpClient)
                 cancellationToken);
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "oprettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Genstanden", "oprettes", cancellationToken);
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -100,7 +100,7 @@ public sealed class LotService(BackendApiClient httpClient)
                 cancellationToken);
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "opdateres");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Genstanden", "opdateres", cancellationToken);
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -129,7 +129,7 @@ public sealed class LotService(BackendApiClient httpClient)
             throw new LotApiException("Genstanden blev ikke fundet.", response.StatusCode);
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Genstanden", "slettes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Genstanden", "slettes", cancellationToken);
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -166,7 +166,7 @@ public sealed class LotService(BackendApiClient httpClient)
                 cancellationToken);
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "gemmes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Billedet", "gemmes", cancellationToken);
         throw new LotApiException(message, response.StatusCode);
     }
 
@@ -186,7 +186,7 @@ public sealed class LotService(BackendApiClient httpClient)
             return;
         }
 
-        string message = await ApiProblemReader.ReadMessageAsync(response, cancellationToken, "Billedet", "fjernes");
+        string message = await ApiProblemReader.ReadMessageAsync(response, "Billedet", "fjernes", cancellationToken);
         throw new LotApiException(message, response.StatusCode);
     }
 

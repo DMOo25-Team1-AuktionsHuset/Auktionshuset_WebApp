@@ -26,7 +26,7 @@ public sealed class PostgresLotImageStore(AHDBContext dbContext) : ILotImageStor
         }
         byte[] bytes = buffer.ToArray();
         if (!LotImageValidator.TryGetExtension(bytes.AsSpan(0, Math.Min(bytes.Length, LotImageValidator.HeaderLength)), out string detectedExtension)
-            || detectedExtension != extension.ToLowerInvariant())
+            || !detectedExtension.Equals(extension, StringComparison.InvariantCultureIgnoreCase))
         {
             throw new InvalidDataException("The image content does not match its type.");
         }

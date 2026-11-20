@@ -8,6 +8,9 @@ namespace Auktionshuset.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class Inbox_Processor_Policy_RabbitMQ : Migration
     {
+        private static readonly string[] ConsumerNameNextAttemptAtTimeRecievedAtTimeInboxIdColumns = { "ConsumerName", "NextAttemptAtTime", "RecievedAtTime", "InboxId" };
+        private static readonly string[] RecievedAtTimeInboxIdColumns = { "RecievedAtTime", "InboxId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -44,7 +47,7 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "InboxMessages_Ready",
                 table: "InboxMessages",
-                columns: new[] { "ConsumerName", "NextAttemptAtTime", "RecievedAtTime", "InboxId" },
+                columns: ConsumerNameNextAttemptAtTimeRecievedAtTimeInboxIdColumns,
                 filter: "\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
         }
 
@@ -74,7 +77,7 @@ namespace Auktionshuset.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "InboxMessages_Ready",
                 table: "InboxMessages",
-                columns: new[] { "RecievedAtTime", "InboxId" },
+                columns: RecievedAtTimeInboxIdColumns,
                 filter: "\"ProcessedAtTime\" IS NULL AND \"InboxQuarantinedAtTime\" IS NULL");
         }
     }

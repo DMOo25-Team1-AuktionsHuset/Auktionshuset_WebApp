@@ -12,7 +12,7 @@ public sealed class EmployeeService(BackendApiClient httpClient)
         CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.GetAsync("api/employee/options", cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Auktionarius", "hentes");
+        await EnsureSuccessAsync(response, "Auktionarius", "hentes", cancellationToken);
 
         try
         {
@@ -29,7 +29,7 @@ public sealed class EmployeeService(BackendApiClient httpClient)
         CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.GetAsync("api/employee", cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Medarbejderne", "hentes");
+        await EnsureSuccessAsync(response, "Medarbejderne", "hentes", cancellationToken);
 
         try
         {
@@ -45,7 +45,7 @@ public sealed class EmployeeService(BackendApiClient httpClient)
     public async Task<EmployeeResponse> GetByIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.GetAsync($"api/employee/{employeeId}", cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Medarbejderen", "hentes");
+        await EnsureSuccessAsync(response, "Medarbejderen", "hentes", cancellationToken);
 
         try
         {
@@ -63,7 +63,7 @@ public sealed class EmployeeService(BackendApiClient httpClient)
         CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.PostAsJsonAsync("api/employee", request, cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Medarbejderen", "oprettes");
+        await EnsureSuccessAsync(response, "Medarbejderen", "oprettes", cancellationToken);
 
         try
         {
@@ -82,7 +82,7 @@ public sealed class EmployeeService(BackendApiClient httpClient)
         CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.PutAsJsonAsync($"api/employee/{employeeId}", request, cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Medarbejderen", "opdateres");
+        await EnsureSuccessAsync(response, "Medarbejderen", "opdateres", cancellationToken);
 
         try
         {
@@ -98,14 +98,14 @@ public sealed class EmployeeService(BackendApiClient httpClient)
     public async Task DeleteAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await httpClient.DeleteAsync($"api/employee/{employeeId}", cancellationToken);
-        await EnsureSuccessAsync(response, cancellationToken, "Medarbejderen", "slettes");
+        await EnsureSuccessAsync(response, "Medarbejderen", "slettes", cancellationToken);
     }
 
     private static async Task EnsureSuccessAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken,
         string subject,
-        string verb)
+        string verb,
+        CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -114,7 +114,7 @@ public sealed class EmployeeService(BackendApiClient httpClient)
 
         string message = response.StatusCode == HttpStatusCode.NotFound
             ? "Medarbejderen findes ikke længere. Listen er muligvis blevet opdateret."
-            : await ApiProblemReader.ReadMessageAsync(response, cancellationToken, subject, verb);
+            : await ApiProblemReader.ReadMessageAsync(response, subject, verb, cancellationToken);
 
         throw new EmployeeApiException(message, response.StatusCode);
     }

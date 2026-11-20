@@ -277,7 +277,7 @@
                     }
                     else
                     {
-                        <text>@FilteredAuctions.Count auktion@(FilteredAuctions.Count == 1 ? string.Empty : "er") fundet</text>
+                        <text>@FilteredAuctions.Length auktion@(FilteredAuctions.Length == 1 ? string.Empty : "er") fundet</text>
                     }
                 </p>
             </div>
@@ -327,7 +327,7 @@
         {
             <p class="list-state">Der er endnu ingen auktioner. Opret den første med formularen ovenfor.</p>
         }
-        else if (FilteredAuctions.Count == 0)
+        else if (FilteredAuctions.Length == 0)
         {
             <p class="list-state">Ingen auktioner matcher søgningen eller filteret.</p>
         }

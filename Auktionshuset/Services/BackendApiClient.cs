@@ -88,7 +88,7 @@ public sealed class BackendApiClient(
         }
 
         await tokenAccessor.InvalidateCurrentSessionAsync();
-        sessionCancellation.Cancel();
+        await sessionCancellation.CancelAsync();
         Redirect("/login");
     }
 
