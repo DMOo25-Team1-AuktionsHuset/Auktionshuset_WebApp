@@ -261,13 +261,5 @@ public sealed class DeviceAuthenticationEndpointTests
 
             return Task.FromResult(result);
         }
-
-        public Task<ActiveDeviceSession?> GetActiveSessionAsync(
-            Guid deviceId,
-            Guid? sessionId,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult<ActiveDeviceSession?>(null);
-        }
     }
 }
