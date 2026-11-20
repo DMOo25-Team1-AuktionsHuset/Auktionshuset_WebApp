@@ -120,7 +120,7 @@ public sealed class DeviceAdministrationService(BackendApiClient client)
         }
         catch (JsonException) { }
         if (string.IsNullOrWhiteSpace(message))
-            message = await ApiProblemReader.ReadMessageAsync(response, default, "Handlingen", "udføres");
+            message = await ApiProblemReader.ReadMessageAsync(response, "Handlingen", "udføres", default);
         throw new ApiException(message, response.StatusCode);
     }
 }
