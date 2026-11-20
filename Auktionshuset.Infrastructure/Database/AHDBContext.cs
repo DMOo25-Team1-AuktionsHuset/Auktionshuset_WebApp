@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Auktionshuset.Infrastructure.Database
 {
-    public class AHDBContext : IdentityDbContext
+    public class AHDBContext : IdentityDbContext<LoginUser>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="AHDBContext"/> with the supplied options.
@@ -21,9 +21,11 @@ namespace Auktionshuset.Infrastructure.Database
         public DbSet<Auction> Auction => Set<Auction>();
         public DbSet<AuctionLot> AuctionLot => Set<AuctionLot>();
         public DbSet<Employee> Employee => Set<Employee>();
+        public DbSet<DeviceCredential> DeviceCredentials => Set<DeviceCredential>();
         public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
         public DbSet<Bid> Bids => Set<Bid>();
         public DbSet<BidCommandKey> BidCommandKeys => Set<BidCommandKey>();
+        public DbSet<DeviceBidRecovery> DeviceBidRecoveries => Set<DeviceBidRecovery>();
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<AuctionRegistration> AuctionRegistrations => Set<AuctionRegistration>();
         public DbSet<LoginUser> LoginUsers => Set<LoginUser>();

@@ -10,6 +10,7 @@ using Auktionshuset.Infrastructure.Messaging.MessagingServices;
 using Auktionshuset.Infrastructure.Repositories;
 using Auktionshuset.Infrastructure.Service.Auctions;
 using Auktionshuset.Infrastructure.Service.Lots;
+using Auktionshuset.Infrastructure.Service.Auth;
 using Auktionshuset.Infrastructure.Service.Vault;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -54,6 +55,10 @@ namespace Auktionshuset.Infrastructure.Service
 
             RabbitMqCredentials rabbitMqCredentials =
                 await secretProvider.GetRabbitMqCredentialsAsync();
+            configuration["DeviceAuthentication:SigningKey"] =
+                await secretProvider.GetDeviceSigningKeyAsync();
+
+
 
             return services.AddInfrastructure(
                 configuration,
@@ -101,6 +106,7 @@ namespace Auktionshuset.Infrastructure.Service
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuctionWriteSessionFactory, PostgresAuctionWriteSessionFactory>();
             services.AddScoped<IAuctionLifeCycleStore, AuctionLifeCycleStore>();
+            services.AddScoped<ISharedAuctionLotStore, SharedAuctionLotStore>();
             services.AddScoped<AuctionLifeCycleStore>();
             services.AddHostedService<AuctionExpirationWorker>();
             services.AddScoped<Auktionshuset.Infrastructure.Service.Billing.AuctionInvoiceStore>();
@@ -108,8 +114,10 @@ namespace Auktionshuset.Infrastructure.Service
 
             services.AddScoped<ILotRepository, EFLotRepo>();
             services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
-            services.AddSingleton<IEmployeeRepository, InMemoryEmployeeRepository>();
-
+            services.AddScoped<IDeviceSecretService, DeviceSecretService>();
+            services.AddScoped<PostgresDeviceRepository>();
+            services.AddScoped<IDeviceRepository>(provider => provider.GetRequiredService<PostgresDeviceRepository>());
+            services.AddScoped<IDeviceAssignmentRepository>(provider => provider.GetRequiredService<PostgresDeviceRepository>());
             services.AddScoped<IEmployeeRepository, EFEmployeeRepository>();
             services.AddScoped<IAuctionRepository, EFAuctionRepository>();
             services.AddScoped<IPlaceBidStore, AuctionLotBiddingStore>();

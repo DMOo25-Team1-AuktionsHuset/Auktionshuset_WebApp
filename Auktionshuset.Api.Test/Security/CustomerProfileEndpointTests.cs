@@ -305,6 +305,9 @@ public sealed partial class CustomerProfileEndpointTests
             ["Authentication:SigningKey"] = "test-signing-key-with-at-least-32-characters",
             ["Authentication:Issuer"] = "Auktionshuset.Api.Test",
             ["Authentication:Audience"] = "Auktionshuset.Client.Test",
+            ["UsbStation:StationId"] = "11111111-1111-1111-1111-111111111111",
+            ["UsbStation:ApprovedOrigin"] = "https://staff.example.test",
+            ["UsbStation:GrantKeyHex"] = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
                 ["Authentication:Users:0:Email"] = "admin-role@example.test",
                 ["Authentication:Users:0:Password"] = "test-password",
                 ["Authentication:Users:0:Role"] = "Admin",
@@ -352,6 +355,11 @@ public sealed partial class CustomerProfileEndpointTests
                     services.AddSingleton<IPlaceBidStore, CustomerAuctionBidStore>();
                     services.AddApiServices();
                     services.AddScoped<Auktionshuset.Infrastructure.Service.Billing.AuctionInvoiceStore>();
+                    services.AddSingleton(TimeProvider.System);
+                    services.AddScoped<Auktionshuset.Infrastructure.Repositories.PostgresDeviceRepository>();
+                    services.AddScoped<Auktionshuset.Application.Abstraction.Auth.IDeviceRepository>(s => s.GetRequiredService<Auktionshuset.Infrastructure.Repositories.PostgresDeviceRepository>());
+                    services.AddScoped<Auktionshuset.Application.Abstraction.Auth.IDeviceAssignmentRepository>(s => s.GetRequiredService<Auktionshuset.Infrastructure.Repositories.PostgresDeviceRepository>());
+                    services.AddScoped<Auktionshuset.Application.Abstraction.Auth.IDeviceSecretService, Auktionshuset.Infrastructure.Service.Auth.DeviceSecretService>();
                     services.AddSignalR();
                     services.AddDbContext<AHDBContext>(options =>
                         options.UseSqlite($"Data Source={databasePath}"));
@@ -380,6 +388,7 @@ public sealed partial class CustomerProfileEndpointTests
                         endpoints.MapHub<Auktionshuset.Api.Hubs.CustomerAuctionHub>("/hubs/customer-auctions")
                             .RequireAuthorization(SecurityPolicies.Customer);
                         Auktionshuset.Api.Endpoints.Billing.InvoiceEndpoints.MapInvoiceEndpoints(endpoints);
+                        Auktionshuset.Api.Endpoints.Device.DeviceAdministrationEndpoints.MapDeviceAdministrationEndpoints(endpoints);
                         endpoints.MapBidEndpoints();
                         endpoints.MapEmployeeEndpoints();
                         endpoints.MapLotEndpoints();

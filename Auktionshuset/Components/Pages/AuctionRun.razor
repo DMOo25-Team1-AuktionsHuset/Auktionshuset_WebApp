@@ -47,6 +47,7 @@
         {
             <p>Du har kun læseadgang til auktionen.</p>
         }
+        <SharedLotPicker @key="auction.AuctionId" Auction="auction" CanUpdate="canUpdate" />
         <h2>Auktionens genstande</h2>
         @if (auction.Lots.Count == 0)
         {

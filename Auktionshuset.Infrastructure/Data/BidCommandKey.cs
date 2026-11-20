@@ -11,6 +11,7 @@ namespace Auktionshuset.Infrastructure.Data
         public required Guid RequestId { get; set; }
         public required Guid AuctionLotId { get; set; }
         public required decimal RequestedAmount { get; set; }
+        public long? AuctionRevision { get; set; }
 
         public required bool Accepted { get; set; }
         public required Guid? BidId { get; set; }
@@ -18,12 +19,15 @@ namespace Auktionshuset.Infrastructure.Data
 
         public required decimal CurrentPrice { get; set; }
         public string? ErrorCode { get; set; }
+                public long? ResultAuctionRevision { get; set; }
         public required DateTime ProcessedAt { get; set; }
 
-        public bool Matches(Guid auctionLotId, decimal amount) =>
-            AuctionLotId == auctionLotId && RequestedAmount == amount;
+        public bool Matches(PlaceBidCommand command) =>
+            AuctionLotId == command.AuctionLotId && RequestedAmount == command.Amount
+            && DeviceSessionId == command.DeviceSessionId
+            && AuctionRevision == (command.DeviceSessionId is null ? null : command.AuctionRevision);
 
         public PlaceBidResult ToResult(bool duplicate) =>
-            new(Accepted, duplicate, BidId, SequenceNumber, CurrentPrice, ErrorCode);
+            new(Accepted, duplicate, BidId, SequenceNumber, CurrentPrice, ErrorCode, ResultAuctionRevision);
     }
 }

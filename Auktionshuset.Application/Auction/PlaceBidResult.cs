@@ -6,5 +6,6 @@
         Guid? BidId,
         int? SequenceNumber,
         decimal CurrentPrice,
-        string? ErrorCode);
+        string? ErrorCode,
+                long? AuctionRevision = null);
 }

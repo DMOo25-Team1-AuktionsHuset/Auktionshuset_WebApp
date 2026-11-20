@@ -7,5 +7,6 @@ namespace Auktionshuset.Contracts.Dto.Admin.Auction
         Task AuctionDeletedAsync(DeleteAuctionNotification notification);
         Task BidPlacedAsync(BidPlacedNotification notification);
         Task AuctionLotClosedAsync(AuctionLotClosedNotification notification);
+        Task AuctionRevisionChangedAsync(SharedAuctionLotChangedNotification notification);
     }
 }

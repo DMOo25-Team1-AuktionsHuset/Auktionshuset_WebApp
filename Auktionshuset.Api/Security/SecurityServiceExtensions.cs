@@ -1,4 +1,5 @@
 using Auktionshuset.Api.Services;
+
 using Auktionshuset.Contracts.Security;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,6 +22,16 @@ public static class SecurityServiceExtensions
     {
 
         services.AddSingleton(TimeProvider.System);
+        services.AddIdentityCore<Auktionshuset.Domain.Entities.LoginUser>(options =>
+        {
+            options.User.RequireUniqueEmail = true;
+            options.User.AllowedUserNameCharacters = string.Empty;
+            options.Password.RequiredLength = 12;
+            options.Password.RequireDigit = false;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireLowercase = false;
+        }).AddEntityFrameworkStores<Auktionshuset.Infrastructure.Database.AHDBContext>();
         services.AddSingleton<
             IPasswordHasher<AuthUser>,
             PasswordHasher<AuthUser>>();
@@ -29,6 +40,8 @@ public static class SecurityServiceExtensions
         services.AddSingleton<LoginConnections>();
         services.Configure<HubOptions>(options => options.AddFilter<LoginConnections>());
         services.AddScoped<IAuthUserStore, PersistentAuthUserStore>();
+        services.AddScoped<Auktionshuset.Application.Admin.Employees.IEmployeeLoginStore, IdentityEmployeeLoginStore>();
+        services.AddScoped<Auktionshuset.Application.Admin.Employees.EmployeeLoginHandler>();
         services.AddScoped<CustomerRegistrationService>();
         services.AddSingleton<
             IAccessTokenService,
@@ -39,13 +52,21 @@ public static class SecurityServiceExtensions
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration));
+            .AddJwtBearer(options => ConfigureJwtBearer(options, configuration))
+            .AddJwtBearer(DeviceGatewayAuthentication.Scheme, options => DeviceGatewayAuthentication.Configure(options, configuration));
 
         services.AddAuthorization(options =>
         {
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
                 .Build();
+
+            options.AddPolicy(SecurityPolicies.DeviceGateway, policy =>
+            {
+                policy.AddAuthenticationSchemes(DeviceGatewayAuthentication.Scheme);
+                policy.RequireAuthenticatedUser();
+                policy.RequireClaim("scope", DeviceGatewayAuthentication.Scope);
+            });
 
             options.AddPolicy(SecurityPolicies.Admin, policy =>
             {

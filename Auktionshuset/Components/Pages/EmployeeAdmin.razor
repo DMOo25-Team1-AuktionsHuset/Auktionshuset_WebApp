@@ -36,7 +36,7 @@
                         {
                             <span>@(editingEmployeeId.HasValue ? "Gem ændringer" : "Opret medarbejder")</span>
                         }
-                    </button>
+                    </button 
                     @if (editingEmployeeId.HasValue)
                     {
                         <button type="button" class="btn btn-secondary" disabled="@isSubmitting" @onclick="CancelEdit">Annuller redigering</button>

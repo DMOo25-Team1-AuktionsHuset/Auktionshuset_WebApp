@@ -107,8 +107,8 @@ public sealed class CustomerRegistrationTests
             var verificationUser = new AuthUser
             {
                 UserId = loginUser.UserId,
-                Email = loginUser.Email,
-                PasswordHash = loginUser.PasswordHash,
+                Email = loginUser.Email!,
+                PasswordHash = loginUser.PasswordHash!,
                 Roles = [loginUser.Role],
                 Permissions = []
             };

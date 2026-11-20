@@ -8,16 +8,17 @@ public sealed class LoginUserConfiguration : IEntityTypeConfiguration<LoginUser>
 {
     public void Configure(EntityTypeBuilder<LoginUser> entity)
     {
-        entity.HasKey(loginUser => loginUser.UserId);
+        entity.HasIndex(loginUser => loginUser.UserId).IsUnique();
         entity.Property(loginUser => loginUser.Email).IsRequired();
         entity.Property(loginUser => loginUser.PasswordHash).IsRequired();
         entity.Property(loginUser => loginUser.Role).IsRequired();
         entity.Property(loginUser => loginUser.IsActive).HasDefaultValue(true);
-        entity.ToTable("LoginUsers", table => table.HasCheckConstraint("CK_LoginUser_Owner",
-            "(\"CustomerId\" IS NOT NULL AND \"EmployeeId\" IS NULL AND \"Role\" = 'Customer') OR (\"CustomerId\" IS NULL AND \"EmployeeId\" IS NOT NULL AND \"Role\" IN ('Admin', 'AuctionAdmin', 'LotAdmin', 'Employee'))"));
+        entity.ToTable("AspNetUsers", table => table.HasCheckConstraint("CK_LoginUser_Owner",
+            "(\"IsSystemAccount\" AND \"CustomerId\" IS NULL AND \"EmployeeId\" IS NULL) OR (NOT \"IsSystemAccount\" AND ((\"CustomerId\" IS NOT NULL AND \"EmployeeId\" IS NULL AND \"Role\" = 'Customer') OR (\"CustomerId\" IS NULL AND \"EmployeeId\" IS NOT NULL AND \"Role\" IN ('Admin', 'AuctionAdmin', 'LotAdmin', 'Employee'))))"));
 
         // Registration normalizes emails to lowercase; the unique index is the database backstop.
         entity.HasIndex(loginUser => loginUser.Email).IsUnique();
+        entity.HasIndex(loginUser => loginUser.NormalizedEmail).IsUnique();
         entity.HasIndex(loginUser => loginUser.CustomerId).IsUnique();
         entity.HasIndex(loginUser => loginUser.EmployeeId).IsUnique();
         entity.HasOne(loginUser => loginUser.Employee).WithOne()

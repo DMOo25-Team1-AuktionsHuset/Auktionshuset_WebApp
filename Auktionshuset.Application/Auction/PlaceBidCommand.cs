@@ -5,5 +5,8 @@
         Guid CustomerId,
         Guid? DeviceSessionId,
         Guid RequestId,
-        decimal Amount);
+        decimal Amount,
+        long? AuctionRevision = null,
+        Guid? DeviceId = null,
+        int? CredentialVersion = null);
 }

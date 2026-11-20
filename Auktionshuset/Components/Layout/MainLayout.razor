@@ -15,7 +15,10 @@
 
             <nav class="primary-nav" aria-label="Primær navigation">
                 <AuthorizeView Policy="@FrontendPolicies.BillingStaff">
-                    <Authorized><NavLink href="admin/invoices">Betaling og afhentning</NavLink></Authorized>
+                    <Authorized>
+                        <NavLink href="admin/invoices">Betaling og afhentning</NavLink>
+                        <NavLink href="admin/devices">Devices</NavLink>
+                    </Authorized>
                 </AuthorizeView>
                 <AuthorizeView Policy="@FrontendPolicies.CanViewLots">
                     <Authorized><NavLink href="warehouse" Match="NavLinkMatch.Prefix">Lager</NavLink></Authorized>

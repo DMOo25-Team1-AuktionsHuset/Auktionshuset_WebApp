@@ -3,6 +3,7 @@ using Auktionshuset.Api.Endpoints.Admin.Bid;
 using Auktionshuset.Api.Endpoints.Admin.CreateAuction;
 using Auktionshuset.Api.Endpoints.Admin.Employee;
 using Auktionshuset.Api.Endpoints.Admin.LotImage;
+using Auktionshuset.Api.Endpoints.Device;
 using Auktionshuset.Api.Endpoints.Admin.Lots;
 using Auktionshuset.Api.Endpoints.Admin.Messaging;
 using Auktionshuset.Api.Endpoints.Auth;
@@ -26,6 +27,7 @@ builder.Services.AddValidation();
 builder.Services.AddSignalR();
 
 builder.Services.AddSecurityServices(builder.Configuration);
+builder.Services.AddDeviceSecurity(builder.Configuration);
 
 //API Services
 builder.Services.AddApiServices();
@@ -55,8 +57,16 @@ if (app.Environment.IsDevelopment())
 
 await app.MigrateAndSeedDatabaseAsync();
 
+// Før routing og endpoints:
+app.UseWebSockets();
+
+// Sammen med de øvrige endpoint-registreringer:
+if (app.Environment.IsDevelopment())
+{
+    app.MapDeviceTestEndpoints();
+}
 app.UseForwardedHeaders();
-app.UseHttpsRedirection();
+app.UseDevelopmentAwareHttpsRedirection(app.Environment.IsDevelopment());
 app.UseRouting();
 app.UseRateLimiter();
 
@@ -65,7 +75,10 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapCustomerEndpoints();
+app.MapDeviceAdministrationEndpoints();
+app.MapDeviceWebSocket();
 Auktionshuset.Api.Endpoints.Billing.InvoiceEndpoints.MapInvoiceEndpoints(app);
+app.MapDeviceEndpoints();
 app.MapLotEndpoints();
 app.MapStoredLotImages();
 app.MapAuctionEndpoints();
@@ -100,6 +113,9 @@ app.MapHealthChecks("/health/messaging", new HealthCheckOptions
         }
 }).RequireAuthorization(SecurityPolicies.Admin);
 
+
+app.MapHub<DeviceGatewayHub>(DeviceGatewayAuthentication.HubPath, options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization(SecurityPolicies.DeviceGateway);
 
 app.MapHub<CustomerAuctionHub>("/hubs/customer-auctions", options => options.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization(SecurityPolicies.Customer);

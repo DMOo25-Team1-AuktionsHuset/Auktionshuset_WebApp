@@ -66,6 +66,7 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
                 if (item.ClosedAtTime is null)
                     item.OpenForBids = true;
 
+            await AuctionRevision.AdvanceAsync(auction, outboxWriter, nowUtc, cancellationToken);
             await AddUpdatedEventAsync(
                 auction,
                 nowUtc,
@@ -119,6 +120,8 @@ namespace Auktionshuset.Infrastructure.Service.Auctions
 
             auction.ClosedAtTime = nowUtc;
             auction.AuctionStatus = AuctionStatuses.Ended;
+            auction.SelectedAuctionLotId = null;
+            await AuctionRevision.AdvanceAsync(auction, outboxWriter, nowUtc, cancellationToken);
 
             //EndedAt is kept as planned end time, not actual end time
             await AddUpdatedEventAsync(
